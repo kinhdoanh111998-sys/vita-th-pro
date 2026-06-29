@@ -1,4 +1,14 @@
-export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: string }) {
+import type { ReactNode } from "react";
+
+export function AdminTopbar({
+  title,
+  subtitle,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  right?: ReactNode;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 mb-5">
       <div>
@@ -6,9 +16,11 @@ export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: str
         {subtitle && <p className="text-sm text-ink-muted mt-1">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-2">
-        <span className="hidden sm:inline rounded-full bg-brand-soft text-brand-dark px-3 py-1.5 text-xs font-extrabold">
-          Demo UI
-        </span>
+        {right ?? (
+          <span className="hidden sm:inline rounded-full bg-brand-soft text-brand-dark px-3 py-1.5 text-xs font-extrabold">
+            Demo UI
+          </span>
+        )}
       </div>
     </div>
   );
