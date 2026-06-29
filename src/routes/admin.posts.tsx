@@ -145,7 +145,7 @@ function PostsAdmin() {
     <>
       <AdminTopbar
         title="Tin tức / Hoạt động / Đào tạo"
-        subtitle={isLoading ? "Đang tải..." : `${rows.length} bài viết`}
+        subtitle={isLoading ? "Đang tải..." : `${filtered.length}/${rows.length} bài viết`}
         right={<Button onClick={openCreate}>+ Thêm bài viết</Button>}
       />
 
@@ -154,6 +154,20 @@ function PostsAdmin() {
           Lỗi tải dữ liệu: {(error as Error).message}
         </div>
       )}
+
+      <div className="mb-4 bg-white border border-hairline rounded-2xl p-3 flex flex-wrap gap-3 items-end">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Lọc theo phân loại</Label>
+          <Select value={catFilter} onValueChange={setCatFilter}>
+            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
 
       <div className="overflow-auto bg-white border border-hairline rounded-2xl">
         <table className="w-full min-w-[860px] border-collapse">
