@@ -61,6 +61,7 @@ function PostsAdmin() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [catFilter, setCatFilter] = useState("all");
 
   const { data: rows = [], isLoading, error } = useQuery({
     queryKey: ["admin", "posts"],
@@ -73,6 +74,9 @@ function PostsAdmin() {
       return (data ?? []) as Post[];
     },
   });
+
+  const filtered = catFilter === "all" ? rows : rows.filter((r) => (r.category ?? "") === catFilter);
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -141,7 +145,7 @@ function PostsAdmin() {
     <>
       <AdminTopbar
         title="Tin tức / Hoạt động / Đào tạo"
-        subtitle={isLoading ? "Đang tải..." : `${rows.length} bài viết`}
+        subtitle={isLoading ? "Đang tải..." : `${filtered.length}/${rows.length} bài viết`}
         right={<Button onClick={openCreate}>+ Thêm bài viết</Button>}
       />
 
@@ -150,6 +154,20 @@ function PostsAdmin() {
           Lỗi tải dữ liệu: {(error as Error).message}
         </div>
       )}
+
+      <div className="mb-4 bg-white border border-hairline rounded-2xl p-3 flex flex-wrap gap-3 items-end">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Lọc theo phân loại</Label>
+          <Select value={catFilter} onValueChange={setCatFilter}>
+            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả</SelectItem>
+              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
 
       <div className="overflow-auto bg-white border border-hairline rounded-2xl">
         <table className="w-full min-w-[860px] border-collapse">
@@ -166,7 +184,7 @@ function PostsAdmin() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && !isLoading ? (
+            {filtered.length === 0 && !isLoading ? (
               <tr>
                 <td colSpan={6} className="px-3.5 py-10 text-center text-ink-muted font-semibold">
                   Chưa có dữ liệu, vui lòng bấm nút{" "}
@@ -174,7 +192,8 @@ function PostsAdmin() {
                 </td>
               </tr>
             ) : (
-              rows.map((p) => (
+              filtered.map((p) => (
+
                 <tr key={p.id}>
                   <td className="px-3.5 py-3 border-b border-[#edf3ed]">
                     {p.image ? (
