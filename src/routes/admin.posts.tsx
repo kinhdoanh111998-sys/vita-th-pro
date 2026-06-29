@@ -61,6 +61,7 @@ function PostsAdmin() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
+  const [catFilter, setCatFilter] = useState("all");
 
   const { data: rows = [], isLoading, error } = useQuery({
     queryKey: ["admin", "posts"],
@@ -73,6 +74,9 @@ function PostsAdmin() {
       return (data ?? []) as Post[];
     },
   });
+
+  const filtered = catFilter === "all" ? rows : rows.filter((r) => (r.category ?? "") === catFilter);
+
 
   const saveMutation = useMutation({
     mutationFn: async () => {
