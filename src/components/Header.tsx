@@ -4,7 +4,11 @@ import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
 
-type NavItem = { label: string; to: string };
+type NavItem = {
+  label: string;
+  to: string;
+  search?: Record<string, string>;
+};
 type NavGroup = { label: string; to: string; children?: NavItem[] };
 
 const navGroups: NavGroup[] = [
@@ -22,21 +26,23 @@ const navGroups: NavGroup[] = [
   },
   {
     label: "Tin tức",
-    to: "/news/activities",
+    to: "/news",
     children: [
-      { label: "Hoạt động", to: "/news/activities" },
-      { label: "Sự kiện", to: "/news/events" },
-      { label: "Lịch đào tạo", to: "/news/training" },
+      { label: "Tất cả", to: "/news" },
+      { label: "Hoạt động", to: "/news", search: { category: "Hoạt động" } },
+      { label: "Sự kiện", to: "/news", search: { category: "Sự kiện" } },
+      { label: "Lịch đào tạo", to: "/news", search: { category: "Lịch đào tạo" } },
     ],
   },
   {
     label: "Sản phẩm",
     to: "/products",
     children: [
-      { label: "Máy công nghệ", to: "/products/machines" },
-      { label: "Phụ kiện", to: "/products/accessories" },
-      { label: "Dịch vụ", to: "/products/services" },
-      { label: "Chuyển giao công nghệ", to: "/products/technology-transfer" },
+      { label: "Tất cả", to: "/products" },
+      { label: "Máy công nghệ", to: "/products", search: { category: "Máy công nghệ" } },
+      { label: "Phụ kiện", to: "/products", search: { category: "Phụ kiện" } },
+      { label: "Dịch vụ", to: "/products", search: { category: "Dịch vụ" } },
+      { label: "Chuyển giao công nghệ", to: "/products", search: { category: "Chuyển giao công nghệ" } },
     ],
   },
   { label: "Liên hệ", to: "/contact" },
@@ -80,13 +86,13 @@ export function Header() {
                 {g.children && <span className="text-[10px]">▾</span>}
               </Link>
               {g.children && (
-                <div className="absolute left-0 top-11 min-w-[240px] bg-white border border-hairline rounded-[18px] p-2 shadow-[0_18px_46px_rgba(21,89,42,0.12)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150">
+                <div className="absolute left-0 top-11 min-w-[240px] bg-white border border-hairline rounded-[18px] p-2 shadow-[0_18px_46px_rgba(21,89,42,0.12)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
                   {g.children.map((c) => (
                     <Link
                       key={c.label}
                       to={c.to}
+                      search={c.search as never}
                       className="block rounded-xl px-3 py-2.5 text-sm font-bold text-[#26352a] hover:bg-brand-soft hover:text-brand-dark"
-                      activeProps={{ className: "bg-brand-soft text-brand-dark" }}
                     >
                       {c.label}
                     </Link>
@@ -123,10 +129,11 @@ export function Header() {
 
       {open && (
         <div className="lg:hidden border-t border-hairline bg-white">
-          {navGroups.flatMap((g) => [{ label: g.label, to: g.to }, ...(g.children ?? [])]).map((item, i) => (
+          {navGroups.flatMap((g) => [{ label: g.label, to: g.to, search: undefined as Record<string, string> | undefined }, ...((g.children ?? []) as NavItem[])]).map((item, i) => (
             <Link
               key={`${item.label}-${i}`}
               to={item.to}
+              search={item.search as never}
               className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
               onClick={() => setOpen(false)}
             >

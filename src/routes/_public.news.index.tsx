@@ -1,0 +1,95 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { CategoryTabs } from "@/components/CategoryTabs";
+
+const fallbackImg =
+  "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png";
+
+const CATEGORIES = ["Tất cả", "Hoạt động", "Sự kiện", "Lịch đào tạo"];
+
+type Post = {
+  id: string;
+  category: string | null;
+  title: string;
+  summary: string | null;
+  image: string | null;
+  created_at: string;
+};
+
+type Search = { category?: string };
+
+export const Route = createFileRoute("/_public/news/")({
+  validateSearch: (s: Record<string, unknown>): Search => ({
+    category: typeof s.category === "string" ? s.category : undefined,
+  }),
+  component: NewsPage,
+});
+
+function NewsPage() {
+  const { category } = Route.useSearch();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    let q = supabase
+      .from("posts")
+      .select("*")
+      .eq("status", "Hiển thị")
+      .order("created_at", { ascending: false });
+    if (category) q = q.eq("category", category);
+    q.then(({ data }) => {
+      setPosts((data as Post[]) ?? []);
+      setLoading(false);
+    });
+  }, [category]);
+
+  return (
+    <section className="py-12">
+      <div className="mx-auto max-w-[1180px] px-5">
+        <h1 className="text-3xl lg:text-[34px] font-black tracking-tight text-brand-dark">
+          Tin tức & Hoạt động
+        </h1>
+        <p className="text-ink-muted mt-2 max-w-[620px]">
+          Hoạt động, sự kiện và lịch đào tạo mới nhất từ Vita TH Pro.
+        </p>
+        <CategoryTabs to="/news" categories={CATEGORIES} current={category} />
+        <div className="mt-8">
+          {loading ? (
+            <p className="text-ink-muted">Đang tải...</p>
+          ) : posts.length === 0 ? (
+            <p className="text-ink-muted">Chưa có bài viết phù hợp.</p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((p) => (
+                <article
+                  key={p.id}
+                  className="overflow-hidden rounded-[22px] bg-white border border-hairline shadow-[0_8px_24px_rgba(21,89,42,0.06)]"
+                >
+                  <div className="aspect-[16/10] overflow-hidden border-b border-hairline">
+                    <img
+                      src={p.image || fallbackImg}
+                      alt={p.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <span className="inline-flex rounded-full bg-brand-soft text-brand-dark px-2.5 py-1 text-xs font-extrabold mb-2">
+                      {p.category || "Tin tức"}
+                    </span>
+                    <h3 className="text-[17px] font-bold leading-snug">{p.title}</h3>
+                    <p className="text-sm text-ink-muted mt-2 line-clamp-3">{p.summary}</p>
+                    <small className="block mt-3 text-ink-muted text-xs">
+                      {new Date(p.created_at).toLocaleDateString("vi-VN")}
+                    </small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
