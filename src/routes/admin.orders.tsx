@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
@@ -17,65 +19,119 @@ export const Route = createFileRoute("/admin/orders")({
   component: OrdersPage,
 });
 
-type Option = { id: string; label: string; sub?: string };
+type Customer = { id: string; name: string; phone?: string | null };
+type Staff = { id: string; full_name: string; role?: string | null };
+type CatalogItem = {
+  id: string;
+  name: string;
+  price: number | null;
+  type: string | null;
+};
+type OrderRow = {
+  id: string;
+  created_at: string;
+  customer_id: string | null;
+  staff_id: string | null;
+  catalog_id?: string | null;
+  package_name: string | null;
+  total_sessions: number | null;
+  total_price: number | null;
+  status: string | null;
+};
+
+const TREATMENT_TYPES = new Set(["dịch vụ", "liệu trình", "dich vu", "lieu trinh"]);
+const isTreatmentType = (t?: string | null) =>
+  !!t && TREATMENT_TYPES.has(t.trim().toLowerCase());
 
 function OrdersPage() {
-  const [customers, setCustomers] = useState<Option[]>([]);
-  const [staffs, setStaffs] = useState<Option[]>([]);
+  const qc = useQueryClient();
 
+  const customersQ = useQuery({
+    queryKey: ["customers", "list"],
+    queryFn: async (): Promise<Customer[]> => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id,name,phone")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Customer[];
+    },
+  });
+
+  const staffsQ = useQuery({
+    queryKey: ["users", "list"],
+    queryFn: async (): Promise<Staff[]> => {
+      const { data, error } = await supabase.from("users").select("id,full_name,role");
+      if (error) throw error;
+      return (data ?? []) as Staff[];
+    },
+  });
+
+  const catalogQ = useQuery({
+    queryKey: ["catalog", "list"],
+    queryFn: async (): Promise<CatalogItem[]> => {
+      const { data, error } = await supabase
+        .from("catalog")
+        .select("id,name,price,type");
+      if (error) throw error;
+      return (data ?? []) as CatalogItem[];
+    },
+  });
+
+  const ordersQ = useQuery({
+    queryKey: ["orders", "list"],
+    queryFn: async (): Promise<OrderRow[]> => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as OrderRow[];
+    },
+  });
+
+  // Form state
   const [customerId, setCustomerId] = useState("");
   const [staffId, setStaffId] = useState("");
-  const [packageName, setPackageName] = useState("");
+  const [catalogId, setCatalogId] = useState("");
   const [totalSessions, setTotalSessions] = useState("");
   const [totalPrice, setTotalPrice] = useState("");
   const [commissionAmount, setCommissionAmount] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const [c, s] = await Promise.all([
-        supabase.from("customers").select("id,name,phone"),
-        supabase.from("users").select("id,full_name,role"),
+  const selectedCatalog = useMemo(
+    () => catalogQ.data?.find((c) => c.id === catalogId),
+    [catalogQ.data, catalogId],
+  );
 
-      ]);
-      if (c.error || s.error) {
-        setLoadError(c.error?.message || s.error?.message || null);
-      }
-      setCustomers(
-        (c.data ?? []).map((r: Record<string, unknown>) => ({
-          id: String(r.id),
-          label: String(r.name ?? "—"),
-          sub: r.phone ? String(r.phone) : undefined,
-        })),
-      );
-      setStaffs(
-        (s.data ?? []).map((r: Record<string, unknown>) => ({
-          id: String(r.id),
-          label: String(r.full_name ?? "—"),
-          sub: r.role ? String(r.role) : undefined,
-        })),
-
-      );
-    })();
-  }, []);
+  const onSelectCatalog = (id: string) => {
+    setCatalogId(id);
+    const item = catalogQ.data?.find((c) => c.id === id);
+    if (item && item.price != null) setTotalPrice(String(item.price));
+  };
 
   const suggestedCommission = useMemo(() => {
     const n = Number(totalPrice || 0);
     return n > 0 ? Math.round(n * 0.05) : 0;
   }, [totalPrice]);
 
-  // ====== HÀM LOGIC CHUẨN – KHÔNG ĐƯỢC THAY ĐỔI ======
-  const handleCreateOrder = async (
-    customerId: string,
-    staffId: string,
-    packageName: string,
-    totalSessions: number,
-    totalPrice: number,
-    commissionAmount: number,
-  ) => {
-    try {
-      // Bước 1: Ghi nhận Đơn hàng (Orders)
+  const resetForm = () => {
+    setCustomerId("");
+    setStaffId("");
+    setCatalogId("");
+    setTotalSessions("");
+    setTotalPrice("");
+    setCommissionAmount("");
+  };
+
+  const createOrder = useMutation({
+    mutationFn: async () => {
+      if (!selectedCatalog) throw new Error("Vui lòng chọn sản phẩm/dịch vụ.");
+      const packageName = selectedCatalog.name;
+      const sessions = Number(totalSessions) || 0;
+      const price = Number(totalPrice) || 0;
+      const commission = Number(commissionAmount) || 0;
+
+      // 1) Insert order
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert([
@@ -83,8 +139,8 @@ function OrdersPage() {
             customer_id: customerId,
             staff_id: staffId,
             package_name: packageName,
-            total_sessions: totalSessions,
-            total_price: totalPrice,
+            total_sessions: sessions,
+            total_price: price,
             status: "completed",
           },
         ])
@@ -92,65 +148,89 @@ function OrdersPage() {
         .single();
       if (orderError) throw orderError;
 
-      // Bước 2: Tự động khởi tạo Liệu trình (Treatments) cho khách
-      const { error: treatmentError } = await supabase.from("treatments").insert([
-        {
-          customer_id: customerId,
-          package_name: packageName,
-          total_sessions: totalSessions,
-          remaining_sessions: totalSessions,
-          used_sessions: 0,
-          status: "active",
-        },
-      ]);
-      if (treatmentError) throw treatmentError;
+      // 2) If service/treatment type → auto create treatment
+      if (isTreatmentType(selectedCatalog.type) && sessions > 0) {
+        const { error: tErr } = await supabase.from("treatments").insert([
+          {
+            customer_id: customerId,
+            package_name: packageName,
+            total_sessions: sessions,
+            used_sessions: 0,
+            remaining_sessions: sessions,
+            status: "active",
+          },
+        ]);
+        if (tErr) throw tErr;
+      }
 
-      // Bước 3: Ghi nhận Hoa hồng (Commissions) loại 'sale_order' cho nhân viên sale
-      const { error: commissionError } = await supabase.from("commissions").insert([
-        {
-          staff_id: staffId,
-          commission_type: "sale_order",
-          reference_id: orderData.id,
-          amount: commissionAmount,
-          status: "pending",
-        },
-      ]);
-      if (commissionError) throw commissionError;
+      // 3) Commission (if > 0)
+      if (commission > 0) {
+        const { error: cErr } = await supabase.from("commissions").insert([
+          {
+            staff_id: staffId,
+            commission_type: "sale_order",
+            reference_id: orderData.id,
+            amount: commission,
+            status: "pending",
+          },
+        ]);
+        if (cErr) throw cErr;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Tạo đơn hàng thành công!", {
+        description: isTreatmentType(selectedCatalog?.type)
+          ? "Đã tự động khởi tạo liệu trình cho khách."
+          : undefined,
+      });
+      resetForm();
+      qc.invalidateQueries({ queryKey: ["orders"] });
+      qc.invalidateQueries({ queryKey: ["treatments"] });
+      qc.invalidateQueries({ queryKey: ["commissions"] });
+    },
+    onError: (e: unknown) => {
+      const msg = e instanceof Error ? e.message : "Có lỗi xảy ra, vui lòng thử lại!";
+      toast.error("Lỗi tạo đơn hàng", { description: msg });
+    },
+  });
 
-      alert("Tạo đơn hàng thành công! Đã cập nhật liệu trình cho khách và ghi nhận hoa hồng.");
-      return true;
-    } catch (error) {
-      console.error("Lỗi khi tạo đơn hàng:", error);
-      alert("Có lỗi xảy ra, vui lòng thử lại!");
-      return false;
-    }
-  };
-  // ====== HẾT HÀM LOGIC CHUẨN ======
-
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!customerId || !staffId || !packageName || !totalSessions || !totalPrice) {
-      alert("Vui lòng nhập đủ thông tin đơn hàng.");
+    if (!customerId || !staffId || !catalogId || !totalSessions || !totalPrice) {
+      toast.error("Vui lòng nhập đủ thông tin đơn hàng.");
       return;
     }
-    setSubmitting(true);
-    const ok = await handleCreateOrder(
-      customerId,
-      staffId,
-      packageName,
-      Number(totalSessions),
-      Number(totalPrice),
-      Number(commissionAmount) || 0,
-    );
-    setSubmitting(false);
-    if (ok) {
-      setPackageName("");
-      setTotalSessions("");
-      setTotalPrice("");
-      setCommissionAmount("");
-    }
+    createOrder.mutate();
   };
+
+  // ===== Table filters =====
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const customerMap = useMemo(() => {
+    const m = new Map<string, string>();
+    customersQ.data?.forEach((c) => m.set(c.id, c.name));
+    return m;
+  }, [customersQ.data]);
+  const staffMap = useMemo(() => {
+    const m = new Map<string, string>();
+    staffsQ.data?.forEach((s) => m.set(s.id, s.full_name));
+    return m;
+  }, [staffsQ.data]);
+
+  const filteredOrders = useMemo(() => {
+    const list = ordersQ.data ?? [];
+    return list.filter((o) => {
+      if (!o.created_at) return true;
+      const d = new Date(o.created_at).getTime();
+      if (fromDate && d < new Date(fromDate + "T00:00:00").getTime()) return false;
+      if (toDate && d > new Date(toDate + "T23:59:59").getTime()) return false;
+      return true;
+    });
+  }, [ordersQ.data, fromDate, toDate]);
+
+  const isService = isTreatmentType(selectedCatalog?.type);
 
   return (
     <>
@@ -158,12 +238,6 @@ function OrdersPage() {
         title="Quản lý Đơn hàng (Orders)"
         subtitle="Tạo đơn bán gói – tự động khởi tạo liệu trình và tính hoa hồng cho sale."
       />
-
-      {loadError && (
-        <div className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-          Lỗi tải dữ liệu: {loadError}
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-3 gap-5">
         <form
@@ -190,10 +264,10 @@ function OrdersPage() {
                   <SelectValue placeholder="Chọn khách hàng" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers.map((o) => (
+                  {customersQ.data?.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                      {o.sub ? ` · ${o.sub}` : ""}
+                      {o.name}
+                      {o.phone ? ` · ${o.phone}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -201,16 +275,16 @@ function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Nhân viên sale *</Label>
+              <Label>Nhân viên chốt đơn *</Label>
               <Select value={staffId} onValueChange={setStaffId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn nhân viên" />
                 </SelectTrigger>
                 <SelectContent>
-                  {staffs.map((o) => (
+                  {staffsQ.data?.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                      {o.sub ? ` · ${o.sub}` : ""}
+                      {o.full_name}
+                      {o.role ? ` · ${o.role}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -218,12 +292,30 @@ function OrdersPage() {
             </div>
 
             <div className="space-y-1.5 sm:col-span-2">
-              <Label>Tên gói dịch vụ *</Label>
-              <Input
-                placeholder="VD: Gói chăm sóc da cơ bản 10 buổi"
-                value={packageName}
-                onChange={(e) => setPackageName(e.target.value)}
-              />
+              <Label>
+                Sản phẩm / Dịch vụ *{" "}
+                {selectedCatalog && (
+                  <span className="ml-2 text-xs font-bold text-brand-dark">
+                    [{selectedCatalog.type}]
+                    {isService ? " → tự tạo liệu trình" : ""}
+                  </span>
+                )}
+              </Label>
+              <Select value={catalogId} onValueChange={onSelectCatalog}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn sản phẩm / dịch vụ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {catalogQ.data?.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name}
+                      {o.price != null
+                        ? ` · ${Number(o.price).toLocaleString("vi-VN")} ₫`
+                        : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
@@ -272,31 +364,24 @@ function OrdersPage() {
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setCustomerId("");
-                setStaffId("");
-                setPackageName("");
-                setTotalSessions("");
-                setTotalPrice("");
-                setCommissionAmount("");
-              }}
-            >
+            <Button type="button" variant="ghost" onClick={resetForm}>
               Làm mới
             </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Đang xử lý..." : "✓ Tạo Đơn hàng"}
+            <Button type="submit" disabled={createOrder.isPending}>
+              {createOrder.isPending ? "Đang xử lý..." : "✓ Tạo Đơn hàng"}
             </Button>
           </div>
         </form>
 
         <aside className="bg-gradient-to-br from-brand-soft to-white border border-hairline rounded-2xl p-6 space-y-4 h-fit">
           <h3 className="font-black text-base">Tóm tắt đơn hàng</h3>
-          <Row label="Khách hàng" value={customers.find((x) => x.id === customerId)?.label} />
-          <Row label="Sale phụ trách" value={staffs.find((x) => x.id === staffId)?.label} />
-          <Row label="Gói" value={packageName} />
+          <Row label="Khách hàng" value={customerMap.get(customerId)} />
+          <Row label="Sale phụ trách" value={staffMap.get(staffId)} />
+          <Row label="Gói" value={selectedCatalog?.name} />
+          <Row
+            label="Loại"
+            value={selectedCatalog?.type ?? undefined}
+          />
           <Row
             label="Số buổi"
             value={totalSessions ? `${totalSessions} buổi` : undefined}
@@ -316,11 +401,120 @@ function OrdersPage() {
             }
           />
           <div className="pt-3 mt-3 border-t border-hairline text-xs text-ink-muted leading-relaxed">
-            Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>: ghi nhận order, khởi tạo
-            liệu trình <i>active</i> cho khách và cộng hoa hồng <i>pending</i> cho sale.
+            {isService ? (
+              <>
+                Sản phẩm là <b className="text-brand-dark">{selectedCatalog?.type}</b> →
+                hệ thống sẽ tự khởi tạo liệu trình <i>active</i> cho khách.
+              </>
+            ) : (
+              <>Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>: ghi nhận order & hoa hồng.</>
+            )}
           </div>
         </aside>
       </div>
+
+      {/* ============ DANH SÁCH ĐƠN HÀNG ============ */}
+      <section className="mt-8 bg-white border border-hairline rounded-2xl shadow-sm">
+        <div className="flex flex-wrap items-end justify-between gap-3 p-5 border-b border-hairline">
+          <div>
+            <h3 className="font-black text-lg">Danh sách Đơn hàng</h3>
+            <p className="text-xs text-ink-muted">
+              {filteredOrders.length} đơn{fromDate || toDate ? " (đã lọc)" : ""}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Từ ngày</Label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-[160px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Đến ngày</Label>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-[160px]"
+              />
+            </div>
+            {(fromDate || toDate) && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setFromDate("");
+                  setToDate("");
+                }}
+              >
+                Xoá lọc
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-brand-soft/40 text-left">
+              <tr className="text-ink-muted">
+                <th className="px-4 py-3 font-bold">Ngày tạo</th>
+                <th className="px-4 py-3 font-bold">Khách hàng</th>
+                <th className="px-4 py-3 font-bold">Sản phẩm / Gói</th>
+                <th className="px-4 py-3 font-bold">Số buổi</th>
+                <th className="px-4 py-3 font-bold">Tổng tiền</th>
+                <th className="px-4 py-3 font-bold">Sale</th>
+                <th className="px-4 py-3 font-bold">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ordersQ.isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                    Đang tải...
+                  </td>
+                </tr>
+              ) : filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                    Chưa có đơn hàng nào.
+                  </td>
+                </tr>
+              ) : (
+                filteredOrders.map((o) => (
+                  <tr key={o.id} className="border-t border-hairline hover:bg-brand-soft/20">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {o.created_at
+                        ? new Date(o.created_at).toLocaleDateString("vi-VN")
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3 font-bold">
+                      {(o.customer_id && customerMap.get(o.customer_id)) || "—"}
+                    </td>
+                    <td className="px-4 py-3">{o.package_name || "—"}</td>
+                    <td className="px-4 py-3">{o.total_sessions ?? "—"}</td>
+                    <td className="px-4 py-3 font-bold text-brand-dark">
+                      {o.total_price != null
+                        ? Number(o.total_price).toLocaleString("vi-VN") + " ₫"
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {(o.staff_id && staffMap.get(o.staff_id)) || "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-brand-soft text-brand-dark">
+                        {o.status || "—"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </>
   );
 }
