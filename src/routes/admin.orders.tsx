@@ -118,33 +118,38 @@ function OrdersPage() {
       if (commissionError) throw commissionError;
 
       alert("Tạo đơn hàng thành công! Đã cập nhật liệu trình cho khách và ghi nhận hoa hồng.");
+      return true;
     } catch (error) {
       console.error("Lỗi khi tạo đơn hàng:", error);
       alert("Có lỗi xảy ra, vui lòng thử lại!");
+      return false;
     }
   };
   // ====== HẾT HÀM LOGIC CHUẨN ======
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!customerId || !staffId || !packageName || !totalSessions || !totalPrice) {
       alert("Vui lòng nhập đủ thông tin đơn hàng.");
       return;
     }
     setSubmitting(true);
-    await handleCreateOrder(
+    const ok = await handleCreateOrder(
       customerId,
       staffId,
       packageName,
       Number(totalSessions),
       Number(totalPrice),
-      Number(commissionAmount || 0),
+      Number(commissionAmount) || 0,
     );
     setSubmitting(false);
-    setPackageName("");
-    setTotalSessions("");
-    setTotalPrice("");
-    setCommissionAmount("");
+    if (ok) {
+      setPackageName("");
+      setTotalSessions("");
+      setTotalPrice("");
+      setCommissionAmount("");
+    }
   };
 
   return (
