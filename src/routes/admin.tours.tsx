@@ -311,9 +311,110 @@ function ToursPage() {
           </div>
         </aside>
       </div>
+
+      <ToursList technicians={technicians} customers={customers} />
     </>
   );
 }
+
+function ToursList({
+  technicians,
+  customers,
+}: {
+  technicians: Option[];
+  customers: Option[];
+}) {
+  const [day, setDay] = useState("");
+  const [techId, setTechId] = useState("all");
+  const [tours, setTours] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("tours")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (active) {
+        setTours((data ?? []) as Record<string, unknown>[]);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filtered = tours.filter((t) => {
+    if (day) {
+      const created = String(t.created_at ?? "").slice(0, 10);
+      if (created !== day) return false;
+    }
+    if (techId !== "all" && String(t.technician_id ?? "") !== techId) return false;
+    return true;
+  });
+
+  const nameOf = (list: Option[], id: unknown) =>
+    list.find((x) => x.id === String(id))?.label ?? "—";
+
+  return (
+    <section className="mt-6">
+      <div className="mb-3 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-black text-lg">Danh sách ca làm</h3>
+          <p className="text-xs text-ink-muted">Tra cứu theo ngày và kỹ thuật viên để chấm công.</p>
+        </div>
+        <div className="flex gap-3 items-end bg-white border border-hairline rounded-2xl p-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Ngày</Label>
+            <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-[170px]" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Kỹ thuật viên</Label>
+            <Select value={techId} onValueChange={setTechId}>
+              <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả</SelectItem>
+                {technicians.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-auto bg-white border border-hairline rounded-2xl">
+        <table className="w-full min-w-[760px] border-collapse">
+          <thead>
+            <tr>
+              {["Ngày", "Khách hàng", "Kỹ thuật viên", "Ghi chú", "Trạng thái"].map((h) => (
+                <th key={h} className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 && !loading ? (
+              <tr><td colSpan={5} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có ca làm phù hợp.</td></tr>
+            ) : filtered.map((t) => (
+              <tr key={String(t.id)}>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{t.created_at ? new Date(String(t.created_at)).toLocaleString("vi-VN") : "—"}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{nameOf(customers, t.customer_id)}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{nameOf(technicians, t.technician_id)}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] max-w-[280px] truncate">{String(t.notes ?? "")}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
+                  <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">{String(t.status ?? "—")}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 
 function Row({ label, value }: { label: string; value?: string }) {
   return (
