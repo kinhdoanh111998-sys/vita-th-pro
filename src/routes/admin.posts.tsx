@@ -184,7 +184,7 @@ function PostsAdmin() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && !isLoading ? (
+            {filtered.length === 0 && !isLoading ? (
               <tr>
                 <td colSpan={6} className="px-3.5 py-10 text-center text-ink-muted font-semibold">
                   Chưa có dữ liệu, vui lòng bấm nút{" "}
@@ -192,7 +192,8 @@ function PostsAdmin() {
                 </td>
               </tr>
             ) : (
-              rows.map((p) => (
+              filtered.map((p) => (
+
                 <tr key={p.id}>
                   <td className="px-3.5 py-3 border-b border-[#edf3ed]">
                     {p.image ? (
