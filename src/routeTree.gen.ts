@@ -20,6 +20,25 @@ import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminPageRouteImport } from './routes/admin.$page'
+import { Route as PublicProductsRouteImport } from './routes/_public.products'
+import { Route as PublicNewsRouteImport } from './routes/_public.news'
+import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
+import { Route as PublicContactRouteImport } from './routes/_public.contact'
+import { Route as PublicBookingRouteImport } from './routes/_public.booking'
+import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
+import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
+import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
+import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
+import { Route as PublicProductsMachinesRouteImport } from './routes/_public.products.machines'
+import { Route as PublicProductsAccessoriesRouteImport } from './routes/_public.products.accessories'
+import { Route as PublicNewsTrainingRouteImport } from './routes/_public.news.training'
+import { Route as PublicNewsEventsRouteImport } from './routes/_public.news.events'
+import { Route as PublicNewsActivitiesRouteImport } from './routes/_public.news.activities'
+import { Route as PublicAboutTestimonialsRouteImport } from './routes/_public.about.testimonials'
+import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team'
+import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
+import { Route as PublicAboutCertificationsRouteImport } from './routes/_public.about.certifications'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -75,10 +94,114 @@ const AdminPageRoute = AdminPageRouteImport.update({
   path: '/$page',
   getParentRoute: () => AdminRoute,
 } as any)
+const PublicProductsRoute = PublicProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicNewsRoute = PublicNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicLookupRoute = PublicLookupRouteImport.update({
+  id: '/lookup',
+  path: '/lookup',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicContactRoute = PublicContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicBookingRoute = PublicBookingRouteImport.update({
+  id: '/booking',
+  path: '/booking',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicAboutRoute = PublicAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicProductsRoute,
+} as any)
+const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicAboutRoute,
+} as any)
+const PublicProductsTechnologyTransferRoute =
+  PublicProductsTechnologyTransferRouteImport.update({
+    id: '/technology-transfer',
+    path: '/technology-transfer',
+    getParentRoute: () => PublicProductsRoute,
+  } as any)
+const PublicProductsServicesRoute = PublicProductsServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => PublicProductsRoute,
+} as any)
+const PublicProductsMachinesRoute = PublicProductsMachinesRouteImport.update({
+  id: '/machines',
+  path: '/machines',
+  getParentRoute: () => PublicProductsRoute,
+} as any)
+const PublicProductsAccessoriesRoute =
+  PublicProductsAccessoriesRouteImport.update({
+    id: '/accessories',
+    path: '/accessories',
+    getParentRoute: () => PublicProductsRoute,
+  } as any)
+const PublicNewsTrainingRoute = PublicNewsTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => PublicNewsRoute,
+} as any)
+const PublicNewsEventsRoute = PublicNewsEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => PublicNewsRoute,
+} as any)
+const PublicNewsActivitiesRoute = PublicNewsActivitiesRouteImport.update({
+  id: '/activities',
+  path: '/activities',
+  getParentRoute: () => PublicNewsRoute,
+} as any)
+const PublicAboutTestimonialsRoute = PublicAboutTestimonialsRouteImport.update({
+  id: '/testimonials',
+  path: '/testimonials',
+  getParentRoute: () => PublicAboutRoute,
+} as any)
+const PublicAboutTeamRoute = PublicAboutTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => PublicAboutRoute,
+} as any)
+const PublicAboutHistoryRoute = PublicAboutHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => PublicAboutRoute,
+} as any)
+const PublicAboutCertificationsRoute =
+  PublicAboutCertificationsRouteImport.update({
+    id: '/certifications',
+    path: '/certifications',
+    getParentRoute: () => PublicAboutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/about': typeof PublicAboutRouteWithChildren
+  '/booking': typeof PublicBookingRoute
+  '/contact': typeof PublicContactRoute
+  '/lookup': typeof PublicLookupRoute
+  '/news': typeof PublicNewsRouteWithChildren
+  '/products': typeof PublicProductsRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -87,8 +210,25 @@ export interface FileRoutesByFullPath {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/': typeof AdminIndexRoute
+  '/about/certifications': typeof PublicAboutCertificationsRoute
+  '/about/history': typeof PublicAboutHistoryRoute
+  '/about/team': typeof PublicAboutTeamRoute
+  '/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/news/activities': typeof PublicNewsActivitiesRoute
+  '/news/events': typeof PublicNewsEventsRoute
+  '/news/training': typeof PublicNewsTrainingRoute
+  '/products/accessories': typeof PublicProductsAccessoriesRoute
+  '/products/machines': typeof PublicProductsMachinesRoute
+  '/products/services': typeof PublicProductsServicesRoute
+  '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/about/': typeof PublicAboutIndexRoute
+  '/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/booking': typeof PublicBookingRoute
+  '/contact': typeof PublicContactRoute
+  '/lookup': typeof PublicLookupRoute
+  '/news': typeof PublicNewsRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -98,11 +238,30 @@ export interface FileRoutesByTo {
   '/admin/posts': typeof AdminPostsRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/about/certifications': typeof PublicAboutCertificationsRoute
+  '/about/history': typeof PublicAboutHistoryRoute
+  '/about/team': typeof PublicAboutTeamRoute
+  '/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/news/activities': typeof PublicNewsActivitiesRoute
+  '/news/events': typeof PublicNewsEventsRoute
+  '/news/training': typeof PublicNewsTrainingRoute
+  '/products/accessories': typeof PublicProductsAccessoriesRoute
+  '/products/machines': typeof PublicProductsMachinesRoute
+  '/products/services': typeof PublicProductsServicesRoute
+  '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/about': typeof PublicAboutIndexRoute
+  '/products': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/_public/about': typeof PublicAboutRouteWithChildren
+  '/_public/booking': typeof PublicBookingRoute
+  '/_public/contact': typeof PublicContactRoute
+  '/_public/lookup': typeof PublicLookupRoute
+  '/_public/news': typeof PublicNewsRouteWithChildren
+  '/_public/products': typeof PublicProductsRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -112,12 +271,31 @@ export interface FileRoutesById {
   '/admin/posts': typeof AdminPostsRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/_public/about/certifications': typeof PublicAboutCertificationsRoute
+  '/_public/about/history': typeof PublicAboutHistoryRoute
+  '/_public/about/team': typeof PublicAboutTeamRoute
+  '/_public/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/_public/news/activities': typeof PublicNewsActivitiesRoute
+  '/_public/news/events': typeof PublicNewsEventsRoute
+  '/_public/news/training': typeof PublicNewsTrainingRoute
+  '/_public/products/accessories': typeof PublicProductsAccessoriesRoute
+  '/_public/products/machines': typeof PublicProductsMachinesRoute
+  '/_public/products/services': typeof PublicProductsServicesRoute
+  '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/_public/about/': typeof PublicAboutIndexRoute
+  '/_public/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/about'
+    | '/booking'
+    | '/contact'
+    | '/lookup'
+    | '/news'
+    | '/products'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -126,8 +304,25 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/posts'
     | '/admin/'
+    | '/about/certifications'
+    | '/about/history'
+    | '/about/team'
+    | '/about/testimonials'
+    | '/news/activities'
+    | '/news/events'
+    | '/news/training'
+    | '/products/accessories'
+    | '/products/machines'
+    | '/products/services'
+    | '/products/technology-transfer'
+    | '/about/'
+    | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/booking'
+    | '/contact'
+    | '/lookup'
+    | '/news'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -137,10 +332,29 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/'
     | '/admin'
+    | '/about/certifications'
+    | '/about/history'
+    | '/about/team'
+    | '/about/testimonials'
+    | '/news/activities'
+    | '/news/events'
+    | '/news/training'
+    | '/products/accessories'
+    | '/products/machines'
+    | '/products/services'
+    | '/products/technology-transfer'
+    | '/about'
+    | '/products'
   id:
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/_public/about'
+    | '/_public/booking'
+    | '/_public/contact'
+    | '/_public/lookup'
+    | '/_public/news'
+    | '/_public/products'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -150,6 +364,19 @@ export interface FileRouteTypes {
     | '/admin/posts'
     | '/_public/'
     | '/admin/'
+    | '/_public/about/certifications'
+    | '/_public/about/history'
+    | '/_public/about/team'
+    | '/_public/about/testimonials'
+    | '/_public/news/activities'
+    | '/_public/news/events'
+    | '/_public/news/training'
+    | '/_public/products/accessories'
+    | '/_public/products/machines'
+    | '/_public/products/services'
+    | '/_public/products/technology-transfer'
+    | '/_public/about/'
+    | '/_public/products/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,14 +463,215 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_public/products': {
+      id: '/_public/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof PublicProductsRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/news': {
+      id: '/_public/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof PublicNewsRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/lookup': {
+      id: '/_public/lookup'
+      path: '/lookup'
+      fullPath: '/lookup'
+      preLoaderRoute: typeof PublicLookupRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/contact': {
+      id: '/_public/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof PublicContactRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/booking': {
+      id: '/_public/booking'
+      path: '/booking'
+      fullPath: '/booking'
+      preLoaderRoute: typeof PublicBookingRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/about': {
+      id: '/_public/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof PublicAboutRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/products/': {
+      id: '/_public/products/'
+      path: '/'
+      fullPath: '/products/'
+      preLoaderRoute: typeof PublicProductsIndexRouteImport
+      parentRoute: typeof PublicProductsRoute
+    }
+    '/_public/about/': {
+      id: '/_public/about/'
+      path: '/'
+      fullPath: '/about/'
+      preLoaderRoute: typeof PublicAboutIndexRouteImport
+      parentRoute: typeof PublicAboutRoute
+    }
+    '/_public/products/technology-transfer': {
+      id: '/_public/products/technology-transfer'
+      path: '/technology-transfer'
+      fullPath: '/products/technology-transfer'
+      preLoaderRoute: typeof PublicProductsTechnologyTransferRouteImport
+      parentRoute: typeof PublicProductsRoute
+    }
+    '/_public/products/services': {
+      id: '/_public/products/services'
+      path: '/services'
+      fullPath: '/products/services'
+      preLoaderRoute: typeof PublicProductsServicesRouteImport
+      parentRoute: typeof PublicProductsRoute
+    }
+    '/_public/products/machines': {
+      id: '/_public/products/machines'
+      path: '/machines'
+      fullPath: '/products/machines'
+      preLoaderRoute: typeof PublicProductsMachinesRouteImport
+      parentRoute: typeof PublicProductsRoute
+    }
+    '/_public/products/accessories': {
+      id: '/_public/products/accessories'
+      path: '/accessories'
+      fullPath: '/products/accessories'
+      preLoaderRoute: typeof PublicProductsAccessoriesRouteImport
+      parentRoute: typeof PublicProductsRoute
+    }
+    '/_public/news/training': {
+      id: '/_public/news/training'
+      path: '/training'
+      fullPath: '/news/training'
+      preLoaderRoute: typeof PublicNewsTrainingRouteImport
+      parentRoute: typeof PublicNewsRoute
+    }
+    '/_public/news/events': {
+      id: '/_public/news/events'
+      path: '/events'
+      fullPath: '/news/events'
+      preLoaderRoute: typeof PublicNewsEventsRouteImport
+      parentRoute: typeof PublicNewsRoute
+    }
+    '/_public/news/activities': {
+      id: '/_public/news/activities'
+      path: '/activities'
+      fullPath: '/news/activities'
+      preLoaderRoute: typeof PublicNewsActivitiesRouteImport
+      parentRoute: typeof PublicNewsRoute
+    }
+    '/_public/about/testimonials': {
+      id: '/_public/about/testimonials'
+      path: '/testimonials'
+      fullPath: '/about/testimonials'
+      preLoaderRoute: typeof PublicAboutTestimonialsRouteImport
+      parentRoute: typeof PublicAboutRoute
+    }
+    '/_public/about/team': {
+      id: '/_public/about/team'
+      path: '/team'
+      fullPath: '/about/team'
+      preLoaderRoute: typeof PublicAboutTeamRouteImport
+      parentRoute: typeof PublicAboutRoute
+    }
+    '/_public/about/history': {
+      id: '/_public/about/history'
+      path: '/history'
+      fullPath: '/about/history'
+      preLoaderRoute: typeof PublicAboutHistoryRouteImport
+      parentRoute: typeof PublicAboutRoute
+    }
+    '/_public/about/certifications': {
+      id: '/_public/about/certifications'
+      path: '/certifications'
+      fullPath: '/about/certifications'
+      preLoaderRoute: typeof PublicAboutCertificationsRouteImport
+      parentRoute: typeof PublicAboutRoute
+    }
   }
 }
 
+interface PublicAboutRouteChildren {
+  PublicAboutCertificationsRoute: typeof PublicAboutCertificationsRoute
+  PublicAboutHistoryRoute: typeof PublicAboutHistoryRoute
+  PublicAboutTeamRoute: typeof PublicAboutTeamRoute
+  PublicAboutTestimonialsRoute: typeof PublicAboutTestimonialsRoute
+  PublicAboutIndexRoute: typeof PublicAboutIndexRoute
+}
+
+const PublicAboutRouteChildren: PublicAboutRouteChildren = {
+  PublicAboutCertificationsRoute: PublicAboutCertificationsRoute,
+  PublicAboutHistoryRoute: PublicAboutHistoryRoute,
+  PublicAboutTeamRoute: PublicAboutTeamRoute,
+  PublicAboutTestimonialsRoute: PublicAboutTestimonialsRoute,
+  PublicAboutIndexRoute: PublicAboutIndexRoute,
+}
+
+const PublicAboutRouteWithChildren = PublicAboutRoute._addFileChildren(
+  PublicAboutRouteChildren,
+)
+
+interface PublicNewsRouteChildren {
+  PublicNewsActivitiesRoute: typeof PublicNewsActivitiesRoute
+  PublicNewsEventsRoute: typeof PublicNewsEventsRoute
+  PublicNewsTrainingRoute: typeof PublicNewsTrainingRoute
+}
+
+const PublicNewsRouteChildren: PublicNewsRouteChildren = {
+  PublicNewsActivitiesRoute: PublicNewsActivitiesRoute,
+  PublicNewsEventsRoute: PublicNewsEventsRoute,
+  PublicNewsTrainingRoute: PublicNewsTrainingRoute,
+}
+
+const PublicNewsRouteWithChildren = PublicNewsRoute._addFileChildren(
+  PublicNewsRouteChildren,
+)
+
+interface PublicProductsRouteChildren {
+  PublicProductsAccessoriesRoute: typeof PublicProductsAccessoriesRoute
+  PublicProductsMachinesRoute: typeof PublicProductsMachinesRoute
+  PublicProductsServicesRoute: typeof PublicProductsServicesRoute
+  PublicProductsTechnologyTransferRoute: typeof PublicProductsTechnologyTransferRoute
+  PublicProductsIndexRoute: typeof PublicProductsIndexRoute
+}
+
+const PublicProductsRouteChildren: PublicProductsRouteChildren = {
+  PublicProductsAccessoriesRoute: PublicProductsAccessoriesRoute,
+  PublicProductsMachinesRoute: PublicProductsMachinesRoute,
+  PublicProductsServicesRoute: PublicProductsServicesRoute,
+  PublicProductsTechnologyTransferRoute: PublicProductsTechnologyTransferRoute,
+  PublicProductsIndexRoute: PublicProductsIndexRoute,
+}
+
+const PublicProductsRouteWithChildren = PublicProductsRoute._addFileChildren(
+  PublicProductsRouteChildren,
+)
+
 interface PublicRouteChildren {
+  PublicAboutRoute: typeof PublicAboutRouteWithChildren
+  PublicBookingRoute: typeof PublicBookingRoute
+  PublicContactRoute: typeof PublicContactRoute
+  PublicLookupRoute: typeof PublicLookupRoute
+  PublicNewsRoute: typeof PublicNewsRouteWithChildren
+  PublicProductsRoute: typeof PublicProductsRouteWithChildren
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
+  PublicAboutRoute: PublicAboutRouteWithChildren,
+  PublicBookingRoute: PublicBookingRoute,
+  PublicContactRoute: PublicContactRoute,
+  PublicLookupRoute: PublicLookupRoute,
+  PublicNewsRoute: PublicNewsRouteWithChildren,
+  PublicProductsRoute: PublicProductsRouteWithChildren,
   PublicIndexRoute: PublicIndexRoute,
 }
 
@@ -281,13 +709,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
