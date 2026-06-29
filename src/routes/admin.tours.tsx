@@ -40,8 +40,8 @@ function ToursPage() {
         supabase.from("customers").select("id,name,phone"),
         supabase
           .from("treatments")
-          .select("id,name,customer_id,used_sessions,remaining_sessions,status"),
-        supabase.from("employees").select("id,name,role"),
+          .select("id,package_name,customer_id,used_sessions,remaining_sessions,status"),
+        supabase.from("users").select("id,full_name,role"),
       ]);
       if (c.error || t.error || e.error) {
         setLoadError(c.error?.message || t.error?.message || e.error?.message || null);
@@ -56,7 +56,7 @@ function ToursPage() {
       setTreatments(
         (t.data ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id),
-          label: String(r.name ?? "Liệu trình"),
+          label: String(r.package_name ?? "Liệu trình"),
           sub: `Còn ${r.remaining_sessions ?? 0} buổi`,
           remaining: Number(r.remaining_sessions ?? 0),
           used: Number(r.used_sessions ?? 0),
@@ -66,7 +66,7 @@ function ToursPage() {
       setTechnicians(
         (e.data ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id),
-          label: String(r.name ?? "—"),
+          label: String(r.full_name ?? "—"),
           sub: r.role ? String(r.role) : undefined,
         })),
       );
