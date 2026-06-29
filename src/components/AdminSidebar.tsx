@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import logo from "@/assets/vita-th-pro-logo.png";
 
-const tabs = [
+type Tab = { to: string; label: string; exact?: boolean };
+const tabs: Tab[] = [
   { to: "/admin", label: "Dashboard", exact: true },
   { to: "/admin/banners", label: "Banner sự kiện" },
   { to: "/admin/catalog", label: "Sản phẩm/Dịch vụ" },
@@ -14,7 +15,7 @@ const tabs = [
   { to: "/admin/tours", label: "Tour làm cho khách" },
   { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng" },
   { to: "/admin/settings", label: "Cài đặt/Xuất dữ liệu" },
-] as const;
+];
 
 export function AdminSidebar() {
   return (
