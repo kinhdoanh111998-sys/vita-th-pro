@@ -3,39 +3,42 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
 
-const navGroups = [
-  { label: "Trang chủ", href: "/" },
+type NavItem = { label: string; to: string };
+type NavGroup = { label: string; to: string; children?: NavItem[] };
+
+const navGroups: NavGroup[] = [
+  { label: "Trang chủ", to: "/" },
   {
     label: "Giới thiệu",
-    href: "/",
+    to: "/about",
     children: [
-      { label: "Về chúng tôi", href: "/" },
-      { label: "Lịch sử phát triển", href: "/" },
-      { label: "Đội ngũ", href: "/" },
-      { label: "Khách hàng nói về chúng tôi", href: "/" },
-      { label: "Chứng nhận - chứng chỉ", href: "/" },
+      { label: "Về chúng tôi", to: "/about" },
+      { label: "Lịch sử phát triển", to: "/about/history" },
+      { label: "Đội ngũ", to: "/about/team" },
+      { label: "Khách hàng nói về chúng tôi", to: "/about/testimonials" },
+      { label: "Chứng nhận - chứng chỉ", to: "/about/certifications" },
     ],
   },
   {
     label: "Tin tức",
-    href: "/",
+    to: "/news/activities",
     children: [
-      { label: "Hoạt động", href: "/" },
-      { label: "Sự kiện", href: "/" },
-      { label: "Lịch đào tạo", href: "/" },
+      { label: "Hoạt động", to: "/news/activities" },
+      { label: "Sự kiện", to: "/news/events" },
+      { label: "Lịch đào tạo", to: "/news/training" },
     ],
   },
   {
     label: "Sản phẩm",
-    href: "/",
+    to: "/products",
     children: [
-      { label: "Máy công nghệ", href: "/" },
-      { label: "Phụ kiện", href: "/" },
-      { label: "Dịch vụ", href: "/" },
-      { label: "Chuyển giao công nghệ", href: "/" },
+      { label: "Máy công nghệ", to: "/products/machines" },
+      { label: "Phụ kiện", to: "/products/accessories" },
+      { label: "Dịch vụ", to: "/products/services" },
+      { label: "Chuyển giao công nghệ", to: "/products/technology-transfer" },
     ],
   },
-  { label: "Liên hệ", href: "/" },
+  { label: "Liên hệ", to: "/contact" },
 ];
 
 export function Header() {
@@ -52,21 +55,22 @@ export function Header() {
           {navGroups.map((g) => (
             <div key={g.label} className="relative group">
               <Link
-                to={g.href}
+                to={g.to}
                 className="flex items-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-extrabold text-[#2e3a32] hover:bg-brand-soft hover:text-brand-dark"
                 activeProps={{ className: "bg-brand-soft text-brand-dark" }}
-                activeOptions={{ exact: true }}
+                activeOptions={{ exact: g.to === "/" }}
               >
                 {g.label}
                 {g.children && <span className="text-[10px]">▾</span>}
               </Link>
               {g.children && (
-                <div className="absolute left-0 top-11 min-w-[240px] bg-white border border-hairline rounded-[18px] p-2 shadow-[0_18px_46px_rgba(21,89,42,0.12)] hidden group-hover:block">
+                <div className="absolute left-0 top-11 min-w-[240px] bg-white border border-hairline rounded-[18px] p-2 shadow-[0_18px_46px_rgba(21,89,42,0.12)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150">
                   {g.children.map((c) => (
                     <Link
                       key={c.label}
-                      to={c.href}
+                      to={c.to}
                       className="block rounded-xl px-3 py-2.5 text-sm font-bold text-[#26352a] hover:bg-brand-soft hover:text-brand-dark"
+                      activeProps={{ className: "bg-brand-soft text-brand-dark" }}
                     >
                       {c.label}
                     </Link>
@@ -78,8 +82,12 @@ export function Header() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-2">
-          <Button variant="secondary" size="sm">Tra cứu liệu trình</Button>
-          <Button size="sm">Đặt lịch</Button>
+          <Link to="/lookup">
+            <Button variant="secondary" size="sm">Tra cứu liệu trình</Button>
+          </Link>
+          <Link to="/booking">
+            <Button size="sm">Đặt lịch</Button>
+          </Link>
           <Link
             to="/admin"
             className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
@@ -99,16 +107,30 @@ export function Header() {
 
       {open && (
         <div className="lg:hidden border-t border-hairline bg-white">
-          {navGroups.flatMap((g) => [g, ...(g.children ?? [])]).map((item, i) => (
+          {navGroups.flatMap((g) => [{ label: g.label, to: g.to }, ...(g.children ?? [])]).map((item, i) => (
             <Link
               key={`${item.label}-${i}`}
-              to={item.href}
+              to={item.to}
               className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
               onClick={() => setOpen(false)}
             >
               {item.label}
             </Link>
           ))}
+          <Link
+            to="/booking"
+            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
+            onClick={() => setOpen(false)}
+          >
+            Đặt lịch
+          </Link>
+          <Link
+            to="/lookup"
+            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
+            onClick={() => setOpen(false)}
+          >
+            Tra cứu liệu trình
+          </Link>
           <Link
             to="/admin"
             className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
