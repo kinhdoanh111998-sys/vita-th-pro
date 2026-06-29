@@ -1,6 +1,17 @@
 import logo from "@/assets/vita-th-pro-logo.png";
+import { useSettings } from "@/lib/useSettings";
 
 export function Footer() {
+  const { data } = useSettings();
+  const brand = data?.brand ?? "Vita TH Pro";
+  const hotline = data?.hotline ?? "0988 000 888";
+  const zalo = data?.zalo ?? hotline;
+  const email = data?.email ?? "contact@vitath.pro";
+  const address = data?.address ?? "Hà Nội, Việt Nam";
+  const tagline =
+    data?.tagline ??
+    "Website demo hoàn chỉnh: giới thiệu, sản phẩm/dịch vụ, tin tức, đặt lịch và quản trị vận hành.";
+
   return (
     <footer className="bg-[#112218] text-white pt-12 pb-6 mt-12">
       <div className="mx-auto max-w-[1180px] px-5">
@@ -8,16 +19,10 @@ export function Footer() {
           <div>
             <img
               src={logo}
-              alt="Vita TH Pro"
+              alt={brand}
               className="h-[54px] w-auto bg-white rounded-xl p-1.5"
             />
-            <p className="mt-3 text-sm text-[#d7f4d8]">
-              Website demo hoàn chỉnh cho Vita TH Pro: giới thiệu, sản phẩm/dịch
-              vụ, tin tức, đặt lịch và quản trị vận hành.
-            </p>
-            <small className="text-[#bdd7c2]">
-              Bản demo UI – chưa kết nối dữ liệu thật.
-            </small>
+            <p className="mt-3 text-sm text-[#d7f4d8]">{tagline}</p>
           </div>
           <FooterCol
             title="Giới thiệu"
@@ -29,14 +34,14 @@ export function Footer() {
           />
           <div>
             <h4 className="font-bold mb-2">Liên hệ</h4>
-            <p className="text-sm text-[#d7f4d8]">Hotline/Zalo: 0988 000 888</p>
-            <p className="text-sm text-[#d7f4d8]">Email: contact@vitath.pro</p>
-            <p className="text-sm text-[#d7f4d8] mt-1">Hà Nội, Việt Nam</p>
+            <p className="text-sm text-[#d7f4d8]">Hotline: {hotline}</p>
+            <p className="text-sm text-[#d7f4d8]">Zalo: {zalo}</p>
+            <p className="text-sm text-[#d7f4d8]">Email: {email}</p>
+            <p className="text-sm text-[#d7f4d8] mt-1">{address}</p>
           </div>
         </div>
         <div className="border-t border-white/10 mt-6 pt-4 text-[13px] text-[#bdd7c2]">
-          © {new Date().getFullYear()} Vita TH Pro. Demo bàn giao ý tưởng cho
-          đội phát triển.
+          © {new Date().getFullYear()} {brand}. Mọi quyền được bảo lưu.
         </div>
       </div>
     </footer>

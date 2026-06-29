@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
+import { useSettings } from "@/lib/useSettings";
 
 type NavItem = { label: string; to: string };
 type NavGroup = { label: string; to: string; children?: NavItem[] };
@@ -43,12 +44,27 @@ const navGroups: NavGroup[] = [
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const { data: settings } = useSettings();
+  const brand = settings?.brand ?? "Vita TH Pro";
+  const hotline = settings?.hotline;
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-hairline">
       <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-4 px-5 py-3">
-        <Link to="/" className="flex items-center min-w-[210px]">
-          <img src={logo} alt="Vita TH Pro" className="h-[52px] w-auto object-contain" />
+        <Link to="/" className="flex items-center gap-2 min-w-[210px]">
+          <img src={logo} alt={brand} className="h-[52px] w-auto object-contain" />
+          <div className="hidden md:flex flex-col leading-tight">
+            <span className="font-black text-brand-dark text-sm">{brand}</span>
+            {hotline && (
+              <a
+                href={`tel:${hotline}`}
+                className="text-[11px] font-bold text-ink-muted hover:text-brand-dark"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Hotline: {hotline}
+              </a>
+            )}
+          </div>
         </Link>
 
         <nav className="hidden lg:flex items-center gap-0.5">
