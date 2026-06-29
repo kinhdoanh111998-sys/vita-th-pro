@@ -33,6 +33,7 @@ import { Route as PublicContactRouteImport } from './routes/_public.contact'
 import { Route as PublicBookingRouteImport } from './routes/_public.booking'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
+import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
@@ -165,6 +166,11 @@ const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicProductsRoute,
 } as any)
+const PublicNewsIndexRoute = PublicNewsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicNewsRoute,
+} as any)
 const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -264,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/about/': typeof PublicAboutIndexRoute
+  '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -271,7 +278,6 @@ export interface FileRoutesByTo {
   '/booking': typeof PublicBookingRoute
   '/contact': typeof PublicContactRoute
   '/lookup': typeof PublicLookupRoute
-  '/news': typeof PublicNewsRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -298,6 +304,7 @@ export interface FileRoutesByTo {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/about': typeof PublicAboutIndexRoute
+  '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesById {
@@ -337,6 +344,7 @@ export interface FileRoutesById {
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/_public/about/': typeof PublicAboutIndexRoute
+  '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRouteTypes {
@@ -376,6 +384,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/about/'
+    | '/news/'
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -383,7 +392,6 @@ export interface FileRouteTypes {
     | '/booking'
     | '/contact'
     | '/lookup'
-    | '/news'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -410,6 +418,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/about'
+    | '/news'
     | '/products'
   id:
     | '__root__'
@@ -448,6 +457,7 @@ export interface FileRouteTypes {
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
     | '/_public/about/'
+    | '/_public/news/'
     | '/_public/products/'
   fileRoutesById: FileRoutesById
 }
@@ -627,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicProductsIndexRouteImport
       parentRoute: typeof PublicProductsRoute
     }
+    '/_public/news/': {
+      id: '/_public/news/'
+      path: '/'
+      fullPath: '/news/'
+      preLoaderRoute: typeof PublicNewsIndexRouteImport
+      parentRoute: typeof PublicNewsRoute
+    }
     '/_public/about/': {
       id: '/_public/about/'
       path: '/'
@@ -738,12 +755,14 @@ interface PublicNewsRouteChildren {
   PublicNewsActivitiesRoute: typeof PublicNewsActivitiesRoute
   PublicNewsEventsRoute: typeof PublicNewsEventsRoute
   PublicNewsTrainingRoute: typeof PublicNewsTrainingRoute
+  PublicNewsIndexRoute: typeof PublicNewsIndexRoute
 }
 
 const PublicNewsRouteChildren: PublicNewsRouteChildren = {
   PublicNewsActivitiesRoute: PublicNewsActivitiesRoute,
   PublicNewsEventsRoute: PublicNewsEventsRoute,
   PublicNewsTrainingRoute: PublicNewsTrainingRoute,
+  PublicNewsIndexRoute: PublicNewsIndexRoute,
 }
 
 const PublicNewsRouteWithChildren = PublicNewsRoute._addFileChildren(
@@ -835,13 +854,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

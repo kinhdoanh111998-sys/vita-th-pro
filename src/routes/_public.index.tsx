@@ -161,6 +161,39 @@ function Home() {
         </div>
       </section>
 
+      {/* Process */}
+      <section className="py-16">
+        <div className="mx-auto max-w-[1180px] px-5">
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl lg:text-[34px] font-black tracking-tight text-brand-dark">
+              Quy trình trải nghiệm đơn giản
+            </h2>
+            <p className="text-ink-muted max-w-[720px] mx-auto mt-2">
+              Thiết kế phù hợp nhóm khách hàng phổ thông: dễ xem, dễ đặt lịch, được nhân viên tư vấn và theo dõi số buổi.
+            </p>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { n: 1, t: "Xem thông tin", d: "Khách xem dịch vụ, máy công nghệ, phụ kiện, chuyển giao..." },
+              { n: 2, t: "Đặt lịch", d: "Khách để lại tên, số điện thoại, nhu cầu và thời gian..." },
+              { n: 3, t: "Thực hiện tour", d: "Nhân viên thực hiện buổi dịch vụ và ghi nhận kết quả..." },
+              { n: 4, t: "Theo dõi liệu trình", d: "Hệ thống trừ buổi, ghi nhận đơn hàng và tính hoa hồng..." },
+            ].map((s) => (
+              <div
+                key={s.n}
+                className="relative bg-white border border-hairline rounded-2xl p-6 shadow-[0_8px_24px_rgba(21,89,42,0.06)] hover:shadow-[0_14px_36px_rgba(21,89,42,0.12)] transition-shadow"
+              >
+                <div className="grid h-11 w-11 place-items-center rounded-full bg-brand-dark text-white font-black text-lg shadow-[0_6px_18px_rgba(21,89,42,0.25)]">
+                  {s.n}
+                </div>
+                <h3 className="mt-4 text-lg font-black text-brand-dark">{s.t}</h3>
+                <p className="mt-2 text-sm text-ink-muted leading-relaxed">{s.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* News */}
       <section className="py-16 bg-gradient-to-b from-white to-brand-lime">
         <div className="mx-auto max-w-[1180px] px-5">
