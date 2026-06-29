@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -42,6 +43,11 @@ import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team
 import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
 import { Route as PublicAboutCertificationsRouteImport } from './routes/_public.about.certifications'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -208,6 +214,7 @@ const PublicAboutCertificationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
   '/about': typeof PublicAboutRouteWithChildren
   '/booking': typeof PublicBookingRoute
   '/contact': typeof PublicContactRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/booking': typeof PublicBookingRoute
   '/contact': typeof PublicContactRoute
   '/lookup': typeof PublicLookupRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/login': typeof LoginRoute
   '/_public/about': typeof PublicAboutRouteWithChildren
   '/_public/booking': typeof PublicBookingRoute
   '/_public/contact': typeof PublicContactRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/login'
     | '/about'
     | '/booking'
     | '/contact'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/login'
     | '/booking'
     | '/contact'
     | '/lookup'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/login'
     | '/_public/about'
     | '/_public/booking'
     | '/_public/contact'
@@ -406,10 +418,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -747,6 +767,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
