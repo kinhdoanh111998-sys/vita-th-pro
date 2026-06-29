@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/Button";
 import { ProductCard } from "@/components/ProductCard";
-import { banners, catalog, posts } from "@/lib/mockData";
+import { BookingForm } from "@/components/BookingForm";
+import { banners } from "@/lib/mockData";
+import type { Product } from "@/lib/mockData";
+import { supabase } from "@/lib/supabaseClient";
 
 export const Route = createFileRoute("/_public/")({
   head: () => ({
@@ -17,9 +21,51 @@ export const Route = createFileRoute("/_public/")({
   component: Home,
 });
 
+type Post = {
+  id: string;
+  category: string | null;
+  title: string;
+  summary: string | null;
+  image: string | null;
+  created_at: string;
+};
+
+const fallbackImg =
+  "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png";
+
 function Home() {
   const hero = banners[0];
-  const featured = catalog.slice(0, 6);
+  const [featured, setFeatured] = useState<Product[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    supabase
+      .from("catalog")
+      .select("*")
+      .eq("status", "Hiển thị")
+      .limit(6)
+      .then(({ data }) => {
+        const rows = (data ?? []).map((r: Record<string, unknown>) => ({
+          id: String(r.id),
+          type: (r.type as string) ?? "",
+          name: (r.name as string) ?? "",
+          price: Number(r.price ?? 0),
+          summary: (r.summary as string) ?? "",
+          status: (r.status as string) ?? "",
+          image: (r.image as string) || fallbackImg,
+          source: (r.source as string) ?? "",
+        }));
+        setFeatured(rows);
+      });
+
+    supabase
+      .from("posts")
+      .select("*")
+      .eq("status", "Hiển thị")
+      .order("created_at", { ascending: false })
+      .limit(3)
+      .then(({ data }) => setPosts((data as Post[]) ?? []));
+  }, []);
 
   return (
     <>
@@ -39,7 +85,7 @@ function Home() {
               một website demo hoàn chỉnh.
             </p>
             <div className="flex gap-3 flex-wrap mt-6">
-              <Button>Đặt lịch trải nghiệm</Button>
+              <a href="#booking"><Button>Đặt lịch trải nghiệm</Button></a>
               <Button variant="secondary">Tra cứu liệu trình</Button>
             </div>
             <div className="flex gap-2.5 flex-wrap mt-5">
@@ -99,15 +145,19 @@ function Home() {
                 trình được khách lựa chọn nhiều nhất.
               </p>
             </div>
-            <Link to="/" className="text-brand-dark font-extrabold text-sm hover:underline">
+            <Link to="/products" className="text-brand-dark font-extrabold text-sm hover:underline">
               Xem tất cả →
             </Link>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          {featured.length === 0 ? (
+            <p className="text-ink-muted">Chưa có sản phẩm hiển thị.</p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -122,26 +172,53 @@ function Home() {
               Hoạt động, sự kiện và lịch đào tạo mới nhất từ Vita TH Pro.
             </p>
           </div>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((p) => (
-              <article
-                key={p.id}
-                className="overflow-hidden rounded-[22px] bg-white border border-hairline shadow-[0_8px_24px_rgba(21,89,42,0.06)]"
-              >
-                <div className="aspect-[16/10] overflow-hidden border-b border-hairline">
-                  <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-5">
-                  <span className="inline-flex rounded-full bg-brand-soft text-brand-dark px-2.5 py-1 text-xs font-extrabold mb-2">
-                    {p.category}
-                  </span>
-                  <h3 className="text-[17px] font-bold leading-snug">{p.title}</h3>
-                  <p className="text-sm text-ink-muted mt-2 line-clamp-3">{p.summary}</p>
-                  <small className="block mt-3 text-ink-muted text-xs">{p.date}</small>
-                </div>
-              </article>
-            ))}
+          {posts.length === 0 ? (
+            <p className="text-ink-muted">Chưa có bài viết.</p>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {posts.map((p) => (
+                <article
+                  key={p.id}
+                  className="overflow-hidden rounded-[22px] bg-white border border-hairline shadow-[0_8px_24px_rgba(21,89,42,0.06)]"
+                >
+                  <div className="aspect-[16/10] overflow-hidden border-b border-hairline">
+                    <img src={p.image || fallbackImg} alt={p.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-5">
+                    <span className="inline-flex rounded-full bg-brand-soft text-brand-dark px-2.5 py-1 text-xs font-extrabold mb-2">
+                      {p.category || "Tin tức"}
+                    </span>
+                    <h3 className="text-[17px] font-bold leading-snug">{p.title}</h3>
+                    <p className="text-sm text-ink-muted mt-2 line-clamp-3">{p.summary}</p>
+                    <small className="block mt-3 text-ink-muted text-xs">
+                      {new Date(p.created_at).toLocaleDateString("vi-VN")}
+                    </small>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Booking */}
+      <section id="booking" className="py-16">
+        <div className="mx-auto max-w-[1180px] px-5 grid gap-8 lg:grid-cols-[1fr_1fr] items-start">
+          <div>
+            <h2 className="text-3xl lg:text-[34px] font-black tracking-tight">
+              Đặt lịch trải nghiệm
+            </h2>
+            <p className="text-ink-muted mt-2 max-w-[520px]">
+              Chỉ vài thao tác, đội ngũ Vita TH Pro sẽ liên hệ tư vấn liệu trình
+              phù hợp và xác nhận lịch hẹn của bạn.
+            </p>
+            <ul className="mt-5 grid gap-3 text-sm">
+              <li className="flex gap-2"><span>✅</span>Tư vấn miễn phí 1-1 với chuyên gia</li>
+              <li className="flex gap-2"><span>✅</span>Trải nghiệm máy công nghệ AI & Terahertz</li>
+              <li className="flex gap-2"><span>✅</span>Ưu đãi gói liệu trình trong tháng</li>
+            </ul>
           </div>
+          <BookingForm />
         </div>
       </section>
 
