@@ -36,7 +36,8 @@ function OrdersPage() {
     (async () => {
       const [c, s] = await Promise.all([
         supabase.from("customers").select("id,name,phone"),
-        supabase.from("employees").select("id,name,role"),
+        supabase.from("users").select("id,full_name,role"),
+
       ]);
       if (c.error || s.error) {
         setLoadError(c.error?.message || s.error?.message || null);
@@ -51,9 +52,10 @@ function OrdersPage() {
       setStaffs(
         (s.data ?? []).map((r: Record<string, unknown>) => ({
           id: String(r.id),
-          label: String(r.name ?? "—"),
+          label: String(r.full_name ?? "—"),
           sub: r.role ? String(r.role) : undefined,
         })),
+
       );
     })();
   }, []);
