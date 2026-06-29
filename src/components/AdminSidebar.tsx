@@ -32,7 +32,7 @@ export function AdminSidebar() {
         {tabs.map((t) => (
           <Link
             key={t.to}
-            to={t.to}
+            to={t.to as never}
             activeOptions={{ exact: t.exact ?? false }}
             className="w-full text-left rounded-xl px-3 py-2.5 font-extrabold text-[#dff5e3] hover:bg-white/10 hover:text-white"
             activeProps={{ className: "bg-white/15 text-white" }}
