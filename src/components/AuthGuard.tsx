@@ -1,4 +1,4 @@
-import { Navigate } from "@tanstack/react-router";
+import { Navigate, useLocation } from "@tanstack/react-router";
 import { type ReactNode } from "react";
 import { useAuth, type Role } from "@/lib/AuthContext";
 
@@ -13,6 +13,8 @@ type Props = {
   /** Where to send authenticated visitors without the right role. */
   forbiddenPath?: string;
 };
+
+const CUSTOMER_SAFE_PATHS = ["/portal/my-treatments", "/portal/affiliate"];
 
 /** Pick a safe landing route per role so we never bounce a signed-in user
  *  back to /login (which would just re-redirect them and create a loop). */
@@ -37,7 +39,12 @@ export function AuthGuard({
   loginPath = "/login",
   forbiddenPath,
 }: Props) {
+  const { pathname } = useLocation();
   const { session, role, loading, isLoadingRole } = useAuth();
+
+  console.log("--- AUTH GUARD DEBUG ---");
+  console.log("Session:", session);
+  console.log("Fetched Role:", role);
 
   // Session/profile state is asynchronous. Never redirect while role is loading,
   // otherwise /login ↔ /portal can loop before the DB query resolves.
@@ -52,6 +59,13 @@ export function AuthGuard({
   // No session at all → straight to login.
   if (!session) {
     return <Navigate to={loginPath} replace />;
+  }
+
+  // Customer whitelist: if a customer is already authenticated and is opening
+  // their allowed portal pages, render immediately instead of falling through
+  // to any broader portal/admin routing branch.
+  if (role === "customer" && CUSTOMER_SAFE_PATHS.includes(pathname)) {
+    return <>{children}</>;
   }
 
   // Signed in but wrong role for this subtree → send to their own home,
