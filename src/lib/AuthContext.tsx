@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
   const [fullName, setFullName] = useState<string | null>(null);
+  const roleEmailRef = useRef<string | null>(null);
   // Two independent flags — only block UI while we don't yet know the session.
   const [sessionLoading, setSessionLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(false);
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data }) => {
         if (!active) return;
+        roleEmailRef.current = null;
         setRole(null);
         setFullName(null);
         setRoleLoading(Boolean(data.session));
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("[auth] getSession failed:", err);
         if (!active) return;
         setSession(null);
+        roleEmailRef.current = null;
         setRole(null);
         setFullName(null);
         setRoleLoading(false);
@@ -70,12 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setRole(null);
-      setFullName(null);
-      setRoleLoading(Boolean(s));
+      const nextEmail = s?.user?.email ?? null;
+      const emailChanged = nextEmail !== roleEmailRef.current;
+      if (emailChanged) {
+        roleEmailRef.current = null;
+        setRole(null);
+        setFullName(null);
+        setRoleLoading(Boolean(s));
+      }
       setSession(s);
       setSessionLoading(false);
       if (!s) {
+        roleEmailRef.current = null;
         setRoleLoading(false);
       }
     });
@@ -115,11 +125,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const fetchedRole = (data?.role as Role) ?? null;
         // Fallback: virtual-email accounts are always customers, even when the
         // users-table read is blocked by RLS or the row is missing.
+        roleEmailRef.current = email;
         setRole(fetchedRole ?? (isVirtualCustomer ? "customer" : null));
         setFullName((data?.full_name as string) ?? null);
       } catch (err) {
         if (!active) return;
         console.error("[auth] fetch role crashed:", err);
+        roleEmailRef.current = email;
         setRole(isVirtualCustomer ? "customer" : null);
         setFullName(null);
       } finally {
