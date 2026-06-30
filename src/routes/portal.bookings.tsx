@@ -434,30 +434,96 @@ function PortalBookings() {
           } else setCreateOpen(true);
         }}
       >
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Tạo lịch hẹn mới</DialogTitle>
             <DialogDescription>
-              Dành cho Quản lý/CSKH khi nhận điện thoại đặt lịch từ khách hàng cũ.
+              Dành cho Quản lý/CSKH khi nhận điện thoại đặt lịch.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Khách hàng *</Label>
-              <Select value={cCustomerId} onValueChange={setCCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khách hàng" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(customersQ.data ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {(c.name ?? "—") + (c.phone ? ` · ${c.phone}` : "")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <form onSubmit={onSubmitCreate} className="space-y-3">
+            <div className="flex items-center gap-2 p-1 bg-[#f3f7f3] rounded-lg border border-hairline">
+              <button
+                type="button"
+                onClick={() => setIsNewCustomerMode(false)}
+                className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition ${
+                  !isNewCustomerMode
+                    ? "bg-white text-brand-dark shadow"
+                    : "text-ink-muted"
+                }`}
+              >
+                Khách hàng cũ
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNewCustomerMode(true)}
+                className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition ${
+                  isNewCustomerMode
+                    ? "bg-white text-brand-dark shadow"
+                    : "text-ink-muted"
+                }`}
+              >
+                Khách hàng mới
+              </button>
             </div>
+
+            {isNewCustomerMode ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Tên khách hàng *</Label>
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Số điện thoại *</Label>
+                  <input
+                    type="tel"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    placeholder="09xx xxx xxx"
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Khách hàng *</Label>
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Tìm theo tên hoặc SĐT..."
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm mb-1.5"
+                />
+                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn khách hàng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(customersQ.data ?? [])
+                      .filter((c) => {
+                        const q = customerSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          (c.name ?? "").toLowerCase().includes(q) ||
+                          (c.phone ?? "").toLowerCase().includes(q)
+                        );
+                      })
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {(c.name ?? "—") + (c.phone ? ` · ${c.phone}` : "")}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Dịch vụ *</Label>
@@ -480,8 +546,8 @@ function PortalBookings() {
                 <Label>Ngày hẹn *</Label>
                 <input
                   type="date"
-                  value={cDate}
-                  onChange={(e) => setCDate(e.target.value)}
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
                 />
               </div>
@@ -489,8 +555,8 @@ function PortalBookings() {
                 <Label>Giờ hẹn *</Label>
                 <input
                   type="time"
-                  value={cTime}
-                  onChange={(e) => setCTime(e.target.value)}
+                  value={bookingTime}
+                  onChange={(e) => setBookingTime(e.target.value)}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
                 />
               </div>
@@ -500,32 +566,28 @@ function PortalBookings() {
               <Label>Ghi chú</Label>
               <textarea
                 rows={3}
-                value={cNote}
-                onChange={(e) => setCNote(e.target.value)}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
               />
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setCreateOpen(false);
-                resetCreate();
-              }}
-            >
-              Huỷ
-            </Button>
-            <Button
-              type="button"
-              onClick={() => createBooking.mutate()}
-              disabled={createBooking.isPending}
-            >
-              {createBooking.isPending ? "Đang lưu..." : "Lưu lịch hẹn"}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setCreateOpen(false);
+                  resetCreate();
+                }}
+              >
+                Huỷ
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Đang lưu..." : "Lưu lịch hẹn"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
