@@ -109,7 +109,7 @@ function PortalBookings() {
     qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
   };
 
-  const onSubmitCreate = async (e: React.FormEvent) => {
+  const onSubmitCreate = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
