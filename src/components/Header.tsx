@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
+import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
   label: string;
@@ -51,8 +52,16 @@ const navGroups: NavGroup[] = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const { data: settings } = useSettings();
+  const { session, role } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline;
+
+  const accountTo =
+    role === "admin"
+      ? "/admin"
+      : role === "manager" || role === "staff"
+      ? "/portal/timesheet"
+      : "/";
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-hairline">
