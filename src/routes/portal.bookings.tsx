@@ -55,6 +55,74 @@ function PortalBookings() {
   const [technicianId, setTechnicianId] = useState("");
   const [treatmentId, setTreatmentId] = useState("");
 
+  // Create booking modal
+  const [createOpen, setCreateOpen] = useState(false);
+  const [cCustomerId, setCCustomerId] = useState("");
+  const [cService, setCService] = useState("");
+  const [cDate, setCDate] = useState("");
+  const [cTime, setCTime] = useState("");
+  const [cNote, setCNote] = useState("");
+
+  const customersQ = useQuery({
+    queryKey: ["portal", "customers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, name, phone")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Customer[];
+    },
+  });
+
+  const servicesQ = useQuery({
+    queryKey: ["portal", "catalog-services"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("catalog")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Service[];
+    },
+  });
+
+  const resetCreate = () => {
+    setCCustomerId("");
+    setCService("");
+    setCDate("");
+    setCTime("");
+    setCNote("");
+  };
+
+  const createBooking = useMutation({
+    mutationFn: async () => {
+      if (!cCustomerId) throw new Error("Vui lòng chọn khách hàng.");
+      if (!cService) throw new Error("Vui lòng chọn dịch vụ.");
+      if (!cDate || !cTime) throw new Error("Vui lòng chọn ngày & giờ hẹn.");
+      const cust = customersQ.data?.find((c) => c.id === cCustomerId);
+      const { error } = await supabase.from("bookings").insert({
+        customer_id: cCustomerId,
+        customer_name: cust?.name ?? null,
+        phone: cust?.phone ?? null,
+        service: cService,
+        booking_date: cDate,
+        booking_time: cTime,
+        note: cNote || null,
+        status: "pending",
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã tạo lịch hẹn mới.");
+      qc.invalidateQueries({ queryKey: ["portal", "bookings"] });
+      qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
+      resetCreate();
+      setCreateOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const bookingsQ = useQuery({
     queryKey: ["portal", "bookings", "pending"],
     queryFn: async () => {
