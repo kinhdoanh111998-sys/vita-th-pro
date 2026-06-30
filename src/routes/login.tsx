@@ -82,12 +82,23 @@ function LoginPage() {
 
     if (signInError || !data.user) {
       setSubmitting(false);
-      setError(signInError?.message ?? "Đăng nhập thất bại");
+      const raw = signInError?.message ?? "Đăng nhập thất bại";
+      const friendly = humanizeAuthError(raw);
+      setError(friendly);
+      toast.error(friendly);
       return;
     }
 
-    // Let AuthContext finish fetching role first, then the effect above routes
-    // once loading=false. Navigating here can race AuthGuard and cause loops.
+    // Fast-track: virtual customer emails skip the AuthContext role round-trip
+    // entirely — no risk of infinite loading from a slow users-table read.
+    const signedInEmail = (data.user.email ?? finalAccount).toLowerCase();
+    if (signedInEmail.endsWith(VIRTUAL_CUSTOMER_DOMAIN)) {
+      setSubmitting(false);
+      navigate({ to: "/khach-hang", replace: true });
+      return;
+    }
+
+    // Other roles: let AuthContext resolve, then the effect above routes.
     setSubmitting(false);
   };
 
