@@ -107,6 +107,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     setRoleLoading(true);
+
+    // Failsafe: never block the UI longer than 5s waiting for the role lookup.
+    const roleFailsafe = setTimeout(() => {
+      if (!active) return;
+      console.warn("[auth] role fetch timeout (5s) — releasing loading lock");
+      setRoleLoading(false);
+    }, 5000);
+
     (async () => {
       const isVirtualCustomer = email.toLowerCase().endsWith("@khach.vitath.pro");
       try {
@@ -135,11 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(isVirtualCustomer ? "customer" : null);
         setFullName(null);
       } finally {
+        clearTimeout(roleFailsafe);
         if (active) setRoleLoading(false);
       }
     })();
     return () => {
       active = false;
+      clearTimeout(roleFailsafe);
     };
   }, [session?.user?.email]);
 

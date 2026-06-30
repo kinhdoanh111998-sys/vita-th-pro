@@ -1,10 +1,27 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/vita-th-pro-logo.png";
+
+const VIRTUAL_CUSTOMER_DOMAIN = "@khach.vitath.pro";
+
+function humanizeAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("database error") || m.includes("unexpected_failure") || m.includes("500")) {
+    return "Hệ thống đang bảo trì, vui lòng thử lại sau";
+  }
+  if (m.includes("invalid login credentials") || m.includes("invalid_grant")) {
+    return "Sai tài khoản hoặc mật khẩu";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Tài khoản chưa được kích hoạt";
+  }
+  return message;
+}
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -65,12 +82,23 @@ function LoginPage() {
 
     if (signInError || !data.user) {
       setSubmitting(false);
-      setError(signInError?.message ?? "Đăng nhập thất bại");
+      const raw = signInError?.message ?? "Đăng nhập thất bại";
+      const friendly = humanizeAuthError(raw);
+      setError(friendly);
+      toast.error(friendly);
       return;
     }
 
-    // Let AuthContext finish fetching role first, then the effect above routes
-    // once loading=false. Navigating here can race AuthGuard and cause loops.
+    // Fast-track: virtual customer emails skip the AuthContext role round-trip
+    // entirely — no risk of infinite loading from a slow users-table read.
+    const signedInEmail = (data.user.email ?? finalAccount).toLowerCase();
+    if (signedInEmail.endsWith(VIRTUAL_CUSTOMER_DOMAIN)) {
+      setSubmitting(false);
+      navigate({ to: "/khach-hang", replace: true });
+      return;
+    }
+
+    // Other roles: let AuthContext resolve, then the effect above routes.
     setSubmitting(false);
   };
 
