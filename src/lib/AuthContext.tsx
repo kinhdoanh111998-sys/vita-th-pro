@@ -32,51 +32,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
   const [fullName, setFullName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Two independent flags — only block UI while we don't yet know the session.
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      setSession(data.session ?? null);
-      if (!data.session) setLoading(false);
-    });
+    // Safety net: never hang forever on the splash screen.
+    const failsafe = setTimeout(() => {
+      if (active) setSessionLoading(false);
+    }, 4000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!active) return;
+        setSession(data.session ?? null);
+      })
+      .catch((err) => {
+        console.error("[auth] getSession failed:", err);
+      })
+      .finally(() => {
+        if (!active) return;
+        setSessionLoading(false);
+        clearTimeout(failsafe);
+      });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
+      setSessionLoading(false);
       if (!s) {
         setRole(null);
         setFullName(null);
-        setLoading(false);
+        setRoleLoading(false);
       }
     });
 
     return () => {
       active = false;
+      clearTimeout(failsafe);
       sub.subscription.unsubscribe();
     };
   }, []);
 
   useEffect(() => {
     const email = session?.user?.email;
-    if (!email) return;
-    setLoading(true);
+    if (!email) {
+      setRole(null);
+      setFullName(null);
+      setRoleLoading(false);
+      return;
+    }
+    let active = true;
+    setRoleLoading(true);
     (async () => {
       const { data, error } = await supabase
         .from("users")
         .select("role, full_name")
         .eq("email", email)
         .maybeSingle();
+      if (!active) return;
       if (error) {
         console.error("[auth] fetch role failed:", error.message);
         setRole(null);
+        setFullName(null);
       } else {
         setRole(((data?.role as Role) ?? null) as Role);
         setFullName((data?.full_name as string) ?? null);
       }
-      setLoading(false);
+      setRoleLoading(false);
     })();
+    return () => {
+      active = false;
+    };
   }, [session?.user?.email]);
 
   const value: AuthCtx = {
@@ -84,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: session?.user?.email ?? null,
     role,
     fullName,
-    loading,
+    loading: sessionLoading || (!!session && roleLoading),
     signOut: async () => {
       await supabase.auth.signOut();
     },
