@@ -218,13 +218,16 @@ function PortalBookings() {
 
   return (
     <div className="mx-auto max-w-[1180px] space-y-4">
-      <div className="bg-white border border-hairline rounded-2xl p-6">
-        <h1 className="text-2xl font-black text-brand-dark">Điều phối Lịch hẹn</h1>
-        <p className="text-ink-muted font-medium text-sm mt-1">
-          {bookingsQ.isLoading
-            ? "Đang tải..."
-            : `${rows.length} lịch hẹn đang chờ điều phối (status = pending).`}
-        </p>
+      <div className="bg-white border border-hairline rounded-2xl p-6 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-black text-brand-dark">Điều phối Lịch hẹn</h1>
+          <p className="text-ink-muted font-medium text-sm mt-1">
+            {bookingsQ.isLoading
+              ? "Đang tải..."
+              : `${rows.length} lịch hẹn đang chờ điều phối (status = pending).`}
+          </p>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>+ Tạo lịch hẹn</Button>
       </div>
 
       {bookingsQ.error && (
