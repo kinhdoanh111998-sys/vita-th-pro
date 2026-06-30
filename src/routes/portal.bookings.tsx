@@ -370,6 +370,110 @@ function PortalBookings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(v) => {
+          if (!v) {
+            setCreateOpen(false);
+            resetCreate();
+          } else setCreateOpen(true);
+        }}
+      >
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>Tạo lịch hẹn mới</DialogTitle>
+            <DialogDescription>
+              Dành cho Quản lý/CSKH khi nhận điện thoại đặt lịch từ khách hàng cũ.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Khách hàng *</Label>
+              <Select value={cCustomerId} onValueChange={setCCustomerId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn khách hàng" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(customersQ.data ?? []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {(c.name ?? "—") + (c.phone ? ` · ${c.phone}` : "")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Dịch vụ *</Label>
+              <Select value={cService} onValueChange={setCService}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn dịch vụ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(servicesQ.data ?? []).map((s) => (
+                    <SelectItem key={s.id} value={s.name ?? s.id}>
+                      {s.name ?? "—"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Ngày hẹn *</Label>
+                <input
+                  type="date"
+                  value={cDate}
+                  onChange={(e) => setCDate(e.target.value)}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Giờ hẹn *</Label>
+                <input
+                  type="time"
+                  value={cTime}
+                  onChange={(e) => setCTime(e.target.value)}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Ghi chú</Label>
+              <textarea
+                rows={3}
+                value={cNote}
+                onChange={(e) => setCNote(e.target.value)}
+                className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setCreateOpen(false);
+                resetCreate();
+              }}
+            >
+              Huỷ
+            </Button>
+            <Button
+              type="button"
+              onClick={() => createBooking.mutate()}
+              disabled={createBooking.isPending}
+            >
+              {createBooking.isPending ? "Đang lưu..." : "Lưu lịch hẹn"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
