@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KhachHangRouteImport } from './routes/khach-hang'
+import { Route as DangKyRouteImport } from './routes/dang-ky'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -68,6 +69,11 @@ const LoginRoute = LoginRouteImport.update({
 const KhachHangRoute = KhachHangRouteImport.update({
   id: '/khach-hang',
   path: '/khach-hang',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DangKyRoute = DangKyRouteImport.update({
+  id: '/dang-ky',
+  path: '/dang-ky',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -286,6 +292,7 @@ const PublicAboutCertificationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/dang-ky': typeof DangKyRoute
   '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
@@ -330,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/dang-ky': typeof DangKyRoute
   '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/dang-ky': typeof DangKyRoute
   '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
@@ -424,6 +433,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/dang-ky'
     | '/khach-hang'
     | '/login'
     | '/portal'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/dang-ky'
     | '/khach-hang'
     | '/login'
     | '/portal'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/dang-ky'
     | '/khach-hang'
     | '/login'
     | '/portal'
@@ -560,6 +572,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  DangKyRoute: typeof DangKyRoute
   KhachHangRoute: typeof KhachHangRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
@@ -586,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/khach-hang'
       fullPath: '/khach-hang'
       preLoaderRoute: typeof KhachHangRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dang-ky': {
+      id: '/dang-ky'
+      path: '/dang-ky'
+      fullPath: '/dang-ky'
+      preLoaderRoute: typeof DangKyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1024,6 +1044,7 @@ const PortalRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  DangKyRoute: DangKyRoute,
   KhachHangRoute: KhachHangRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
@@ -1031,13 +1052,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
