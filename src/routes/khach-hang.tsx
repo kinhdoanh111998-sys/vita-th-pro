@@ -96,7 +96,7 @@ function KhachHangPage() {
   });
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const link = phone ? `${origin}/?ref=${encodeURIComponent(phone)}` : "";
+  const link = phone ? `${origin}/dang-ky?ref=${encodeURIComponent(phone)}` : "";
 
   async function handleCopy() {
     if (!link) return;
