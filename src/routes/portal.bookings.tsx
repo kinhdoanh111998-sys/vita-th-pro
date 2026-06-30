@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
@@ -57,11 +57,16 @@ function PortalBookings() {
 
   // Create booking modal
   const [createOpen, setCreateOpen] = useState(false);
-  const [cCustomerId, setCCustomerId] = useState("");
+  const [isNewCustomerMode, setIsNewCustomerMode] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [cService, setCService] = useState("");
-  const [cDate, setCDate] = useState("");
-  const [cTime, setCTime] = useState("");
-  const [cNote, setCNote] = useState("");
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const customersQ = useQuery({
     queryKey: ["portal", "customers"],
@@ -88,39 +93,88 @@ function PortalBookings() {
   });
 
   const resetCreate = () => {
-    setCCustomerId("");
+    setIsNewCustomerMode(false);
+    setSelectedCustomerId("");
+    setNewCustomerName("");
+    setNewCustomerPhone("");
+    setCustomerSearch("");
     setCService("");
-    setCDate("");
-    setCTime("");
-    setCNote("");
+    setBookingDate("");
+    setBookingTime("");
+    setNotes("");
   };
 
-  const createBooking = useMutation({
-    mutationFn: async () => {
-      if (!cCustomerId) throw new Error("Vui lòng chọn khách hàng.");
+  const refetchBookings = () => {
+    qc.invalidateQueries({ queryKey: ["portal", "bookings"] });
+    qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
+  };
+
+  const onSubmitCreate = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      let customerIdToUse: string | null = null;
+
+      if (isNewCustomerMode) {
+        if (!newCustomerName || !newCustomerPhone) {
+          throw new Error("Vui lòng nhập đầy đủ Tên và SĐT khách mới.");
+        }
+        const { data: existingCust } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("phone", newCustomerPhone)
+          .maybeSingle();
+        if (existingCust) {
+          customerIdToUse = existingCust.id;
+        } else {
+          const { data: newCust, error: cErr } = await supabase
+            .from("customers")
+            .insert({ name: newCustomerName, phone: newCustomerPhone })
+            .select("id")
+            .single();
+          if (cErr) throw cErr;
+          customerIdToUse = newCust.id;
+        }
+      } else {
+        if (!selectedCustomerId) throw new Error("Vui lòng chọn một khách hàng.");
+        customerIdToUse = selectedCustomerId;
+      }
+
       if (!cService) throw new Error("Vui lòng chọn dịch vụ.");
-      if (!cDate || !cTime) throw new Error("Vui lòng chọn ngày & giờ hẹn.");
-      const cust = customersQ.data?.find((c) => c.id === cCustomerId);
-      const { error } = await supabase.from("bookings").insert({
-        customer_name: cust?.name ?? null,
-        phone: cust?.phone ?? null,
+      if (!bookingDate || !bookingTime)
+        throw new Error("Vui lòng chọn ngày & giờ hẹn.");
+
+      const custInfo =
+        customersQ.data?.find((c) => c.id === customerIdToUse) ?? null;
+      const finalName = isNewCustomerMode ? newCustomerName : custInfo?.name ?? null;
+      const finalPhone = isNewCustomerMode
+        ? newCustomerPhone
+        : custInfo?.phone ?? null;
+
+      const { error: bErr } = await supabase.from("bookings").insert({
+        customer_id: customerIdToUse,
+        customer_name: finalName,
+        phone: finalPhone,
         service: cService,
-        booking_date: cDate,
-        booking_time: cTime,
-        note: cNote || null,
+        booking_date: bookingDate,
+        booking_time: bookingTime,
+        note: notes || null,
         status: "pending",
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Đã tạo lịch hẹn mới.");
-      qc.invalidateQueries({ queryKey: ["portal", "bookings"] });
-      qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
-      resetCreate();
+      if (bErr) throw bErr;
+
+      toast.success("Tạo lịch hẹn thành công!");
       setCreateOpen(false);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+      resetCreate();
+      refetchBookings();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi hệ thống";
+      console.error("Lỗi khi tạo lịch:", error);
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const bookingsQ = useQuery({
     queryKey: ["portal", "bookings", "pending"],
@@ -380,30 +434,96 @@ function PortalBookings() {
           } else setCreateOpen(true);
         }}
       >
-        <DialogContent className="sm:max-w-[520px]">
+        <DialogContent className="sm:max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Tạo lịch hẹn mới</DialogTitle>
             <DialogDescription>
-              Dành cho Quản lý/CSKH khi nhận điện thoại đặt lịch từ khách hàng cũ.
+              Dành cho Quản lý/CSKH khi nhận điện thoại đặt lịch.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Khách hàng *</Label>
-              <Select value={cCustomerId} onValueChange={setCCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khách hàng" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(customersQ.data ?? []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {(c.name ?? "—") + (c.phone ? ` · ${c.phone}` : "")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <form onSubmit={onSubmitCreate} className="space-y-3">
+            <div className="flex items-center gap-2 p-1 bg-[#f3f7f3] rounded-lg border border-hairline">
+              <button
+                type="button"
+                onClick={() => setIsNewCustomerMode(false)}
+                className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition ${
+                  !isNewCustomerMode
+                    ? "bg-white text-brand-dark shadow"
+                    : "text-ink-muted"
+                }`}
+              >
+                Khách hàng cũ
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsNewCustomerMode(true)}
+                className={`flex-1 px-3 py-1.5 text-sm font-semibold rounded-md transition ${
+                  isNewCustomerMode
+                    ? "bg-white text-brand-dark shadow"
+                    : "text-ink-muted"
+                }`}
+              >
+                Khách hàng mới
+              </button>
             </div>
+
+            {isNewCustomerMode ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Tên khách hàng *</Label>
+                  <input
+                    type="text"
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="Nguyễn Văn A"
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Số điện thoại *</Label>
+                  <input
+                    type="tel"
+                    value={newCustomerPhone}
+                    onChange={(e) => setNewCustomerPhone(e.target.value)}
+                    placeholder="09xx xxx xxx"
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Khách hàng *</Label>
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Tìm theo tên hoặc SĐT..."
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm mb-1.5"
+                />
+                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Chọn khách hàng" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(customersQ.data ?? [])
+                      .filter((c) => {
+                        const q = customerSearch.trim().toLowerCase();
+                        if (!q) return true;
+                        return (
+                          (c.name ?? "").toLowerCase().includes(q) ||
+                          (c.phone ?? "").toLowerCase().includes(q)
+                        );
+                      })
+                      .map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {(c.name ?? "—") + (c.phone ? ` · ${c.phone}` : "")}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Dịch vụ *</Label>
@@ -426,8 +546,8 @@ function PortalBookings() {
                 <Label>Ngày hẹn *</Label>
                 <input
                   type="date"
-                  value={cDate}
-                  onChange={(e) => setCDate(e.target.value)}
+                  value={bookingDate}
+                  onChange={(e) => setBookingDate(e.target.value)}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
                 />
               </div>
@@ -435,8 +555,8 @@ function PortalBookings() {
                 <Label>Giờ hẹn *</Label>
                 <input
                   type="time"
-                  value={cTime}
-                  onChange={(e) => setCTime(e.target.value)}
+                  value={bookingTime}
+                  onChange={(e) => setBookingTime(e.target.value)}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm"
                 />
               </div>
@@ -446,32 +566,28 @@ function PortalBookings() {
               <Label>Ghi chú</Label>
               <textarea
                 rows={3}
-                value={cNote}
-                onChange={(e) => setCNote(e.target.value)}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm"
               />
             </div>
-          </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setCreateOpen(false);
-                resetCreate();
-              }}
-            >
-              Huỷ
-            </Button>
-            <Button
-              type="button"
-              onClick={() => createBooking.mutate()}
-              disabled={createBooking.isPending}
-            >
-              {createBooking.isPending ? "Đang lưu..." : "Lưu lịch hẹn"}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setCreateOpen(false);
+                  resetCreate();
+                }}
+              >
+                Huỷ
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Đang lưu..." : "Lưu lịch hẹn"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
