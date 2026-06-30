@@ -102,7 +102,6 @@ function PortalBookings() {
       if (!cDate || !cTime) throw new Error("Vui lòng chọn ngày & giờ hẹn.");
       const cust = customersQ.data?.find((c) => c.id === cCustomerId);
       const { error } = await supabase.from("bookings").insert({
-        customer_id: cCustomerId,
         customer_name: cust?.name ?? null,
         phone: cust?.phone ?? null,
         service: cService,
