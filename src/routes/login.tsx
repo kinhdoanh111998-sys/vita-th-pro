@@ -19,7 +19,7 @@ function destinationForRole(role: string | null): string {
     case "staff":
       return "/portal/dashboard";
     case "customer":
-      return "/";
+      return "/portal/my-treatments";
     default:
       return "/";
   }
