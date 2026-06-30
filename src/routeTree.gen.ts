@@ -16,6 +16,8 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PortalTimesheetRouteImport } from './routes/portal.timesheet'
+import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
+import { Route as PortalBookingsRouteImport } from './routes/portal.bookings'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -81,6 +83,16 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
 const PortalTimesheetRoute = PortalTimesheetRouteImport.update({
   id: '/timesheet',
   path: '/timesheet',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalDashboardRoute = PortalDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalBookingsRoute = PortalBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
   getParentRoute: () => PortalRoute,
 } as any)
 const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
@@ -270,6 +282,8 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/admin/': typeof AdminIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
@@ -305,6 +319,8 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -347,6 +363,8 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -390,6 +408,8 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/bookings'
+    | '/portal/dashboard'
     | '/portal/timesheet'
     | '/admin/'
     | '/about/certifications'
@@ -425,6 +445,8 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/bookings'
+    | '/portal/dashboard'
     | '/portal/timesheet'
     | '/'
     | '/admin'
@@ -466,6 +488,8 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/bookings'
+    | '/portal/dashboard'
     | '/portal/timesheet'
     | '/_public/'
     | '/admin/'
@@ -541,6 +565,20 @@ declare module '@tanstack/react-router' {
       path: '/timesheet'
       fullPath: '/portal/timesheet'
       preLoaderRoute: typeof PortalTimesheetRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/dashboard': {
+      id: '/portal/dashboard'
+      path: '/dashboard'
+      fullPath: '/portal/dashboard'
+      preLoaderRoute: typeof PortalDashboardRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/bookings': {
+      id: '/portal/bookings'
+      path: '/bookings'
+      fullPath: '/portal/bookings'
+      preLoaderRoute: typeof PortalBookingsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/admin/treatments': {
@@ -886,10 +924,14 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PortalRouteChildren {
+  PortalBookingsRoute: typeof PortalBookingsRoute
+  PortalDashboardRoute: typeof PortalDashboardRoute
   PortalTimesheetRoute: typeof PortalTimesheetRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalBookingsRoute: PortalBookingsRoute,
+  PortalDashboardRoute: PortalDashboardRoute,
   PortalTimesheetRoute: PortalTimesheetRoute,
 }
 
