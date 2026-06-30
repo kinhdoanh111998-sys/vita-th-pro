@@ -8,7 +8,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
-export type Role = "admin" | "manager" | "staff" | "customer" | null;
+export type Role = "admin" | "manager" | "staff" | "employee" | "customer" | null;
 
 type AuthCtx = {
   session: Session | null;
@@ -16,6 +16,7 @@ type AuthCtx = {
   role: Role;
   fullName: string | null;
   loading: boolean;
+  isLoadingRole: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -25,6 +26,7 @@ const Ctx = createContext<AuthCtx>({
   role: null,
   fullName: null,
   loading: true,
+  isLoadingRole: false,
   signOut: async () => {},
 });
 
@@ -48,10 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getSession()
       .then(({ data }) => {
         if (!active) return;
+        setRole(null);
+        setFullName(null);
+        setRoleLoading(Boolean(data.session));
         setSession(data.session ?? null);
       })
       .catch((err) => {
         console.error("[auth] getSession failed:", err);
+        if (!active) return;
+        setSession(null);
+        setRole(null);
+        setFullName(null);
+        setRoleLoading(false);
       })
       .finally(() => {
         if (!active) return;
@@ -60,11 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+      setRole(null);
+      setFullName(null);
+      setRoleLoading(Boolean(s));
       setSession(s);
       setSessionLoading(false);
       if (!s) {
-        setRole(null);
-        setFullName(null);
         setRoleLoading(false);
       }
     });
@@ -86,31 +97,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     setRoleLoading(true);
-    const failsafe = setTimeout(() => {
-      if (active) setRoleLoading(false);
-    }, 3000);
     (async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("role, full_name")
-        .eq("email", email)
-        .maybeSingle();
-      if (!active) return;
-      if (error) {
-        console.error("[auth] fetch role failed:", error.message);
+      const isVirtualCustomer = email.toLowerCase().endsWith("@khach.vitath.pro");
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("role, full_name")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (!active) return;
+
+        if (error) {
+          console.error("[auth] fetch role failed:", error.message);
+        }
+
+        const fetchedRole = (data?.role as Role) ?? null;
+        // Fallback: virtual-email accounts are always customers, even when the
+        // users-table read is blocked by RLS or the row is missing.
+        setRole(fetchedRole ?? (isVirtualCustomer ? "customer" : null));
+        setFullName((data?.full_name as string) ?? null);
+      } catch (err) {
+        if (!active) return;
+        console.error("[auth] fetch role crashed:", err);
+        setRole(isVirtualCustomer ? "customer" : null);
+        setFullName(null);
+      } finally {
+        if (active) setRoleLoading(false);
       }
-      const fetchedRole = (data?.role as Role) ?? null;
-      // Fallback: virtual-email accounts are always customers, even when the
-      // users-table read is blocked by RLS or the row is missing.
-      const isVirtualCustomer = email.endsWith("@khach.vitath.pro");
-      setRole(fetchedRole ?? (isVirtualCustomer ? "customer" : null));
-      setFullName((data?.full_name as string) ?? null);
-      setRoleLoading(false);
-      clearTimeout(failsafe);
     })();
     return () => {
       active = false;
-      clearTimeout(failsafe);
     };
   }, [session?.user?.email]);
 
@@ -119,7 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     email: session?.user?.email ?? null,
     role,
     fullName,
-    loading: sessionLoading || (!!session && roleLoading),
+    loading: sessionLoading || roleLoading,
+    isLoadingRole: roleLoading,
     signOut: async () => {
       await supabase.auth.signOut();
     },
