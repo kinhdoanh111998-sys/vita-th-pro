@@ -93,39 +93,88 @@ function PortalBookings() {
   });
 
   const resetCreate = () => {
-    setCCustomerId("");
+    setIsNewCustomerMode(false);
+    setSelectedCustomerId("");
+    setNewCustomerName("");
+    setNewCustomerPhone("");
+    setCustomerSearch("");
     setCService("");
-    setCDate("");
-    setCTime("");
-    setCNote("");
+    setBookingDate("");
+    setBookingTime("");
+    setNotes("");
   };
 
-  const createBooking = useMutation({
-    mutationFn: async () => {
-      if (!cCustomerId) throw new Error("Vui lòng chọn khách hàng.");
+  const refetchBookings = () => {
+    qc.invalidateQueries({ queryKey: ["portal", "bookings"] });
+    qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
+  };
+
+  const onSubmitCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      let customerIdToUse: string | null = null;
+
+      if (isNewCustomerMode) {
+        if (!newCustomerName || !newCustomerPhone) {
+          throw new Error("Vui lòng nhập đầy đủ Tên và SĐT khách mới.");
+        }
+        const { data: existingCust } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("phone", newCustomerPhone)
+          .maybeSingle();
+        if (existingCust) {
+          customerIdToUse = existingCust.id;
+        } else {
+          const { data: newCust, error: cErr } = await supabase
+            .from("customers")
+            .insert({ name: newCustomerName, phone: newCustomerPhone })
+            .select("id")
+            .single();
+          if (cErr) throw cErr;
+          customerIdToUse = newCust.id;
+        }
+      } else {
+        if (!selectedCustomerId) throw new Error("Vui lòng chọn một khách hàng.");
+        customerIdToUse = selectedCustomerId;
+      }
+
       if (!cService) throw new Error("Vui lòng chọn dịch vụ.");
-      if (!cDate || !cTime) throw new Error("Vui lòng chọn ngày & giờ hẹn.");
-      const cust = customersQ.data?.find((c) => c.id === cCustomerId);
-      const { error } = await supabase.from("bookings").insert({
-        customer_name: cust?.name ?? null,
-        phone: cust?.phone ?? null,
+      if (!bookingDate || !bookingTime)
+        throw new Error("Vui lòng chọn ngày & giờ hẹn.");
+
+      const custInfo =
+        customersQ.data?.find((c) => c.id === customerIdToUse) ?? null;
+      const finalName = isNewCustomerMode ? newCustomerName : custInfo?.name ?? null;
+      const finalPhone = isNewCustomerMode
+        ? newCustomerPhone
+        : custInfo?.phone ?? null;
+
+      const { error: bErr } = await supabase.from("bookings").insert({
+        customer_id: customerIdToUse,
+        customer_name: finalName,
+        phone: finalPhone,
         service: cService,
-        booking_date: cDate,
-        booking_time: cTime,
-        note: cNote || null,
+        booking_date: bookingDate,
+        booking_time: bookingTime,
+        note: notes || null,
         status: "pending",
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Đã tạo lịch hẹn mới.");
-      qc.invalidateQueries({ queryKey: ["portal", "bookings"] });
-      qc.invalidateQueries({ queryKey: ["portal", "bookings-pending-count"] });
-      resetCreate();
+      if (bErr) throw bErr;
+
+      toast.success("Tạo lịch hẹn thành công!");
       setCreateOpen(false);
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+      resetCreate();
+      refetchBookings();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Lỗi hệ thống";
+      console.error("Lỗi khi tạo lịch:", error);
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const bookingsQ = useQuery({
     queryKey: ["portal", "bookings", "pending"],
