@@ -165,13 +165,23 @@ export function Header() {
           >
             Tra cứu liệu trình
           </Link>
-          <Link
-            to="/admin"
-            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
-            onClick={() => setOpen(false)}
-          >
-            Quản trị
-          </Link>
+          {session ? (
+            <Link
+              to={accountTo}
+              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
+              onClick={() => setOpen(false)}
+            >
+              Khu vực của tôi
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
+              onClick={() => setOpen(false)}
+            >
+              Đăng nhập
+            </Link>
+          )}
         </div>
       )}
     </header>
