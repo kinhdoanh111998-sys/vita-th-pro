@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/AuthContext";
 
@@ -7,8 +7,14 @@ export const Route = createFileRoute("/portal")({
 });
 
 function PortalLayout() {
+  const { pathname } = useLocation();
+  const isCustomerPage = pathname === "/portal/my-treatments" || pathname === "/portal/affiliate";
+  const allowedRoles = isCustomerPage
+    ? (["admin", "manager", "staff", "employee", "customer"] as const)
+    : (["admin", "manager", "staff", "employee"] as const);
+
   return (
-    <AuthGuard allowedRoles={["admin", "manager", "staff", "employee", "customer"]}>
+    <AuthGuard allowedRoles={[...allowedRoles]}>
       <PortalShell />
     </AuthGuard>
   );
