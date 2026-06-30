@@ -143,11 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(isVirtualCustomer ? "customer" : null);
         setFullName(null);
       } finally {
+        clearTimeout(roleFailsafe);
         if (active) setRoleLoading(false);
       }
     })();
     return () => {
       active = false;
+      clearTimeout(roleFailsafe);
     };
   }, [session?.user?.email]);
 
