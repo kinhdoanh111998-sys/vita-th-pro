@@ -5,6 +5,8 @@ import { supabase } from "@/lib/supabaseClient";
 
 type Service = { id: string; name: string };
 
+const REF_STORAGE_KEY = "vitath_ref_phone";
+
 export function BookingForm({ compact = false }: { compact?: boolean }) {
   const [services, setServices] = useState<Service[]>([]);
   const [customerName, setCustomerName] = useState("");
@@ -14,6 +16,7 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
   const [time, setTime] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [refPhone, setRefPhone] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -21,6 +24,24 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
       .select("id,name")
       .eq("status", "Hiển thị")
       .then(({ data }) => setServices((data as Service[]) ?? []));
+  }, []);
+
+  // Capture ?ref=... from URL and persist to sessionStorage so it survives reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref) {
+        sessionStorage.setItem(REF_STORAGE_KEY, ref);
+        setRefPhone(ref);
+      } else {
+        const stored = sessionStorage.getItem(REF_STORAGE_KEY);
+        if (stored) setRefPhone(stored);
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   async function onSubmit(e: FormEvent) {
@@ -31,6 +52,9 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
       return;
     }
     setSubmitting(true);
+    const referrer =
+      refPhone ??
+      (typeof window !== "undefined" ? sessionStorage.getItem(REF_STORAGE_KEY) : null);
     const { error } = await supabase.from("bookings").insert({
       customer_name: customerName,
       phone,
@@ -39,6 +63,7 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
       booking_time: time,
       note: note || null,
       status: "pending",
+      referrer_phone: referrer || null,
     });
     setSubmitting(false);
     if (error) {
@@ -46,6 +71,12 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
       return;
     }
     toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ sớm.");
+    try {
+      sessionStorage.removeItem(REF_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setRefPhone(null);
     setCustomerName("");
     setPhone("");
     setService("");

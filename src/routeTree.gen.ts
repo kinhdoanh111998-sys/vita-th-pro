@@ -16,9 +16,11 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PortalTimesheetRouteImport } from './routes/portal.timesheet'
+import { Route as PortalMyTreatmentsRouteImport } from './routes/portal.my-treatments'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
 import { Route as PortalContentRouteImport } from './routes/portal.content'
 import { Route as PortalBookingsRouteImport } from './routes/portal.bookings'
+import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -86,6 +88,11 @@ const PortalTimesheetRoute = PortalTimesheetRouteImport.update({
   path: '/timesheet',
   getParentRoute: () => PortalRoute,
 } as any)
+const PortalMyTreatmentsRoute = PortalMyTreatmentsRouteImport.update({
+  id: '/my-treatments',
+  path: '/my-treatments',
+  getParentRoute: () => PortalRoute,
+} as any)
 const PortalDashboardRoute = PortalDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -99,6 +106,11 @@ const PortalContentRoute = PortalContentRouteImport.update({
 const PortalBookingsRoute = PortalBookingsRouteImport.update({
   id: '/bookings',
   path: '/bookings',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalAffiliateRoute = PortalAffiliateRouteImport.update({
+  id: '/affiliate',
+  path: '/affiliate',
   getParentRoute: () => PortalRoute,
 } as any)
 const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
@@ -288,9 +300,11 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/my-treatments': typeof PortalMyTreatmentsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/admin/': typeof AdminIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
@@ -326,9 +340,11 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/my-treatments': typeof PortalMyTreatmentsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -371,9 +387,11 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
+  '/portal/my-treatments': typeof PortalMyTreatmentsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -417,9 +435,11 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/content'
     | '/portal/dashboard'
+    | '/portal/my-treatments'
     | '/portal/timesheet'
     | '/admin/'
     | '/about/certifications'
@@ -455,9 +475,11 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/content'
     | '/portal/dashboard'
+    | '/portal/my-treatments'
     | '/portal/timesheet'
     | '/'
     | '/admin'
@@ -499,9 +521,11 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/content'
     | '/portal/dashboard'
+    | '/portal/my-treatments'
     | '/portal/timesheet'
     | '/_public/'
     | '/admin/'
@@ -579,6 +603,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortalTimesheetRouteImport
       parentRoute: typeof PortalRoute
     }
+    '/portal/my-treatments': {
+      id: '/portal/my-treatments'
+      path: '/my-treatments'
+      fullPath: '/portal/my-treatments'
+      preLoaderRoute: typeof PortalMyTreatmentsRouteImport
+      parentRoute: typeof PortalRoute
+    }
     '/portal/dashboard': {
       id: '/portal/dashboard'
       path: '/dashboard'
@@ -598,6 +629,13 @@ declare module '@tanstack/react-router' {
       path: '/bookings'
       fullPath: '/portal/bookings'
       preLoaderRoute: typeof PortalBookingsRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/affiliate': {
+      id: '/portal/affiliate'
+      path: '/affiliate'
+      fullPath: '/portal/affiliate'
+      preLoaderRoute: typeof PortalAffiliateRouteImport
       parentRoute: typeof PortalRoute
     }
     '/admin/treatments': {
@@ -943,16 +981,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface PortalRouteChildren {
+  PortalAffiliateRoute: typeof PortalAffiliateRoute
   PortalBookingsRoute: typeof PortalBookingsRoute
   PortalContentRoute: typeof PortalContentRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
+  PortalMyTreatmentsRoute: typeof PortalMyTreatmentsRoute
   PortalTimesheetRoute: typeof PortalTimesheetRoute
 }
 
 const PortalRouteChildren: PortalRouteChildren = {
+  PortalAffiliateRoute: PortalAffiliateRoute,
   PortalBookingsRoute: PortalBookingsRoute,
   PortalContentRoute: PortalContentRoute,
   PortalDashboardRoute: PortalDashboardRoute,
+  PortalMyTreatmentsRoute: PortalMyTreatmentsRoute,
   PortalTimesheetRoute: PortalTimesheetRoute,
 }
 

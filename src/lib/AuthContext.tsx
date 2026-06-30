@@ -8,7 +8,7 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabaseClient";
 
-export type Role = "admin" | "manager" | "staff" | null;
+export type Role = "admin" | "manager" | "staff" | "customer" | null;
 
 type AuthCtx = {
   session: Session | null;

@@ -8,17 +8,22 @@ export const Route = createFileRoute("/portal")({
 
 function PortalLayout() {
   return (
-    <AuthGuard allowedRoles={["admin", "manager", "staff"]}>
+    <AuthGuard allowedRoles={["admin", "manager", "staff", "customer"]}>
       <PortalShell />
     </AuthGuard>
   );
 }
 
-const NAV = [
+const STAFF_NAV = [
   { to: "/portal/dashboard", label: "Dashboard" },
   { to: "/portal/bookings", label: "Lịch hẹn" },
   { to: "/portal/timesheet", label: "Bảng công" },
   { to: "/portal/content", label: "Viết bài" },
+] as const;
+
+const CUSTOMER_NAV = [
+  { to: "/portal/my-treatments", label: "Liệu trình của tôi" },
+  { to: "/portal/affiliate", label: "Tiếp thị liên kết" },
 ] as const;
 
 function PortalShell() {
@@ -30,13 +35,16 @@ function PortalShell() {
     navigate({ to: "/login", replace: true });
   };
 
+  const NAV = role === "customer" ? CUSTOMER_NAV : STAFF_NAV;
+  const homeTo = role === "customer" ? "/portal/my-treatments" : "/portal/dashboard";
+
   return (
     <div className="min-h-screen bg-[#f3f7f3] flex flex-col">
       <header className="bg-[#112218] text-white">
         <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-4">
-            <Link to="/portal/dashboard" className="font-black text-lg">
-              Khu vực Quản lý
+            <Link to={homeTo} className="font-black text-lg">
+              {role === "customer" ? "Khu vực Khách hàng" : "Khu vực Quản lý"}
             </Link>
             <nav className="flex items-center gap-1">
               {NAV.map((n) => (
