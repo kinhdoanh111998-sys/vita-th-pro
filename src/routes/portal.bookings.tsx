@@ -45,6 +45,9 @@ type Treatment = {
   remaining_sessions: number | null;
 };
 
+type Customer = { id: string; name: string | null; phone: string | null };
+type Service = { id: string; name: string | null };
+
 function PortalBookings() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
