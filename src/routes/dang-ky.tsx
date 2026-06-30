@@ -55,11 +55,24 @@ function RegisterPage() {
     }
 
     if (data.user) {
-      await supabase.from("customers").insert({
+      // 1. Lưu vào bảng customers (Cột tên là 'name', bắt buộc truyền 'id')
+      const { error: customerError } = await supabase.from("customers").insert({
+        id: data.user.id,
         email: virtualEmail,
-        phone,
-        full_name: fullName,
+        phone: phone,
+        name: fullName,
       });
+      if (customerError) console.error("Lỗi tạo customer:", customerError);
+
+      // 2. Lưu đồng thời vào bảng users để quản lý phân quyền
+      const { error: userError } = await supabase.from("users").insert({
+        id: data.user.id,
+        email: virtualEmail,
+        phone: phone,
+        full_name: fullName,
+        role: "customer",
+      });
+      if (userError) console.error("Lỗi tạo user:", userError);
     }
 
     toast.success("Đăng ký thành công!");
