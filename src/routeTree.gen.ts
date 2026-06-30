@@ -9,11 +9,13 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
+import { Route as PortalTimesheetRouteImport } from './routes/portal.timesheet'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -47,6 +49,11 @@ import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team
 import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
 import { Route as PublicAboutCertificationsRouteImport } from './routes/_public.about.certifications'
 
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -70,6 +77,11 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PublicRoute,
+} as any)
+const PortalTimesheetRoute = PortalTimesheetRouteImport.update({
+  id: '/timesheet',
+  path: '/timesheet',
+  getParentRoute: () => PortalRoute,
 } as any)
 const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
   id: '/treatments',
@@ -239,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRouteWithChildren
   '/about': typeof PublicAboutRouteWithChildren
   '/booking': typeof PublicBookingRoute
   '/contact': typeof PublicContactRoute
@@ -257,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/timesheet': typeof PortalTimesheetRoute
   '/admin/': typeof AdminIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
   '/about/history': typeof PublicAboutHistoryRoute
@@ -275,6 +289,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRouteWithChildren
   '/booking': typeof PublicBookingRoute
   '/contact': typeof PublicContactRoute
   '/lookup': typeof PublicLookupRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/timesheet': typeof PortalTimesheetRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
@@ -312,6 +328,7 @@ export interface FileRoutesById {
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/portal': typeof PortalRouteWithChildren
   '/_public/about': typeof PublicAboutRouteWithChildren
   '/_public/booking': typeof PublicBookingRoute
   '/_public/contact': typeof PublicContactRoute
@@ -330,6 +347,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/portal/timesheet': typeof PortalTimesheetRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
   '/_public/about/certifications': typeof PublicAboutCertificationsRoute
@@ -353,6 +371,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/portal'
     | '/about'
     | '/booking'
     | '/contact'
@@ -371,6 +390,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/timesheet'
     | '/admin/'
     | '/about/certifications'
     | '/about/history'
@@ -389,6 +409,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/portal'
     | '/booking'
     | '/contact'
     | '/lookup'
@@ -404,6 +425,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/timesheet'
     | '/'
     | '/admin'
     | '/about/certifications'
@@ -425,6 +447,7 @@ export interface FileRouteTypes {
     | '/_public'
     | '/admin'
     | '/login'
+    | '/portal'
     | '/_public/about'
     | '/_public/booking'
     | '/_public/contact'
@@ -443,6 +466,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/portal/timesheet'
     | '/_public/'
     | '/admin/'
     | '/_public/about/certifications'
@@ -465,10 +489,18 @@ export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  PortalRoute: typeof PortalRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -503,6 +535,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof PublicIndexRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/portal/timesheet': {
+      id: '/portal/timesheet'
+      path: '/timesheet'
+      fullPath: '/portal/timesheet'
+      preLoaderRoute: typeof PortalTimesheetRouteImport
+      parentRoute: typeof PortalRoute
     }
     '/admin/treatments': {
       id: '/admin/treatments'
@@ -846,10 +885,22 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface PortalRouteChildren {
+  PortalTimesheetRoute: typeof PortalTimesheetRoute
+}
+
+const PortalRouteChildren: PortalRouteChildren = {
+  PortalTimesheetRoute: PortalTimesheetRoute,
+}
+
+const PortalRouteWithChildren =
+  PortalRoute._addFileChildren(PortalRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  PortalRoute: PortalRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
