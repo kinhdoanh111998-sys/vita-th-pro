@@ -21,10 +21,13 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Capture affiliate referrer from URL query param ?ref=0906232777
+  // Capture affiliate referrer: prefer localStorage (set globally on any page),
+  // fallback to current URL query param ?ref=...
   const referredBy = useMemo(() => {
     if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("ref") ?? "";
+    const fromStorage = localStorage.getItem("affiliate_ref");
+    const fromUrl = new URLSearchParams(window.location.search).get("ref");
+    return fromStorage || fromUrl || "";
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
