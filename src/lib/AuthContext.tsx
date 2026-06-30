@@ -98,12 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!active) return;
       if (error) {
         console.error("[auth] fetch role failed:", error.message);
-        setRole(null);
-        setFullName(null);
-      } else {
-        setRole(((data?.role as Role) ?? null) as Role);
-        setFullName((data?.full_name as string) ?? null);
       }
+      const fetchedRole = (data?.role as Role) ?? null;
+      // Fallback: virtual-email accounts are always customers, even when the
+      // users-table read is blocked by RLS or the row is missing.
+      const isVirtualCustomer = email.endsWith("@khach.vitath.pro");
+      setRole(fetchedRole ?? (isVirtualCustomer ? "customer" : null));
+      setFullName((data?.full_name as string) ?? null);
       setRoleLoading(false);
       clearTimeout(failsafe);
     })();
