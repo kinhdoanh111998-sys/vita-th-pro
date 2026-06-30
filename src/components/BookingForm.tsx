@@ -38,6 +38,7 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
       booking_date: date,
       booking_time: time,
       note: note || null,
+      status: "pending",
     });
     setSubmitting(false);
     if (error) {
