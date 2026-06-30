@@ -71,13 +71,9 @@ export function Header() {
           <div className="hidden md:flex flex-col leading-tight">
             <span className="font-black text-brand-dark text-sm">{brand}</span>
             {hotline && (
-              <a
-                href={`tel:${hotline}`}
-                className="text-[11px] font-bold text-ink-muted hover:text-brand-dark"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <span className="text-[11px] font-bold text-ink-muted">
                 Hotline: {hotline}
-              </a>
+              </span>
             )}
           </div>
         </Link>
