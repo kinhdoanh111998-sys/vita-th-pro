@@ -1,10 +1,27 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/vita-th-pro-logo.png";
+
+const VIRTUAL_CUSTOMER_DOMAIN = "@khach.vitath.pro";
+
+function humanizeAuthError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("database error") || m.includes("unexpected_failure") || m.includes("500")) {
+    return "Hệ thống đang bảo trì, vui lòng thử lại sau";
+  }
+  if (m.includes("invalid login credentials") || m.includes("invalid_grant")) {
+    return "Sai tài khoản hoặc mật khẩu";
+  }
+  if (m.includes("email not confirmed")) {
+    return "Tài khoản chưa được kích hoạt";
+  }
+  return message;
+}
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
