@@ -8,7 +8,7 @@ export const Route = createFileRoute("/portal")({
 
 function PortalLayout() {
   return (
-    <AuthGuard allowedRoles={["admin", "manager", "staff", "customer"]}>
+    <AuthGuard allowedRoles={["admin", "manager", "staff", "employee", "customer"]}>
       <PortalShell />
     </AuthGuard>
   );
