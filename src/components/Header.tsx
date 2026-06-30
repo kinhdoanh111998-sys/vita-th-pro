@@ -125,9 +125,19 @@ export function Header() {
               Khu vực của tôi
             </Link>
           ) : (
-            <Link to="/login">
-              <Button variant="secondary" size="sm">Đăng nhập</Button>
-            </Link>
+            <>
+              <Link to="/login">
+                <Button variant="secondary" size="sm">Đăng nhập</Button>
+              </Link>
+              <Link to="/dang-ky">
+                <Button
+                  size="sm"
+                  className="bg-transparent text-brand-dark border border-brand hover:bg-brand-soft shadow-none"
+                >
+                  Đăng ký
+                </Button>
+              </Link>
+            </>
           )}
         </div>
 
