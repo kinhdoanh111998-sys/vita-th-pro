@@ -83,13 +83,13 @@ function KhachHangPage() {
   });
 
   const referrals = useQuery({
-    queryKey: ["kh-referrals-count", phone],
+    queryKey: ["kh-affiliate-referrals", phone],
     enabled: !!phone,
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("bookings")
-        .select("id", { count: "exact", head: true })
-        .eq("referrer_phone", phone);
+        .from("customers")
+        .select("*", { count: "exact", head: true })
+        .eq("referred_by", phone);
       if (error) throw error;
       return count ?? 0;
     },
