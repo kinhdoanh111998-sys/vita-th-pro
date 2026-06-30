@@ -1,19 +1,9 @@
-import { useEffect, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Navigate } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { useAuth } from "@/lib/AuthContext";
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const { session, role, loading } = useAuth();
-  const navigate = useNavigate();
-
-  const allowed = role === "admin" || role === "manager";
-
-  useEffect(() => {
-    if (loading) return;
-    if (!session || !allowed) {
-      navigate({ to: "/login" });
-    }
-  }, [loading, session, allowed, navigate]);
 
   if (loading) {
     return (
@@ -23,7 +13,10 @@ export function AuthGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!session || !allowed) return null;
+  const allowed = role === "admin" || role === "manager";
+  if (!session || !allowed) {
+    return <Navigate to="/login" replace />;
+  }
 
   return <>{children}</>;
 }
