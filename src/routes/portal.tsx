@@ -14,6 +14,12 @@ function PortalLayout() {
   );
 }
 
+const NAV = [
+  { to: "/portal/dashboard", label: "Dashboard" },
+  { to: "/portal/bookings", label: "Lịch hẹn" },
+  { to: "/portal/timesheet", label: "Bảng công" },
+] as const;
+
 function PortalShell() {
   const { fullName, email, role, signOut } = useAuth();
   const navigate = useNavigate();
@@ -28,16 +34,21 @@ function PortalShell() {
       <header className="bg-[#112218] text-white">
         <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-4">
-            <Link to="/portal/timesheet" className="font-black text-lg">
-              Khu vực nội bộ
+            <Link to="/portal/dashboard" className="font-black text-lg">
+              Khu vực Quản lý
             </Link>
-            <Link
-              to="/portal/timesheet"
-              className="rounded-full px-3 py-1.5 text-sm font-bold hover:bg-white/10"
-              activeProps={{ className: "bg-white/15" }}
-            >
-              Bảng công
-            </Link>
+            <nav className="flex items-center gap-1">
+              {NAV.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  className="rounded-full px-3 py-1.5 text-sm font-bold hover:bg-white/10"
+                  activeProps={{ className: "bg-white/15" }}
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
             <div className="text-right leading-tight">
