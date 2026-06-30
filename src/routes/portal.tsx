@@ -43,8 +43,8 @@ function PortalShell() {
       <header className="bg-[#112218] text-white">
         <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-3 px-5 py-3">
           <div className="flex items-center gap-4">
-            <Link to="/portal/dashboard" className="font-black text-lg">
-              Khu vực Quản lý
+            <Link to={homeTo} className="font-black text-lg">
+              {role === "customer" ? "Khu vực Khách hàng" : "Khu vực Quản lý"}
             </Link>
             <nav className="flex items-center gap-1">
               {NAV.map((n) => (
