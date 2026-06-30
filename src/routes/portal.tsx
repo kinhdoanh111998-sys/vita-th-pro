@@ -51,6 +51,12 @@ function PortalShell() {
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <Link
+              to="/"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
+            >
+              🏠 Trở về Trang chủ
+            </Link>
             <div className="text-right leading-tight">
               <div className="font-bold">{fullName ?? email}</div>
               <div className="text-[11px] uppercase tracking-wider text-white/70">
