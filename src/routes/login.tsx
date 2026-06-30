@@ -25,10 +25,16 @@ function destinationForRole(role: string | null): string {
   }
 }
 
+function resolveVirtualEmail(input: string): string {
+  const trimmed = input.trim();
+  if (trimmed.includes("@")) return trimmed;
+  return `${trimmed}@khach.vitath.pro`;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const { session, role, loading } = useAuth();
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -42,6 +48,8 @@ function LoginPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
+
+    const email = resolveVirtualEmail(account);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
@@ -80,13 +88,13 @@ function LoginPage() {
 
         <form onSubmit={onSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm font-bold mb-1">Email</label>
+            <label className="block text-sm font-bold mb-1">Số điện thoại hoặc Email</label>
             <Input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              placeholder="Nhập số điện thoại hoặc email"
             />
           </div>
           <div>
