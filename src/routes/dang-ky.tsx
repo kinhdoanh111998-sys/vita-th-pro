@@ -86,6 +86,11 @@ function RegisterPage() {
     }
 
     toast.success("Đăng ký thành công!");
+    try {
+      localStorage.removeItem("affiliate_ref");
+    } catch {
+      /* ignore */
+    }
     navigate({ to: "/khach-hang", replace: true });
   };
 
