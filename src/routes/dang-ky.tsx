@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,32 +13,36 @@ export const Route = createFileRoute("/dang-ky")({
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const [ho_ten, setHoTen] = useState("");
-  const [so_dien_thoai, setSoDienThoai] = useState("");
-  const [mat_khau, setMatKhau] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Bước 1: kiểm tra mật khẩu
-    if (mat_khau.length < 6) {
+    if (password.length < 6) {
       toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
 
     setSubmitting(true);
 
-    // Bước 2: tạo virtual email
-    const virtualEmail = `${so_dien_thoai}@khach.vitath.pro`;
+    const virtualEmail = `${phone}@khach.vitath.pro`;
 
-    // Bước 3: gọi Supabase Auth
     const { data, error } = await supabase.auth.signUp({
       email: virtualEmail,
-      password: mat_khau,
+      password,
     });
 
-    // Bước 4: bắt lỗi Auth
     if (error && error.message.includes("already registered")) {
       toast.error("Số điện thoại này đã được đăng ký!");
       setSubmitting(false);
@@ -49,16 +54,14 @@ function RegisterPage() {
       return;
     }
 
-    // Bước 5: đồng bộ DB
     if (data.user) {
       await supabase.from("customers").insert({
         email: virtualEmail,
-        phone: so_dien_thoai,
-        full_name: ho_ten,
+        phone,
+        full_name: fullName,
       });
     }
 
-    // Bước 6: thành công
     toast.success("Đăng ký thành công!");
     navigate({ to: "/khach-hang", replace: true });
   };
@@ -79,8 +82,8 @@ function RegisterPage() {
             <label className="block text-sm font-bold mb-1">Họ và tên</label>
             <Input
               type="text"
-              value={ho_ten}
-              onChange={(e) => setHoTen(e.target.value)}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               placeholder="Nguyễn Văn A"
             />
           </div>
@@ -88,19 +91,50 @@ function RegisterPage() {
             <label className="block text-sm font-bold mb-1">Số điện thoại</label>
             <Input
               type="text"
-              value={so_dien_thoai}
-              onChange={(e) => setSoDienThoai(e.target.value)}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               placeholder="09xxxxxxxx"
             />
           </div>
           <div>
             <label className="block text-sm font-bold mb-1">Mật khẩu</label>
-            <Input
-              type="password"
-              value={mat_khau}
-              onChange={(e) => setMatKhau(e.target.value)}
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-brand-dark"
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold mb-1">Xác nhận mật khẩu</label>
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-brand-dark"
+                aria-label={showConfirmPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <Button type="submit" disabled={submitting} className="w-full">
