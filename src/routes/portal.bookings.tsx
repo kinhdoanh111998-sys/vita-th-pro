@@ -57,11 +57,16 @@ function PortalBookings() {
 
   // Create booking modal
   const [createOpen, setCreateOpen] = useState(false);
-  const [cCustomerId, setCCustomerId] = useState("");
+  const [isNewCustomerMode, setIsNewCustomerMode] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [newCustomerName, setNewCustomerName] = useState("");
+  const [newCustomerPhone, setNewCustomerPhone] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [cService, setCService] = useState("");
-  const [cDate, setCDate] = useState("");
-  const [cTime, setCTime] = useState("");
-  const [cNote, setCNote] = useState("");
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingTime, setBookingTime] = useState("");
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const customersQ = useQuery({
     queryKey: ["portal", "customers"],
