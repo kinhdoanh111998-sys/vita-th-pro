@@ -69,17 +69,9 @@ function LoginPage() {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("email", data.user.email!)
-      .maybeSingle();
-
+    // Let AuthContext finish fetching role first, then the effect above routes
+    // once loading=false. Navigating here can race AuthGuard and cause loops.
     setSubmitting(false);
-    navigate({
-      to: destinationForRole((profile?.role as string) ?? null),
-      replace: true,
-    });
   };
 
   return (

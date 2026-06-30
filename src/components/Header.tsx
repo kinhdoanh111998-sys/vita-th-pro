@@ -59,8 +59,10 @@ export function Header() {
   const accountTo =
     role === "admin"
       ? "/admin"
-      : role === "manager" || role === "staff"
+      : role === "manager" || role === "staff" || role === "employee"
       ? "/portal/timesheet"
+      : role === "customer"
+      ? "/portal/my-treatments"
       : "/";
 
   return (

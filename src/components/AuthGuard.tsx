@@ -1,5 +1,5 @@
 import { Navigate } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { useAuth, type Role } from "@/lib/AuthContext";
 
 type AllowedRole = Exclude<Role, null>;
@@ -22,6 +22,7 @@ function landingForRole(role: Role): string {
       return "/admin";
     case "manager":
     case "staff":
+    case "employee":
       return "/portal/dashboard";
     case "customer":
       return "/portal/my-treatments";
@@ -36,20 +37,14 @@ export function AuthGuard({
   loginPath = "/login",
   forbiddenPath,
 }: Props) {
-  const { session, role, loading } = useAuth();
+  const { session, role, loading, isLoadingRole } = useAuth();
 
-  // Hard failsafe: never show the spinner longer than 3s.
-  const [forceReady, setForceReady] = useState(false);
-  useEffect(() => {
-    if (!loading) return;
-    const t = setTimeout(() => setForceReady(true), 3000);
-    return () => clearTimeout(t);
-  }, [loading]);
-
-  if (loading && !forceReady) {
+  // Session/profile state is asynchronous. Never redirect while role is loading,
+  // otherwise /login ↔ /portal can loop before the DB query resolves.
+  if (loading || isLoadingRole) {
     return (
       <div className="min-h-screen flex items-center justify-center text-ink-muted font-bold">
-        Đang kiểm tra phiên đăng nhập...
+        Đang tải hệ thống...
       </div>
     );
   }
