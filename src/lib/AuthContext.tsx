@@ -86,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     let active = true;
     setRoleLoading(true);
+    const failsafe = setTimeout(() => {
+      if (active) setRoleLoading(false);
+    }, 3000);
     (async () => {
       const { data, error } = await supabase
         .from("users")
@@ -102,9 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFullName((data?.full_name as string) ?? null);
       }
       setRoleLoading(false);
+      clearTimeout(failsafe);
     })();
     return () => {
       active = false;
+      clearTimeout(failsafe);
     };
   }, [session?.user?.email]);
 

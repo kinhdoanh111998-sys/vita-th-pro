@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
+import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
   label: string;
@@ -51,8 +52,16 @@ const navGroups: NavGroup[] = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const { data: settings } = useSettings();
+  const { session, role } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline;
+
+  const accountTo =
+    role === "admin"
+      ? "/admin"
+      : role === "manager" || role === "staff"
+      ? "/portal/timesheet"
+      : "/";
 
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-hairline">
@@ -62,13 +71,9 @@ export function Header() {
           <div className="hidden md:flex flex-col leading-tight">
             <span className="font-black text-brand-dark text-sm">{brand}</span>
             {hotline && (
-              <a
-                href={`tel:${hotline}`}
-                className="text-[11px] font-bold text-ink-muted hover:text-brand-dark"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <span className="text-[11px] font-bold text-ink-muted">
                 Hotline: {hotline}
-              </a>
+              </span>
             )}
           </div>
         </Link>
@@ -110,12 +115,18 @@ export function Header() {
           <Link to="/booking">
             <Button size="sm">Đặt lịch</Button>
           </Link>
-          <Link
-            to="/admin"
-            className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
-          >
-            Quản trị
-          </Link>
+          {session ? (
+            <Link
+              to={accountTo}
+              className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
+            >
+              Khu vực của tôi
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="secondary" size="sm">Đăng nhập</Button>
+            </Link>
+          )}
         </div>
 
         <button
@@ -154,13 +165,23 @@ export function Header() {
           >
             Tra cứu liệu trình
           </Link>
-          <Link
-            to="/admin"
-            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
-            onClick={() => setOpen(false)}
-          >
-            Quản trị
-          </Link>
+          {session ? (
+            <Link
+              to={accountTo}
+              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
+              onClick={() => setOpen(false)}
+            >
+              Khu vực của tôi
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
+              onClick={() => setOpen(false)}
+            >
+              Đăng nhập
+            </Link>
+          )}
         </div>
       )}
     </header>
