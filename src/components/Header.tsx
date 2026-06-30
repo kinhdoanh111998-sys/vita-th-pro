@@ -115,12 +115,18 @@ export function Header() {
           <Link to="/booking">
             <Button size="sm">Đặt lịch</Button>
           </Link>
-          <Link
-            to="/admin"
-            className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
-          >
-            Quản trị
-          </Link>
+          {session ? (
+            <Link
+              to={accountTo}
+              className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
+            >
+              Khu vực của tôi
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="secondary" size="sm">Đăng nhập</Button>
+            </Link>
+          )}
         </div>
 
         <button
