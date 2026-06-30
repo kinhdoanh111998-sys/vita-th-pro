@@ -47,12 +47,19 @@ function LoginPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const rawInput = account.trim();
+    if (!rawInput) {
+      setError("Vui lòng nhập tài khoản");
+      return;
+    }
+
     setSubmitting(true);
 
-    const email = resolveVirtualEmail(account);
+    const finalAccount = resolveVirtualEmail(rawInput);
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
+      email: finalAccount,
       password,
     });
 
@@ -86,12 +93,11 @@ function LoginPage() {
           </div>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} noValidate className="space-y-3">
           <div>
             <label className="block text-sm font-bold mb-1">Số điện thoại hoặc Email</label>
             <Input
               type="text"
-              required
               value={account}
               onChange={(e) => setAccount(e.target.value)}
               placeholder="Nhập số điện thoại hoặc email"
@@ -101,7 +107,6 @@ function LoginPage() {
             <label className="block text-sm font-bold mb-1">Mật khẩu</label>
             <Input
               type="password"
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
