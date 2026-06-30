@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as KhachHangRouteImport } from './routes/khach-hang'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -62,6 +63,11 @@ const PortalRoute = PortalRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KhachHangRoute = KhachHangRouteImport.update({
+  id: '/khach-hang',
+  path: '/khach-hang',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -280,6 +286,7 @@ const PublicAboutCertificationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/about': typeof PublicAboutRouteWithChildren
@@ -323,6 +330,7 @@ export interface FileRoutesByFullPath {
   '/products/': typeof PublicProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/booking': typeof PublicBookingRoute
@@ -367,6 +375,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/_public/about': typeof PublicAboutRouteWithChildren
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/khach-hang'
     | '/login'
     | '/portal'
     | '/about'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/khach-hang'
     | '/login'
     | '/portal'
     | '/booking'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/khach-hang'
     | '/login'
     | '/portal'
     | '/_public/about'
@@ -548,6 +560,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  KhachHangRoute: typeof KhachHangRoute
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
 }
@@ -566,6 +579,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/khach-hang': {
+      id: '/khach-hang'
+      path: '/khach-hang'
+      fullPath: '/khach-hang'
+      preLoaderRoute: typeof KhachHangRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1004,6 +1024,7 @@ const PortalRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  KhachHangRoute: KhachHangRoute,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
 }
