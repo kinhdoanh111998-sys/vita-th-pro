@@ -36,12 +36,10 @@ export function AuthGuard({
     );
   }
 
-  // No session → straight to /login, no exceptions.
   if (!session) {
     return <Navigate to={loginPath} replace />;
   }
 
-  // Logged in but role not allowed → bounce to safe area.
   if (!role || !(allowedRoles as string[]).includes(role)) {
     return <Navigate to={forbiddenPath} replace />;
   }

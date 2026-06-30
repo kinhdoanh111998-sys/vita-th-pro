@@ -10,6 +10,21 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+function destinationForRole(role: string | null): string {
+  switch (role) {
+    case "admin":
+      return "/admin";
+    case "manager":
+    case "employee":
+    case "staff":
+      return "/portal/timesheet";
+    case "customer":
+      return "/";
+    default:
+      return "/";
+  }
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const { session, role, loading } = useAuth();
@@ -19,18 +34,37 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && session && (role === "admin" || role === "manager")) {
-      navigate({ to: "/admin" });
-    }
+    if (loading || !session) return;
+    navigate({ to: destinationForRole(role), replace: true });
   }, [session, role, loading, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError || !data.user) {
+      setSubmitting(false);
+      setError(signInError?.message ?? "Đăng nhập thất bại");
+      return;
+    }
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("email", data.user.email!)
+      .maybeSingle();
+
     setSubmitting(false);
-    if (error) setError(error.message);
+    navigate({
+      to: destinationForRole((profile?.role as string) ?? null),
+      replace: true,
+    });
   };
 
   return (
@@ -39,7 +73,7 @@ function LoginPage() {
         <div className="flex items-center gap-3 mb-5">
           <img src={logo} alt="" className="h-12 rounded-xl" />
           <div>
-            <h1 className="text-xl font-black text-brand-dark">Đăng nhập Quản trị</h1>
+            <h1 className="text-xl font-black text-brand-dark">Đăng nhập</h1>
             <p className="text-sm text-ink-muted">VITA TH PRO</p>
           </div>
         </div>
