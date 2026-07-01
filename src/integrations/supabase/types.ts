@@ -106,28 +106,46 @@ export type Database = {
       }
       services: {
         Row: {
+          cost_price: number
           created_at: string
           default_sessions: number
           description: string | null
           id: string
+          image_url: string | null
+          is_hidden: boolean
           name: string
           price: number
+          sale_price: number | null
+          sku: string | null
+          stock_quantity: number
         }
         Insert: {
+          cost_price?: number
           created_at?: string
           default_sessions?: number
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_hidden?: boolean
           name: string
           price?: number
+          sale_price?: number | null
+          sku?: string | null
+          stock_quantity?: number
         }
         Update: {
+          cost_price?: number
           created_at?: string
           default_sessions?: number
           description?: string | null
           id?: string
+          image_url?: string | null
+          is_hidden?: boolean
           name?: string
           price?: number
+          sale_price?: number | null
+          sku?: string | null
+          stock_quantity?: number
         }
         Relationships: []
       }
