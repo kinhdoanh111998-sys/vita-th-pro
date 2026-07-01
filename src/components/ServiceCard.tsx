@@ -38,7 +38,9 @@ export function ServiceCard({
   const linkProps =
     linkTo === "app"
       ? { to: "/app/store/$productId" as const, params: { productId: item.id } }
-      : { to: "/products/$id" as const, params: { id: item.id } };
+      : isService
+        ? { to: "/services/$id" as const, params: { id: item.id } }
+        : { to: "/products/$id" as const, params: { id: item.id } };
 
   const compact = variant === "app";
 
@@ -107,7 +109,7 @@ export function ServiceCard({
 
         {!compact && item.description && (
           <p className="text-xs text-gray-500 line-clamp-2">
-            {item.description}
+            {item.description.replace(/<[^>]+>/g, " ").trim()}
           </p>
         )}
 
