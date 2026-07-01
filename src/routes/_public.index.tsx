@@ -266,7 +266,7 @@ function CommunityHome() {
 
 
       {/* Public Bottom Navigation */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
+      <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
         <div className="grid grid-cols-3 h-16">
           <Link
             to="/"
