@@ -107,34 +107,44 @@ const MOCK_POSTS = [
 function CommunityHome() {
   return (
     <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24 md:pb-12">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3">
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-lg font-heading font-bold text-emerald-600">VITA</span>
-            <span className="text-xs font-semibold text-emerald-500">TH®Pro</span>
-          </div>
+      {/* Luxury Top Bar */}
+      <header className="sticky top-0 z-40 bg-white md:bg-[#0f1a12] md:text-white border-b border-gray-100 md:border-white/10 md:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
+        <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3 md:py-4">
+          {/* Logo VITA gold */}
+          <Link to="/" className="flex items-baseline gap-1 shrink-0 select-none">
+            <span
+              className="text-xl md:text-2xl font-heading font-black tracking-wider md:text-transparent md:bg-clip-text md:bg-gradient-to-b md:from-[#F5D57A] md:via-[#E5B449] md:to-[#B8862F] text-emerald-600"
+              style={{ letterSpacing: "0.08em" }}
+            >
+              VITA
+            </span>
+            <span className="text-[11px] md:text-xs font-semibold text-emerald-500 md:text-[#E5B449]/80">
+              TH®Pro
+            </span>
+          </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 ml-6 text-sm font-medium text-gray-700">
-            <Link to="/" className="text-emerald-600">Trang chủ</Link>
-            <Link to="/products" className="hover:text-emerald-600">Cửa hàng</Link>
-            <a href="#events" className="hover:text-emerald-600">Sự kiện</a>
-            <a href="#stores" className="hover:text-emerald-600">Cửa hàng liên kết</a>
-            <a href="#feed" className="hover:text-emerald-600">Cộng đồng</a>
+          {/* Desktop Nav — Luxury */}
+          <nav className="hidden md:flex items-center gap-8 ml-10 text-[13px] font-medium tracking-wide uppercase">
+            <Link to="/" className="text-[#E5B449]">Trang chủ</Link>
+            <Link to="/products" className="text-white/85 hover:text-[#E5B449] transition-colors">Cửa hàng</Link>
+            <a href="#events" className="text-white/85 hover:text-[#E5B449] transition-colors">Sự kiện</a>
+            <a href="#stores" className="text-white/85 hover:text-[#E5B449] transition-colors">Cửa hàng liên kết</a>
+            <a href="#feed" className="text-white/85 hover:text-[#E5B449] transition-colors">Cộng đồng</a>
           </nav>
 
-          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 md:max-w-xs md:ml-auto">
-            <Search className="w-4 h-4 text-gray-500" />
+          {/* Search */}
+          <div className="flex-1 flex items-center gap-2 bg-gray-100 md:bg-white/10 md:border md:border-white/15 rounded-full px-3 py-2 md:max-w-xs md:ml-auto">
+            <Search className="w-4 h-4 text-gray-500 md:text-white/60" />
             <input
               type="text"
               placeholder="Tìm kiếm..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400 md:placeholder:text-white/50 md:text-white"
             />
           </div>
+
           <Link
             to="/login"
-            className="shrink-0 h-9 md:px-4 w-9 md:w-auto rounded-full bg-emerald-600 text-white flex items-center justify-center gap-2 text-sm font-medium"
+            className="shrink-0 h-9 md:h-10 md:px-5 w-9 md:w-auto rounded-full bg-emerald-600 md:bg-gradient-to-b md:from-[#F5D57A] md:to-[#B8862F] md:text-[#1a1108] text-white flex items-center justify-center gap-2 text-sm font-semibold md:shadow-[0_4px_14px_rgba(229,180,73,0.35)] hover:md:brightness-110 transition"
             aria-label="Đăng nhập"
           >
             <LogIn className="w-4 h-4" />
