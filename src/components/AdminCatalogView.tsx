@@ -735,7 +735,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-white/95 backdrop-blur border-t border-hairline z-10">
               <Button
                 type="button"
                 variant="ghost"
