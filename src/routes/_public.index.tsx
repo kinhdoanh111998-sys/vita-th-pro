@@ -12,10 +12,14 @@ import {
   Home as HomeIcon,
   User,
   ChevronRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
+import { useSettings } from "@/lib/useSettings";
+import logo from "@/assets/vita-th-pro-logo.png";
 
 const MOCK_BANNERS = [
   { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
@@ -105,53 +109,224 @@ const MOCK_POSTS = [
 
 
 function CommunityHome() {
+  const { data: settings } = useSettings();
+  const brand = settings?.brand ?? "Vita TH Pro";
+  const hotline = settings?.hotline ?? "0988 000 888";
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const navLinks: Array<{ label: string; to: string }> = [
+    { label: "Trang chủ", to: "/" },
+    { label: "Giới thiệu", to: "/about" },
+    { label: "Tin tức", to: "/news" },
+    { label: "Sản phẩm", to: "/products" },
+    { label: "Liên hệ", to: "/contact" },
+  ];
+
   return (
-    <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24 md:pb-12">
-      {/* Luxury Top Bar */}
-      <header className="sticky top-0 z-40 bg-white md:bg-[#0f1a12] md:text-white border-b border-gray-100 md:border-white/10 md:shadow-[0_4px_24px_rgba(0,0,0,0.25)]">
-        <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3 md:py-4">
-          {/* Logo VITA gold */}
-          <Link to="/" className="flex items-baseline gap-1 shrink-0 select-none">
-            <span
-              className="text-xl md:text-2xl font-heading font-black tracking-wider md:text-transparent md:bg-clip-text md:bg-gradient-to-b md:from-[#F5D57A] md:via-[#E5B449] md:to-[#B8862F] text-emerald-600"
-              style={{ letterSpacing: "0.08em" }}
-            >
-              VITA
-            </span>
-            <span className="text-[11px] md:text-xs font-semibold text-emerald-500 md:text-[#E5B449]/80">
-              TH®Pro
-            </span>
+    <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-[#FAFAFA] pb-24 md:pb-12">
+      {/* Header — Figma standard */}
+      <header
+        className="sticky top-0 z-40 bg-white border-b"
+        style={{ borderColor: "#E3E3E3" }}
+      >
+        <div className="w-full flex items-center gap-3 px-4 md:px-12 py-2.5 md:py-3">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-3 shrink-0">
+            <img
+              src={logo}
+              alt={brand}
+              className="h-11 md:h-12 w-auto object-contain"
+            />
+            <div className="hidden md:flex flex-col leading-tight">
+              <span
+                className="font-heading font-black text-[15px]"
+                style={{ color: "#147805" }}
+              >
+                {brand}
+              </span>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: "#929292" }}
+              >
+                Hotline: {hotline}
+              </span>
+            </div>
           </Link>
 
-          {/* Desktop Nav — Luxury */}
-          <nav className="hidden md:flex items-center gap-8 ml-10 text-[13px] font-medium tracking-wide uppercase">
-            <Link to="/" className="text-[#E5B449]">Trang chủ</Link>
-            <Link to="/products" className="text-white/85 hover:text-[#E5B449] transition-colors">Cửa hàng</Link>
-            <a href="#events" className="text-white/85 hover:text-[#E5B449] transition-colors">Sự kiện</a>
-            <a href="#stores" className="text-white/85 hover:text-[#E5B449] transition-colors">Cửa hàng liên kết</a>
-            <a href="#feed" className="text-white/85 hover:text-[#E5B449] transition-colors">Cộng đồng</a>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1 ml-6">
+            {navLinks.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="px-3 py-2 rounded-lg text-[14px] font-semibold transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
+                style={{ color: "#484848" }}
+                activeProps={{
+                  style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
+                }}
+                activeOptions={{ exact: n.to === "/" }}
+              >
+                {n.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* Search */}
-          <div className="flex-1 flex items-center gap-2 bg-gray-100 md:bg-white/10 md:border md:border-white/15 rounded-full px-3 py-2 md:max-w-xs md:ml-auto">
-            <Search className="w-4 h-4 text-gray-500 md:text-white/60" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400 md:placeholder:text-white/50 md:text-white"
-            />
-          </div>
+          {/* Right actions */}
+          <div className="ml-auto flex items-center gap-2">
+            {/* Desktop-only action buttons */}
+            <Link
+              to="/lookup"
+              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
+              style={{ borderColor: "#E3E3E3", color: "#484848" }}
+            >
+              Tra cứu liệu trình
+            </Link>
+            <Link
+              to="/booking"
+              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
+              style={{ backgroundColor: "#1B9606" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#147805")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1B9606")
+              }
+            >
+              Đặt lịch
+            </Link>
+            <Link
+              to="/dang-ky"
+              className="hidden md:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
+              style={{ color: "#484848" }}
+            >
+              Đăng ký
+            </Link>
 
-          <Link
-            to="/login"
-            className="shrink-0 h-9 md:h-10 md:px-5 w-9 md:w-auto rounded-full bg-emerald-600 md:bg-gradient-to-b md:from-[#F5D57A] md:to-[#B8862F] md:text-[#1a1108] text-white flex items-center justify-center gap-2 text-sm font-semibold md:shadow-[0_4px_14px_rgba(229,180,73,0.35)] hover:md:brightness-110 transition"
-            aria-label="Đăng nhập"
-          >
-            <LogIn className="w-4 h-4" />
-            <span className="hidden md:inline">Đăng nhập</span>
-          </Link>
+            {/* Login — visible on all sizes */}
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+              style={{ borderColor: "#1B9606", color: "#1B9606" }}
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Đăng nhập</span>
+            </Link>
+
+            {/* Mobile hamburger */}
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
+              style={{ borderColor: "#E3E3E3", color: "#484848" }}
+              aria-label="Mở menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Mobile Drawer */}
+      {drawerOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside className="absolute right-0 top-0 h-full w-[82%] max-w-[320px] bg-white shadow-xl flex flex-col animate-in slide-in-from-right duration-200">
+            <div
+              className="flex items-center justify-between px-4 py-3 border-b"
+              style={{ borderColor: "#E3E3E3" }}
+            >
+              <img src={logo} alt={brand} className="h-9 w-auto" />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="h-9 w-9 rounded-lg inline-flex items-center justify-center"
+                style={{ color: "#484848" }}
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-3">
+              <div
+                className="flex items-center gap-2 bg-[#FAFAFA] rounded-lg px-3 py-2 border"
+                style={{ borderColor: "#E3E3E3" }}
+              >
+                <Search className="w-4 h-4" style={{ color: "#929292" }} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  className="flex-1 bg-transparent text-sm outline-none"
+                  style={{ color: "#484848" }}
+                />
+              </div>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto px-2">
+              {navLinks.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#484848" }}
+                  activeProps={{
+                    style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
+                  }}
+                  activeOptions={{ exact: n.to === "/" }}
+                >
+                  {n.label}
+                </Link>
+              ))}
+              <div className="h-px my-2" style={{ backgroundColor: "#E3E3E3" }} />
+              <Link
+                to="/lookup"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Tra cứu liệu trình
+              </Link>
+              <Link
+                to="/booking"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Đặt lịch
+              </Link>
+              <Link
+                to="/dang-ky"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Đăng ký
+              </Link>
+            </nav>
+
+            <div
+              className="px-4 py-3 border-t"
+              style={{ borderColor: "#E3E3E3" }}
+            >
+              <Link
+                to="/booking"
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center justify-center h-11 rounded-lg text-white text-[14px] font-semibold"
+                style={{ backgroundColor: "#1B9606" }}
+              >
+                Đặt lịch ngay
+              </Link>
+            </div>
+          </aside>
+        </div>
+      )}
+
+
 
 
       {/* Hero Banner Carousel */}
