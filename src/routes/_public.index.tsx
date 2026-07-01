@@ -537,9 +537,60 @@ function CommunityHome() {
           </Link>
         </div>
       </nav>
+
+      {/* Soi da AI Modal */}
+      {skinAIOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-end md:items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+            <div className="relative bg-gradient-to-br from-pink-500 to-rose-500 text-white p-6">
+              <button
+                onClick={() => setSkinAIOpen(false)}
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <Sparkles className="w-10 h-10 mb-3" />
+              <h3 className="text-xl font-black">Soi Da AI cá nhân hoá</h3>
+              <p className="text-sm text-white/90 mt-1">
+                Phân tích chi tiết 8 chỉ số da bằng công nghệ AI. Nhận phác đồ điều trị chuyên sâu miễn phí từ bác sĩ VITA.
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              <ul className="space-y-2 text-sm text-gray-700">
+                {[
+                  "Phát hiện nám – tàn nhang – sắc tố ẩn dưới da",
+                  "Đo độ ẩm, độ đàn hồi, dầu và lỗ chân lông",
+                  "Bác sĩ tư vấn liệu trình cá nhân hoá",
+                ].map((it) => (
+                  <li key={it} className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    {it}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/booking"
+                search={{ service: "soi-da-ai" } as never}
+                onClick={() => setSkinAIOpen(false)}
+                className="mt-2 flex items-center justify-center h-12 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              >
+                Đặt lịch Soi Da AI ngay
+              </Link>
+              <button
+                onClick={() => setSkinAIOpen(false)}
+                className="w-full h-11 rounded-xl border border-gray-200 font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Để sau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function HeroCarousel() {
   const [active, setActive] = useState(0);
