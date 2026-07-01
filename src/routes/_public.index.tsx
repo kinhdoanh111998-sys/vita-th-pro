@@ -328,7 +328,7 @@ function HeroCarousel() {
   };
 
   return (
-    <section className="pt-4">
+    <section className="pt-4 max-w-7xl mx-auto w-full">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
