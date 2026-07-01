@@ -366,29 +366,22 @@ function NewsDrawer({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-gray-600 uppercase">Danh mục</label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                className="mt-1 w-full h-11 px-3 rounded-lg border border-gray-200 text-sm bg-white"
-              >
-                {NEWS_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-600 uppercase">Thời gian xuất bản</label>
-              <input
-                type="datetime-local"
-                value={form.published_at}
-                onChange={(e) => setForm((p) => ({ ...p, published_at: e.target.value }))}
-                className="mt-1 w-full h-11 px-3 rounded-lg border border-gray-200 text-sm"
-              />
-            </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600 uppercase">Danh mục</label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
+              className="mt-1 w-full h-11 px-3 rounded-lg border border-gray-200 text-sm bg-white"
+            >
+              {NEWS_CATEGORIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+            <p className="mt-1 text-[11px] text-gray-400">
+              Thời gian xuất bản được tự động ghi nhận khi tạo hoặc chỉnh sửa bài viết.
+            </p>
           </div>
+
 
           <label className="flex items-center gap-2 text-sm">
             <input
