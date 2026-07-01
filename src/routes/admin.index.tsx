@@ -112,8 +112,8 @@ function Dashboard() {
   const [
     qCust,
     qRev,
-    qComm,
-    qToday,
+    qOrders,
+    qTreatments,
     qBookings,
     qTours,
     qCustList,
@@ -128,9 +128,10 @@ function Dashboard() {
   const kpis = [
     { label: "Khách hàng", value: qCust.data ?? 0, loading: qCust.isLoading, format: (v: number) => String(v) },
     { label: "Doanh thu", value: qRev.data ?? 0, loading: qRev.isLoading, format: formatVND },
-    { label: "Hoa hồng chưa trả", value: qComm.data ?? 0, loading: qComm.isLoading, format: formatVND },
-    { label: "Lịch hẹn hôm nay", value: qToday.data ?? 0, loading: qToday.isLoading, format: (v: number) => String(v) },
+    { label: "Tổng đơn hàng", value: qOrders.data ?? 0, loading: qOrders.isLoading, format: (v: number) => String(v) },
+    { label: "Tổng buổi liệu trình", value: qTreatments.data ?? 0, loading: qTreatments.isLoading, format: (v: number) => String(v) },
   ];
+
 
   return (
     <>
