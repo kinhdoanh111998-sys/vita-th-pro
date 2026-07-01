@@ -89,7 +89,7 @@ export function Header() {
             </Link>
             <Link
               to="/booking"
-              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
+              className="hidden md:inline-flex items-center h-10 px-3 lg:px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
               style={{ backgroundColor: "#1B9606" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.backgroundColor = "#147805")
