@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, Wallet, CheckCheck } from "lucide-react";
+import { Download, Wallet, CheckCheck, Lock } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/lib/supabaseClient";
 import { downloadCSV, toCSV } from "@/lib/csv";
+import { useAuth } from "@/lib/AuthContext";
 
 export const Route = createFileRoute("/admin/commissions")({
   component: CommissionsAdmin,
@@ -39,6 +40,8 @@ const MONTHS = ["all", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", 
 
 function CommissionsAdmin() {
   const qc = useQueryClient();
+  const { role } = useAuth();
+  const canPay = role === "admin";
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
   const [staffFilter, setStaffFilter] = useState<string>("all");
@@ -217,14 +220,16 @@ function CommissionsAdmin() {
             </Button>
             <Button
               onClick={() => markPaidAll.mutate()}
-              disabled={markPaidAll.isPending || totals.pending === 0}
+              disabled={!canPay || markPaidAll.isPending || totals.pending === 0}
+              title={canPay ? "" : "Chỉ Admin được thanh toán"}
             >
-              <CheckCheck size={16} />
+              {canPay ? <CheckCheck size={16} /> : <Lock size={16} />}
               {markPaidAll.isPending ? "Đang xử lý…" : "Trả tất cả trong kỳ"}
             </Button>
           </div>
         }
       />
+
 
       {/* KPI Cards */}
       <div className="grid gap-3 sm:grid-cols-3 mb-4">
@@ -344,9 +349,10 @@ function CommissionsAdmin() {
                         <Button
                           size="sm"
                           onClick={() => markPaidForStaff.mutate(g.staffId)}
-                          disabled={isPaying || markPaidForStaff.isPending}
+                          disabled={!canPay || isPaying || markPaidForStaff.isPending}
+                          title={canPay ? "" : "Chỉ Admin được thanh toán"}
                         >
-                          <Wallet size={14} />
+                          {canPay ? <Wallet size={14} /> : <Lock size={14} />}
                           {isPaying ? "Đang xử lý..." : "Thanh toán"}
                         </Button>
                       ) : (
