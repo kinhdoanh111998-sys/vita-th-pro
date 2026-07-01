@@ -1,4 +1,5 @@
 import { MapPin, Phone, Globe, QrCode, Tag, Navigation, PhoneCall, Share2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export interface StoreProduct {
   id: number;

@@ -52,6 +52,7 @@ import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
+import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
 import { Route as PublicProductsMachinesRouteImport } from './routes/_public.products.machines'
@@ -279,6 +280,11 @@ const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicAboutRoute,
 } as any)
+const AppStoreProductIdRoute = AppStoreProductIdRouteImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => AppStoreRoute,
+} as any)
 const PublicProductsTechnologyTransferRoute =
   PublicProductsTechnologyTransferRouteImport.update({
     id: '/technology-transfer',
@@ -372,7 +378,7 @@ export interface FileRoutesByFullPath {
   '/app/account': typeof AppAccountRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
-  '/app/store': typeof AppStoreRoute
+  '/app/store': typeof AppStoreRouteWithChildren
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/products/machines': typeof PublicProductsMachinesRoute
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/app/store/$productId': typeof AppStoreProductIdRoute
   '/about/': typeof PublicAboutIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
@@ -422,7 +429,7 @@ export interface FileRoutesByTo {
   '/app/account': typeof AppAccountRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
-  '/app/store': typeof AppStoreRoute
+  '/app/store': typeof AppStoreRouteWithChildren
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -446,6 +453,7 @@ export interface FileRoutesByTo {
   '/products/machines': typeof PublicProductsMachinesRoute
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/app/store/$productId': typeof AppStoreProductIdRoute
   '/about': typeof PublicAboutIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
@@ -480,7 +488,7 @@ export interface FileRoutesById {
   '/app/account': typeof AppAccountRoute
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
-  '/app/store': typeof AppStoreRoute
+  '/app/store': typeof AppStoreRouteWithChildren
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -504,6 +512,7 @@ export interface FileRoutesById {
   '/_public/products/machines': typeof PublicProductsMachinesRoute
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/app/store/$productId': typeof AppStoreProductIdRoute
   '/_public/about/': typeof PublicAboutIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
@@ -562,6 +571,7 @@ export interface FileRouteTypes {
     | '/products/machines'
     | '/products/services'
     | '/products/technology-transfer'
+    | '/app/store/$productId'
     | '/about/'
     | '/news/'
     | '/products/'
@@ -613,6 +623,7 @@ export interface FileRouteTypes {
     | '/products/machines'
     | '/products/services'
     | '/products/technology-transfer'
+    | '/app/store/$productId'
     | '/about'
     | '/news'
     | '/products'
@@ -670,6 +681,7 @@ export interface FileRouteTypes {
     | '/_public/products/machines'
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
+    | '/app/store/$productId'
     | '/_public/about/'
     | '/_public/news/'
     | '/_public/products/'
@@ -988,6 +1000,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAboutIndexRouteImport
       parentRoute: typeof PublicAboutRoute
     }
+    '/app/store/$productId': {
+      id: '/app/store/$productId'
+      path: '/$productId'
+      fullPath: '/app/store/$productId'
+      preLoaderRoute: typeof AppStoreProductIdRouteImport
+      parentRoute: typeof AppStoreRoute
+    }
     '/_public/products/technology-transfer': {
       id: '/_public/products/technology-transfer'
       path: '/technology-transfer'
@@ -1192,11 +1211,23 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AppStoreRouteChildren {
+  AppStoreProductIdRoute: typeof AppStoreProductIdRoute
+}
+
+const AppStoreRouteChildren: AppStoreRouteChildren = {
+  AppStoreProductIdRoute: AppStoreProductIdRoute,
+}
+
+const AppStoreRouteWithChildren = AppStoreRoute._addFileChildren(
+  AppStoreRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppScanRoute: typeof AppScanRoute
-  AppStoreRoute: typeof AppStoreRoute
+  AppStoreRoute: typeof AppStoreRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -1204,7 +1235,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppNotificationsRoute: AppNotificationsRoute,
   AppScanRoute: AppScanRoute,
-  AppStoreRoute: AppStoreRoute,
+  AppStoreRoute: AppStoreRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
 }
 
