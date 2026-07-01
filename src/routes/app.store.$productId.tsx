@@ -39,6 +39,7 @@ async function fetchItem(id: string): Promise<CatalogItem | null> {
     name: (r.name as string) ?? "Chưa đặt tên",
     description: (r.description as string) ?? null,
     features: (r.features as string) ?? null,
+    short_description: (r.short_description as string) ?? null,
     price: r.price != null ? Number(r.price) : null,
     sale_price: r.sale_price != null ? Number(r.sale_price) : null,
     default_sessions:

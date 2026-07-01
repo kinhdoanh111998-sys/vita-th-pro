@@ -126,6 +126,7 @@ export type Database = {
           name: string
           price: number
           sale_price: number | null
+          short_description: string | null
           sku: string | null
           stock_quantity: number
           type: string
@@ -144,6 +145,7 @@ export type Database = {
           name: string
           price?: number
           sale_price?: number | null
+          short_description?: string | null
           sku?: string | null
           stock_quantity?: number
           type?: string
@@ -162,6 +164,7 @@ export type Database = {
           name?: string
           price?: number
           sale_price?: number | null
+          short_description?: string | null
           sku?: string | null
           stock_quantity?: number
           type?: string
@@ -298,6 +301,7 @@ export type Database = {
           name: string | null
           price: number | null
           sale_price: number | null
+          short_description: string | null
           sku: string | null
           stock_quantity: number | null
           type: string | null
@@ -315,6 +319,7 @@ export type Database = {
           name?: string | null
           price?: number | null
           sale_price?: number | null
+          short_description?: string | null
           sku?: string | null
           stock_quantity?: number | null
           type?: string | null
@@ -332,6 +337,7 @@ export type Database = {
           name?: string | null
           price?: number | null
           sale_price?: number | null
+          short_description?: string | null
           sku?: string | null
           stock_quantity?: number | null
           type?: string | null
