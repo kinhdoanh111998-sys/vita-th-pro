@@ -176,7 +176,8 @@ function CheckoutPage() {
           <label className="text-sm font-bold text-gray-900">Mã AFF</label>
           <input
             type="text"
-            defaultValue="AFF-VITA-21012"
+            value={affCode}
+            onChange={(e) => setAffCode(e.target.value)}
             className="mt-2 w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-green-500"
           />
         </div>
