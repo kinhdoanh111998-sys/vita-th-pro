@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ImageIcon, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,8 @@ export const Route = createFileRoute("/admin/catalog")({
   component: AdminCatalog,
 });
 
+type ItemType = "product" | "service";
+
 type Service = {
   id: string;
   name: string;
@@ -34,10 +38,13 @@ type Service = {
   stock_quantity: number | null;
   is_hidden: boolean | null;
   image_url: string | null;
+  image_urls: string[] | null;
+  type: ItemType | null;
 };
 
 type FormState = {
   id: string | null;
+  type: ItemType;
   name: string;
   sku: string;
   description: string;
@@ -46,12 +53,13 @@ type FormState = {
   sale_price: string;
   stock_quantity: string;
   default_sessions: string;
-  image_url: string;
+  image_urls: string[];
   is_hidden: boolean;
 };
 
 const EMPTY: FormState = {
   id: null,
+  type: "product",
   name: "",
   sku: "",
   description: "",
@@ -60,13 +68,13 @@ const EMPTY: FormState = {
   sale_price: "",
   stock_quantity: "0",
   default_sessions: "1",
-  image_url: "",
+  image_urls: [],
   is_hidden: false,
 };
 
 const BUCKET = "product-images";
-// 10-year expiry — signed URLs are used because the workspace blocks public buckets.
 const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 10;
+const QK = ["admin", "services"] as const;
 
 const formatVND = (n: number | null | undefined) =>
   n == null || n === 0
@@ -82,7 +90,7 @@ function AdminCatalog() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const listQ = useQuery({
-    queryKey: ["admin", "services"],
+    queryKey: QK,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("services")
@@ -101,8 +109,15 @@ function AdminCatalog() {
   };
 
   const openEdit = (s: Service) => {
+    const urls =
+      s.image_urls && s.image_urls.length > 0
+        ? s.image_urls
+        : s.image_url
+          ? [s.image_url]
+          : [];
     setForm({
       id: s.id,
+      type: (s.type as ItemType) ?? "product",
       name: s.name ?? "",
       sku: s.sku ?? "",
       description: s.description ?? "",
@@ -112,61 +127,84 @@ function AdminCatalog() {
       stock_quantity: s.stock_quantity != null ? String(s.stock_quantity) : "0",
       default_sessions:
         s.default_sessions != null ? String(s.default_sessions) : "1",
-      image_url: s.image_url ?? "",
+      image_urls: urls,
       is_hidden: s.is_hidden ?? false,
     });
     setOpen(true);
   };
 
-  const uploadFile = async (file: File) => {
+  const uploadOne = async (file: File): Promise<string | null> => {
     if (!file.type.startsWith("image/")) {
-      toast.error("Vui lòng chọn tệp ảnh (JPG, PNG, WEBP...).");
-      return;
+      toast.error(`${file.name}: không phải ảnh.`);
+      return null;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Ảnh vượt quá 5MB.");
-      return;
+      toast.error(`${file.name}: vượt quá 5MB.`);
+      return null;
     }
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+    if (upErr) {
+      toast.error(`${file.name}: ${upErr.message}`);
+      return null;
+    }
+    const { data: signed, error: sErr } = await supabase.storage
+      .from(BUCKET)
+      .createSignedUrl(path, SIGNED_URL_TTL);
+    if (sErr) {
+      toast.error(`${file.name}: ${sErr.message}`);
+      return null;
+    }
+    return signed.signedUrl;
+  };
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { cacheControl: "3600", upsert: false });
-      if (upErr) throw upErr;
-      const { data: signed, error: sErr } = await supabase.storage
-        .from(BUCKET)
-        .createSignedUrl(path, SIGNED_URL_TTL);
-      if (sErr) throw sErr;
-      setForm((p) => ({ ...p, image_url: signed.signedUrl }));
-      toast.success("Đã tải ảnh lên.");
-    } catch (e) {
-      toast.error(`Upload thất bại: ${(e as Error).message}`);
+      const urls: string[] = [];
+      for (const f of arr) {
+        const u = await uploadOne(f);
+        if (u) urls.push(u);
+      }
+      if (urls.length > 0) {
+        setForm((p) => ({ ...p, image_urls: [...p.image_urls, ...urls] }));
+        toast.success(`Đã tải lên ${urls.length} ảnh.`);
+      }
     } finally {
       setUploading(false);
     }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) void uploadFile(f);
+    if (e.target.files) void uploadFiles(e.target.files);
     e.target.value = "";
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    const f = e.dataTransfer.files?.[0];
-    if (f) void uploadFile(f);
+    if (e.dataTransfer.files) void uploadFiles(e.dataTransfer.files);
   };
+
+  const removeImage = (idx: number) =>
+    setForm((p) => ({
+      ...p,
+      image_urls: p.image_urls.filter((_, i) => i !== idx),
+    }));
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!form.name.trim()) throw new Error("Vui lòng nhập tên sản phẩm.");
+      if (!form.name.trim()) throw new Error("Vui lòng nhập tên.");
       if (!form.price || Number(form.price) < 0)
         throw new Error("Vui lòng nhập giá bán hợp lệ.");
+      const isService = form.type === "service";
       const payload = {
+        type: form.type,
         name: form.name.trim(),
         sku: form.sku.trim() || null,
         description: form.description.trim() || null,
@@ -174,10 +212,13 @@ function AdminCatalog() {
         price: Number(form.price),
         sale_price: form.sale_price ? Number(form.sale_price) : null,
         stock_quantity: form.stock_quantity ? Number(form.stock_quantity) : 0,
-        default_sessions: form.default_sessions
-          ? Number(form.default_sessions)
-          : 1,
-        image_url: form.image_url.trim() || null,
+        default_sessions: isService
+          ? form.default_sessions
+            ? Number(form.default_sessions)
+            : 1
+          : 0,
+        image_urls: form.image_urls,
+        image_url: form.image_urls[0] ?? null,
         is_hidden: form.is_hidden,
       };
       if (form.id) {
@@ -191,9 +232,10 @@ function AdminCatalog() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      toast.success(form.id ? "Đã cập nhật sản phẩm." : "Đã thêm sản phẩm mới.");
-      qc.invalidateQueries({ queryKey: ["admin", "services"] });
+    onSuccess: async () => {
+      toast.success(form.id ? "Đã cập nhật." : "Đã thêm mới.");
+      await qc.invalidateQueries({ queryKey: QK });
+      await listQ.refetch();
       setOpen(false);
       setForm(EMPTY);
     },
@@ -209,9 +251,9 @@ function AdminCatalog() {
       if (error) throw error;
       return next;
     },
-    onSuccess: (next) => {
-      toast.success(next ? "Đã tạm ẩn sản phẩm." : "Đã hiển thị sản phẩm.");
-      qc.invalidateQueries({ queryKey: ["admin", "services"] });
+    onSuccess: async (next) => {
+      toast.success(next ? "Đã tạm ẩn." : "Đã hiển thị.");
+      await qc.invalidateQueries({ queryKey: QK });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -221,52 +263,52 @@ function AdminCatalog() {
     save.mutate();
   };
 
+  const isService = form.type === "service";
+
   return (
-    <div className="mx-auto max-w-[1200px] space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="font-heading text-3xl md:text-4xl font-bold text-brand-text">
-            Quản lý Sản phẩm & Dịch vụ
-          </h1>
-          <p className="font-body text-brand-muted text-sm mt-2">
-            {listQ.isLoading
-              ? "Đang tải danh sách..."
-              : `${rows.length} sản phẩm trong kho`}
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="h-[44px] px-5 rounded-[8px] bg-brand-primary hover:bg-brand-primary-dark text-white font-medium flex items-center gap-2 transition-colors"
-        >
-          <Plus size={18} /> Thêm sản phẩm mới
-        </button>
-      </div>
+    <div className="mx-auto max-w-[1200px]">
+      <AdminTopbar
+        title="Quản lý Sản phẩm & Dịch vụ"
+        subtitle={
+          listQ.isLoading
+            ? "Đang tải..."
+            : `${rows.length} mục trong danh mục`
+        }
+        right={
+          <button
+            onClick={openCreate}
+            className="h-[40px] px-4 rounded-full bg-brand-primary hover:bg-brand-primary-dark text-white font-extrabold text-sm flex items-center gap-2"
+          >
+            <Plus size={16} /> Thêm mới
+          </button>
+        }
+      />
 
       {listQ.error && (
-        <div className="text-sm text-status-error bg-status-error/10 border border-status-error/20 rounded-card p-3">
+        <div className="text-sm text-status-error bg-status-error/10 border border-status-error/20 rounded-card p-3 mb-4">
           {(listQ.error as Error).message}
         </div>
       )}
 
-      <div className="bg-brand-surface rounded-card border border-brand-border shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-hairline shadow-sm p-5">
         <div className="overflow-auto">
-          <table className="w-full min-w-[1024px] border-collapse">
+          <table className="w-full min-w-[1100px] border-collapse">
             <thead>
-              <tr className="border-b border-brand-border">
+              <tr className="border-b border-hairline">
                 {[
-                  "Hình ảnh",
-                  "Tên sản phẩm",
+                  "Ảnh",
+                  "Tên",
+                  "Loại",
                   "SKU",
-                  "Giá nhập",
                   "Giá bán",
                   "Giá KM",
                   "Tồn kho",
                   "Trạng thái",
-                  "Thao tác",
+                  "",
                 ].map((h) => (
                   <th
                     key={h}
-                    className="text-left px-3 py-3 text-xs font-bold uppercase tracking-wider text-brand-muted"
+                    className="text-left px-3 py-3 text-[11px] font-black uppercase tracking-wider text-ink-muted"
                   >
                     {h}
                   </th>
@@ -278,9 +320,9 @@ function AdminCatalog() {
                 <tr>
                   <td
                     colSpan={9}
-                    className="px-3 py-12 text-center text-brand-muted font-medium"
+                    className="px-3 py-12 text-center text-ink-muted"
                   >
-                    Chưa có sản phẩm nào. Bấm "Thêm sản phẩm mới" để bắt đầu.
+                    Chưa có mục nào. Bấm "Thêm mới" để bắt đầu.
                   </td>
                 </tr>
               ) : (
@@ -288,52 +330,67 @@ function AdminCatalog() {
                   const stock = p.stock_quantity ?? 0;
                   const lowStock = stock < 5;
                   const hidden = p.is_hidden ?? false;
+                  const thumb =
+                    (p.image_urls && p.image_urls[0]) || p.image_url || null;
+                  const kind = (p.type as ItemType) ?? "product";
                   return (
                     <tr
                       key={p.id}
-                      className="border-b border-brand-border/60 hover:bg-brand-bg/40"
+                      className="border-b border-hairline/70 hover:bg-brand-bg/40"
                     >
                       <td className="px-3 py-3">
-                        {p.image_url ? (
+                        {thumb ? (
                           <img
-                            src={p.image_url}
+                            src={thumb}
                             alt={p.name}
                             className="h-14 w-20 object-cover rounded-md"
                           />
                         ) : (
-                          <div className="h-14 w-20 rounded-md bg-brand-bg grid place-items-center text-brand-muted">
+                          <div className="h-14 w-20 rounded-md bg-brand-bg grid place-items-center text-ink-muted">
                             <ImageIcon size={20} />
                           </div>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-sm font-semibold text-brand-text max-w-[240px]">
+                      <td className="px-3 py-3 text-sm font-semibold text-ink max-w-[260px]">
                         <div className="line-clamp-2">{p.name}</div>
                       </td>
-                      <td className="px-3 py-3 text-sm text-brand-muted font-mono">
+                      <td className="px-3 py-3 text-xs">
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-full font-bold ${
+                            kind === "service"
+                              ? "bg-brand-primary-light text-brand-primary-dark"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {kind === "service" ? "Dịch vụ" : "Sản phẩm"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3 text-sm text-ink-muted font-mono">
                         {p.sku ?? "—"}
                       </td>
-                      <td className="px-3 py-3 text-sm text-brand-muted">
-                        {formatVND(p.cost_price)}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-brand-text font-medium">
+                      <td className="px-3 py-3 text-sm text-ink font-medium">
                         {formatVND(p.price)}
                       </td>
                       <td className="px-3 py-3 text-sm text-brand-primary font-semibold">
                         {formatVND(p.sale_price)}
                       </td>
                       <td className="px-3 py-3 text-sm">
-                        <span
-                          className={
-                            lowStock
-                              ? "text-status-error font-bold"
-                              : "text-brand-text font-medium"
-                          }
-                        >
-                          {stock}
-                          {lowStock && (
-                            <span className="ml-1 text-xs">(sắp hết)</span>
-                          )}
-                        </span>
+                        {kind === "service" ? (
+                          <span className="text-ink-muted">—</span>
+                        ) : (
+                          <span
+                            className={
+                              lowStock
+                                ? "text-status-error font-bold"
+                                : "text-ink font-medium"
+                            }
+                          >
+                            {stock}
+                            {lowStock && (
+                              <span className="ml-1 text-xs">(sắp hết)</span>
+                            )}
+                          </span>
+                        )}
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-2">
@@ -358,7 +415,7 @@ function AdminCatalog() {
                       <td className="px-3 py-3">
                         <button
                           onClick={() => openEdit(p)}
-                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-brand-border bg-brand-surface hover:bg-brand-bg text-sm font-medium text-brand-text transition-colors"
+                          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-hairline bg-white hover:bg-brand-bg text-sm font-medium text-ink"
                         >
                           <Pencil size={14} /> Sửa
                         </button>
@@ -379,20 +436,63 @@ function AdminCatalog() {
           if (!v) setForm(EMPTY);
         }}
       >
-        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[680px] max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {form.id ? "Cập nhật sản phẩm" : "Thêm sản phẩm mới"}
+              {form.id ? "Cập nhật" : "Thêm mới"}
             </DialogTitle>
             <DialogDescription>
-              Nhập đầy đủ thông tin để hiển thị trên trang bán hàng.
+              Nhập đầy đủ thông tin. Trường có dấu * là bắt buộc.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={onSubmit} className="space-y-4">
-            {/* Drag & drop image upload */}
+            {/* Type selector */}
             <div className="space-y-1.5">
-              <Label>Ảnh sản phẩm</Label>
+              <Label>Loại *</Label>
+              <RadioGroup
+                value={form.type}
+                onValueChange={(v) =>
+                  setForm((p) => ({ ...p, type: v as ItemType }))
+                }
+                className="flex gap-3"
+              >
+                <label
+                  className={`flex-1 cursor-pointer border rounded-lg p-3 flex items-center gap-2 ${
+                    form.type === "product"
+                      ? "border-brand-primary bg-brand-primary-light/40"
+                      : "border-hairline"
+                  }`}
+                >
+                  <RadioGroupItem value="product" id="t-p" />
+                  <div>
+                    <div className="text-sm font-semibold">Sản phẩm</div>
+                    <div className="text-xs text-ink-muted">
+                      Hàng vật lý, có tồn kho
+                    </div>
+                  </div>
+                </label>
+                <label
+                  className={`flex-1 cursor-pointer border rounded-lg p-3 flex items-center gap-2 ${
+                    form.type === "service"
+                      ? "border-brand-primary bg-brand-primary-light/40"
+                      : "border-hairline"
+                  }`}
+                >
+                  <RadioGroupItem value="service" id="t-s" />
+                  <div>
+                    <div className="text-sm font-semibold">Dịch vụ</div>
+                    <div className="text-xs text-ink-muted">
+                      Liệu trình theo buổi
+                    </div>
+                  </div>
+                </label>
+              </RadioGroup>
+            </div>
+
+            {/* Multi image dropzone */}
+            <div className="space-y-1.5">
+              <Label>Ảnh (có thể chọn nhiều)</Label>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -404,75 +504,77 @@ function AdminCatalog() {
                 className={`relative cursor-pointer border-2 border-dashed rounded-card p-4 transition-colors ${
                   dragOver
                     ? "border-brand-primary bg-brand-primary-light/40"
-                    : "border-brand-border bg-brand-bg/40 hover:border-brand-primary/60"
+                    : "border-hairline bg-brand-bg/40 hover:border-brand-primary/60"
                 }`}
               >
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
                   onChange={onFileChange}
                 />
-                {form.image_url ? (
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={form.image_url}
-                      alt="preview"
-                      className="h-24 w-32 object-cover rounded-md border border-brand-border"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm text-brand-text font-medium">
-                        Đã tải ảnh lên
+                <div className="flex flex-col items-center justify-center py-4 text-center">
+                  {uploading ? (
+                    <>
+                      <Loader2
+                        size={26}
+                        className="text-brand-primary animate-spin mb-2"
+                      />
+                      <div className="text-sm font-medium">
+                        Đang tải ảnh lên...
                       </div>
-                      <div className="text-xs text-brand-muted mt-0.5">
-                        Bấm để chọn ảnh khác, hoặc kéo thả để thay thế.
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={26} className="text-ink-muted mb-2" />
+                      <div className="text-sm font-medium">
+                        Kéo thả nhiều ảnh, hoặc bấm để chọn
                       </div>
+                      <div className="text-xs text-ink-muted mt-1">
+                        JPG, PNG, WEBP · tối đa 5MB / ảnh
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {form.image_urls.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 mt-2">
+                  {form.image_urls.map((u, i) => (
+                    <div
+                      key={u + i}
+                      className="relative group aspect-square rounded-md overflow-hidden border border-hairline"
+                    >
+                      <img
+                        src={u}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                      {i === 0 && (
+                        <span className="absolute top-1 left-1 bg-brand-primary text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                          Ảnh chính
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setForm((p) => ({ ...p, image_url: "" }));
+                          removeImage(i);
                         }}
-                        className="mt-2 inline-flex items-center gap-1 text-xs text-status-error hover:underline"
+                        className="absolute top-1 right-1 bg-black/60 hover:bg-status-error text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
                       >
-                        <X size={12} /> Xoá ảnh
+                        <X size={12} />
                       </button>
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-6 text-center">
-                    {uploading ? (
-                      <>
-                        <Loader2
-                          size={28}
-                          className="text-brand-primary animate-spin mb-2"
-                        />
-                        <div className="text-sm text-brand-text font-medium">
-                          Đang tải ảnh lên...
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <Upload
-                          size={28}
-                          className="text-brand-muted mb-2"
-                        />
-                        <div className="text-sm text-brand-text font-medium">
-                          Kéo thả ảnh vào đây, hoặc bấm để chọn
-                        </div>
-                        <div className="text-xs text-brand-muted mt-1">
-                          JPG, PNG, WEBP · tối đa 5MB
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
-              <Label>Tên sản phẩm *</Label>
+              <Label>Tên *</Label>
               <Input
                 required
                 value={form.name}
@@ -484,7 +586,7 @@ function AdminCatalog() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Mã SP (SKU)</Label>
+                <Label>Mã (SKU)</Label>
                 <Input
                   value={form.sku}
                   onChange={(e) =>
@@ -493,17 +595,38 @@ function AdminCatalog() {
                   placeholder="VD: MAY-001"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Tồn kho</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.stock_quantity}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, stock_quantity: e.target.value }))
-                  }
-                />
-              </div>
+              {!isService && (
+                <div className="space-y-1.5">
+                  <Label>Tồn kho</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.stock_quantity}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        stock_quantity: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              )}
+              {isService && (
+                <div className="space-y-1.5">
+                  <Label>Số buổi mặc định</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={form.default_sessions}
+                    onChange={(e) =>
+                      setForm((p) => ({
+                        ...p,
+                        default_sessions: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -544,19 +667,7 @@ function AdminCatalog() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Số buổi liệu trình mặc định</Label>
-              <Input
-                type="number"
-                min={1}
-                value={form.default_sessions}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, default_sessions: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Mô tả chi tiết</Label>
+              <Label>Mô tả</Label>
               <Textarea
                 rows={4}
                 value={form.description}
@@ -566,7 +677,7 @@ function AdminCatalog() {
               />
             </div>
 
-            <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-card border border-brand-border">
+            <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-card border border-hairline">
               <Switch
                 checked={!form.is_hidden}
                 onCheckedChange={(v) =>
@@ -574,11 +685,11 @@ function AdminCatalog() {
                 }
               />
               <div>
-                <div className="text-sm font-semibold text-brand-text">
+                <div className="text-sm font-semibold">
                   {!form.is_hidden ? "Đang bán" : "Tạm ẩn"}
                 </div>
-                <div className="text-xs text-brand-muted">
-                  Sản phẩm tạm ẩn sẽ không hiển thị công khai.
+                <div className="text-xs text-ink-muted">
+                  Mục tạm ẩn sẽ không hiển thị công khai.
                 </div>
               </div>
             </div>
@@ -596,7 +707,7 @@ function AdminCatalog() {
                   ? "Đang lưu..."
                   : form.id
                     ? "Cập nhật"
-                    : "Thêm sản phẩm"}
+                    : "Thêm mới"}
               </Button>
             </DialogFooter>
           </form>
