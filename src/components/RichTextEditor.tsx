@@ -215,6 +215,40 @@ function Toolbar({
       >
         <Redo2 size={14} />
       </Btn>
+      <span className="w-px h-5 bg-hairline mx-1" />
+      <Btn
+        title="Chèn bảng 3x3"
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+            .run()
+        }
+      >
+        <TableIcon size={14} />
+      </Btn>
+      <Btn
+        title="Thêm hàng phía dưới"
+        disabled={!editor.can().addRowAfter()}
+        onClick={() => editor.chain().focus().addRowAfter().run()}
+      >
+        <Rows3 size={14} />
+      </Btn>
+      <Btn
+        title="Thêm cột bên phải"
+        disabled={!editor.can().addColumnAfter()}
+        onClick={() => editor.chain().focus().addColumnAfter().run()}
+      >
+        <Columns3 size={14} />
+      </Btn>
+      <Btn
+        title="Xóa bảng"
+        disabled={!editor.can().deleteTable()}
+        onClick={() => editor.chain().focus().deleteTable().run()}
+      >
+        <Trash2 size={14} />
+      </Btn>
     </div>
   );
 }
