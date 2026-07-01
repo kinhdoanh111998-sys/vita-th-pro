@@ -24,7 +24,7 @@ const STAFF_NAV = [
   { to: "/portal/dashboard", label: "Dashboard" },
   { to: "/portal/bookings", label: "Lịch hẹn" },
   { to: "/portal/contacts", label: "Khách hàng liên hệ" },
-  { to: "/admin/catalog", label: "Quản lý Sản phẩm" },
+  
   { to: "/portal/timesheet", label: "Bảng công" },
   { to: "/portal/content", label: "Viết bài" },
 ] as const;
