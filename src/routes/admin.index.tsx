@@ -10,14 +10,8 @@ export const Route = createFileRoute("/admin/")({
 const formatVND = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
-function todayISO() {
-  const d = new Date();
-  const tz = d.getTimezoneOffset();
-  return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
-}
-
 function Dashboard() {
-  const today = todayISO();
+
 
   const results = useQueries({
     queries: [
@@ -36,34 +30,36 @@ function Dashboard() {
         queryFn: async () => {
           const { data, error } = await supabase
             .from("orders")
-            .select("total_price")
-            .eq("status", "Đã thanh toán");
+            .select("total_amount,status")
+            .in("status", ["Thành công", "Đã thanh toán"]);
           if (error) throw error;
-          return (data ?? []).reduce((s, r: { total_price: number | null }) => s + Number(r.total_price ?? 0), 0);
+          return (data ?? []).reduce(
+            (s, r: { total_amount: number | null }) => s + Number(r.total_amount ?? 0),
+            0,
+          );
         },
       },
       {
-        queryKey: ["dash", "commission-pending"],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from("commissions")
-            .select("amount")
-            .eq("status", "pending");
-          if (error) throw error;
-          return (data ?? []).reduce((s, r: { amount: number | null }) => s + Number(r.amount ?? 0), 0);
-        },
-      },
-      {
-        queryKey: ["dash", "bookings-today", today],
+        queryKey: ["dash", "orders-count"],
         queryFn: async () => {
           const { count, error } = await supabase
-            .from("bookings")
-            .select("*", { count: "exact", head: true })
-            .eq("booking_date", today);
+            .from("orders")
+            .select("*", { count: "exact", head: true });
           if (error) throw error;
           return count ?? 0;
         },
       },
+      {
+        queryKey: ["dash", "treatments-count"],
+        queryFn: async () => {
+          const { count, error } = await supabase
+            .from("treatments")
+            .select("*", { count: "exact", head: true });
+          if (error) throw error;
+          return count ?? 0;
+        },
+      },
+
       {
         queryKey: ["dash", "recent-bookings"],
         queryFn: async () => {
@@ -110,8 +106,8 @@ function Dashboard() {
   const [
     qCust,
     qRev,
-    qComm,
-    qToday,
+    qOrders,
+    qTreatments,
     qBookings,
     qTours,
     qCustList,
@@ -126,9 +122,10 @@ function Dashboard() {
   const kpis = [
     { label: "Khách hàng", value: qCust.data ?? 0, loading: qCust.isLoading, format: (v: number) => String(v) },
     { label: "Doanh thu", value: qRev.data ?? 0, loading: qRev.isLoading, format: formatVND },
-    { label: "Hoa hồng chưa trả", value: qComm.data ?? 0, loading: qComm.isLoading, format: formatVND },
-    { label: "Lịch hẹn hôm nay", value: qToday.data ?? 0, loading: qToday.isLoading, format: (v: number) => String(v) },
+    { label: "Tổng đơn hàng", value: qOrders.data ?? 0, loading: qOrders.isLoading, format: (v: number) => String(v) },
+    { label: "Tổng buổi liệu trình", value: qTreatments.data ?? 0, loading: qTreatments.isLoading, format: (v: number) => String(v) },
   ];
+
 
   return (
     <>
