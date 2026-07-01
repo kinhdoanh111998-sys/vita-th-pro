@@ -79,6 +79,8 @@ function StorePage() {
       {filtered.length === 0 && (
         <div className="text-center text-sm text-gray-500 py-16">Không tìm thấy sản phẩm</div>
       )}
+
+      <FilterSidebar open={filterOpen} onClose={() => setFilterOpen(false)} />
     </div>
   );
 }
