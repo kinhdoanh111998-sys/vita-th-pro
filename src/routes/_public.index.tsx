@@ -15,7 +15,6 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { FeaturedEventCard } from "@/components/FeaturedEventCard";
