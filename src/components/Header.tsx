@@ -62,12 +62,12 @@ export function Header() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1 ml-6">
+          <nav className="hidden lg:flex items-center gap-0.5 ml-4 xl:ml-6">
             {navLinks.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
-                className="px-3 py-2 rounded-lg text-[14px] font-semibold transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
+                className="px-2.5 py-2 rounded-lg text-[13.5px] font-semibold whitespace-nowrap transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
                 style={{ color: "#484848" }}
                 activeProps={{
                   style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
@@ -82,7 +82,7 @@ export function Header() {
           <div className="ml-auto flex items-center gap-2">
             <Link
               to="/lookup"
-              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
+              className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
               style={{ borderColor: "#E3E3E3", color: "#484848" }}
             >
               Tra cứu liệu trình
