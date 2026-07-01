@@ -48,30 +48,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active) setSessionLoading(false);
     }, 4000);
 
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
+    (async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const cachedSession = sessionData.session ?? null;
+
+        // Validate cached token against Auth server. Stale/expired tokens
+        // otherwise linger in LocalStorage and trick the app into thinking
+        // the user is signed in.
+        if (cachedSession) {
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (userError || !userData?.user) {
+            console.warn("[auth] stale session detected, clearing:", userError?.message);
+            try {
+              await supabase.auth.signOut();
+            } catch (e) {
+              console.error("[auth] signOut cleanup failed:", e);
+            }
+            if (!active) return;
+            setSession(null);
+            roleEmailRef.current = null;
+            setRole(null);
+            setFullName(null);
+            setRoleLoading(false);
+            return;
+          }
+        }
+
         if (!active) return;
         roleEmailRef.current = null;
         setRole(null);
         setFullName(null);
-        setRoleLoading(Boolean(data.session));
-        setSession(data.session ?? null);
-      })
-      .catch((err) => {
-        console.error("[auth] getSession failed:", err);
+        setRoleLoading(Boolean(cachedSession));
+        setSession(cachedSession);
+      } catch (err) {
+        console.error("[auth] session bootstrap failed:", err);
         if (!active) return;
         setSession(null);
         roleEmailRef.current = null;
         setRole(null);
         setFullName(null);
         setRoleLoading(false);
-      })
-      .finally(() => {
-        if (!active) return;
-        setSessionLoading(false);
-        clearTimeout(failsafe);
-      });
+      } finally {
+        if (active) {
+          setSessionLoading(false);
+          clearTimeout(failsafe);
+        }
+      }
+    })();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       const nextEmail = s?.user?.email ?? null;
