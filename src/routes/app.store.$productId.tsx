@@ -101,9 +101,12 @@ function ProductDetailPage() {
           <ShoppingCart className="w-4 h-4" />
           Thêm vào giỏ
         </button>
-        <button className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl text-sm">
+        <Link
+          to="/app/store/checkout"
+          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-xl text-sm text-center"
+        >
           Mua ngay
-        </button>
+        </Link>
       </div>
     </div>
   );

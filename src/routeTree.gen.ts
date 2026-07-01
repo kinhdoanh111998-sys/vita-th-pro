@@ -52,6 +52,7 @@ import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
+import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
@@ -280,6 +281,11 @@ const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicAboutRoute,
 } as any)
+const AppStoreCheckoutRoute = AppStoreCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => AppStoreRoute,
+} as any)
 const AppStoreProductIdRoute = AppStoreProductIdRouteImport.update({
   id: '/$productId',
   path: '/$productId',
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
+  '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about/': typeof PublicAboutIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
@@ -454,6 +461,7 @@ export interface FileRoutesByTo {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
+  '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about': typeof PublicAboutIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
@@ -513,6 +521,7 @@ export interface FileRoutesById {
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
+  '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/_public/about/': typeof PublicAboutIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/app/store/$productId'
+    | '/app/store/checkout'
     | '/about/'
     | '/news/'
     | '/products/'
@@ -624,6 +634,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/app/store/$productId'
+    | '/app/store/checkout'
     | '/about'
     | '/news'
     | '/products'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
     | '/app/store/$productId'
+    | '/app/store/checkout'
     | '/_public/about/'
     | '/_public/news/'
     | '/_public/products/'
@@ -1000,6 +1012,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAboutIndexRouteImport
       parentRoute: typeof PublicAboutRoute
     }
+    '/app/store/checkout': {
+      id: '/app/store/checkout'
+      path: '/checkout'
+      fullPath: '/app/store/checkout'
+      preLoaderRoute: typeof AppStoreCheckoutRouteImport
+      parentRoute: typeof AppStoreRoute
+    }
     '/app/store/$productId': {
       id: '/app/store/$productId'
       path: '/$productId'
@@ -1213,10 +1232,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppStoreRouteChildren {
   AppStoreProductIdRoute: typeof AppStoreProductIdRoute
+  AppStoreCheckoutRoute: typeof AppStoreCheckoutRoute
 }
 
 const AppStoreRouteChildren: AppStoreRouteChildren = {
   AppStoreProductIdRoute: AppStoreProductIdRoute,
+  AppStoreCheckoutRoute: AppStoreCheckoutRoute,
 }
 
 const AppStoreRouteWithChildren = AppStoreRoute._addFileChildren(
