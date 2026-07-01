@@ -11,7 +11,7 @@ import {
   HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
-import { mockNews } from "@/lib/mockPosts";
+import { CommunityFeedMobile } from "@/components/CommunityFeed";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, isUpcoming, type EventRow } from "@/lib/events";
 
@@ -183,47 +183,9 @@ function AppHome() {
             </div>
           </section>
 
-          {/* Sự kiện nổi bật – horizontal */}
-          <SectionHeader
-            title="Sự kiện nổi bật"
-            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
-          />
-          <HorizontalScrollList>
-            {ARTICLES.map((a) => (
-              <HScrollItem key={a.title}>
-                <ArticleCard {...a} />
-              </HScrollItem>
-            ))}
-          </HorizontalScrollList>
+          {/* Community Feed – realtime */}
+          <CommunityFeedMobile />
 
-          {/* Bản tin sức khoẻ – horizontal thumbnails */}
-          <SectionHeader
-            title="Bản tin sức khoẻ"
-            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
-          />
-          <div className="px-4 pb-1 flex flex-row gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-            {mockNews.map((n) => (
-              <article
-                key={n.id}
-                className="shrink-0 w-40 snap-start bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.98] transition-transform"
-              >
-                <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
-                  <img
-                    src={n.image}
-                    alt={n.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-2.5">
-                  <h3 className="text-[12.5px] font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
-                    {n.title}
-                  </h3>
-                  <p className="mt-1 text-[10.5px] text-gray-400">{n.date}</p>
-                </div>
-              </article>
-            ))}
-          </div>
 
           {/* Cửa hàng gần bạn */}
           <SectionHeader
