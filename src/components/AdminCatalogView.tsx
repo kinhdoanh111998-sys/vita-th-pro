@@ -36,6 +36,7 @@ type Service = {
   id: string;
   name: string;
   description: string | null;
+  features: string | null;
   price: number;
   default_sessions: number;
   sku: string | null;
@@ -54,6 +55,7 @@ type FormState = {
   name: string;
   sku: string;
   description: string;
+  features: string;
   category: string;
   cost_price: string;
   price: string;
@@ -86,6 +88,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     name: "",
     sku: "",
     description: "",
+    features: "",
     category: "",
     cost_price: "",
     price: "",
@@ -135,6 +138,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       name: s.name ?? "",
       sku: s.sku ?? "",
       description: s.description ?? "",
+      features: s.features ?? "",
       category: s.category ?? "",
       cost_price: s.cost_price != null ? String(s.cost_price) : "",
       price: s.price != null ? String(s.price) : "",
@@ -227,6 +231,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
         description: form.description.trim() || null,
+        features: form.features.trim() || null,
         category: form.category.trim() || null,
         cost_price: form.cost_price ? Number(form.cost_price) : 0,
         price: Number(form.price),
@@ -675,6 +680,19 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
                   setForm((p) => ({ ...p, description: html }))
                 }
                 placeholder="Nhập mô tả chi tiết, hỗ trợ định dạng đậm/nghiêng, danh sách, tiêu đề..."
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>
+                {isService ? "Đặc trưng dịch vụ" : "Đặc trưng sản phẩm"}
+              </Label>
+              <RichTextEditor
+                value={form.features}
+                onChange={(html) =>
+                  setForm((p) => ({ ...p, features: html }))
+                }
+                placeholder="Liệt kê các đặc trưng nổi bật: thành phần, công nghệ, thông số kỹ thuật, lợi ích..."
               />
             </div>
 

@@ -118,6 +118,7 @@ export type Database = {
           created_at: string
           default_sessions: number
           description: string | null
+          features: string | null
           id: string
           image_url: string | null
           image_urls: string[]
@@ -135,6 +136,7 @@ export type Database = {
           created_at?: string
           default_sessions?: number
           description?: string | null
+          features?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[]
@@ -152,6 +154,7 @@ export type Database = {
           created_at?: string
           default_sessions?: number
           description?: string | null
+          features?: string | null
           id?: string
           image_url?: string | null
           image_urls?: string[]
@@ -287,6 +290,7 @@ export type Database = {
           created_at: string | null
           default_sessions: number | null
           description: string | null
+          features: string | null
           id: string | null
           image_url: string | null
           image_urls: string[] | null
@@ -303,6 +307,7 @@ export type Database = {
           created_at?: string | null
           default_sessions?: number | null
           description?: string | null
+          features?: string | null
           id?: string | null
           image_url?: string | null
           image_urls?: string[] | null
@@ -319,6 +324,7 @@ export type Database = {
           created_at?: string | null
           default_sessions?: number | null
           description?: string | null
+          features?: string | null
           id?: string | null
           image_url?: string | null
           image_urls?: string[] | null
