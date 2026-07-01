@@ -1,39 +1,51 @@
 import { X, Star } from "lucide-react";
 import { useState } from "react";
+import { PRODUCT_CATEGORIES } from "@/lib/catalogCategories";
+
+export interface AppStoreFilters {
+  priceMin: string;
+  priceMax: string;
+  productCats: string[];
+  serviceCats: string[];
+  rating: number | null;
+}
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onApply?: () => void;
+  serviceCategories?: string[];
+  value?: AppStoreFilters;
+  onApply?: (v: AppStoreFilters) => void;
 }
 
-const CATEGORIES = [
-  "Thiết bị spa",
-  "Mỹ phẩm trị liệu",
-  "Phụ kiện tiêu hao",
-  "Thực phẩm chức năng",
-  "Dụng cụ hỗ trợ",
-];
+const DEFAULT: AppStoreFilters = {
+  priceMin: "",
+  priceMax: "",
+  productCats: [],
+  serviceCats: [],
+  rating: null,
+};
 
 const RATINGS = [5, 4, 3];
 
-export function FilterSidebar({ open, onClose, onApply }: Props) {
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [checkedCats, setCheckedCats] = useState<string[]>([]);
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+export function FilterSidebar({
+  open,
+  onClose,
+  serviceCategories = [],
+  value,
+  onApply,
+}: Props) {
+  const [state, setState] = useState<AppStoreFilters>(value ?? DEFAULT);
 
-  const toggleCat = (cat: string) =>
-    setCheckedCats((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
+  const toggle = (list: "productCats" | "serviceCats", key: string) =>
+    setState((prev) => ({
+      ...prev,
+      [list]: prev[list].includes(key)
+        ? prev[list].filter((c) => c !== key)
+        : [...prev[list], key],
+    }));
 
-  const reset = () => {
-    setMinPrice("");
-    setMaxPrice("");
-    setCheckedCats([]);
-    setSelectedRating(null);
-  };
+  const reset = () => setState(DEFAULT);
 
   return (
     <>
@@ -47,11 +59,10 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
 
       {/* Drawer */}
       <aside
-        className={`fixed top-0 right-0 z-[70] h-full w-[85%] max-w-[360px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${
+        className={`fixed top-0 right-0 z-[70] h-full w-[85%] max-w-[380px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Header */}
         <header className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100 shrink-0">
           <h2 className="text-base font-heading font-bold text-gray-900">
             Bộ lọc tìm kiếm
@@ -65,9 +76,8 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
           </button>
         </header>
 
-        {/* Body (scrollable) */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-          {/* Price Range */}
+          {/* Price */}
           <section>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
               Khoảng giá
@@ -75,44 +85,86 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="number"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
+                value={state.priceMin}
+                onChange={(e) =>
+                  setState((p) => ({ ...p, priceMin: e.target.value }))
+                }
                 placeholder="Giá tối thiểu"
                 className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-amber-500"
               />
               <input
                 type="number"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
+                value={state.priceMax}
+                onChange={(e) =>
+                  setState((p) => ({ ...p, priceMax: e.target.value }))
+                }
                 placeholder="Giá tối đa"
                 className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-amber-500"
               />
             </div>
           </section>
 
-          {/* Categories */}
+          {/* Product categories */}
           <section>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
-              Danh mục
-            </h3>
-            <div className="space-y-2">
-              {CATEGORIES.map((cat) => {
-                const checked = checkedCats.includes(cat);
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                Danh mục Sản phẩm
+              </h3>
+            </div>
+            <div className="space-y-1 rounded-xl bg-blue-50/60 p-2">
+              {PRODUCT_CATEGORIES.map((c) => {
+                const checked = state.productCats.includes(c.key);
                 return (
                   <label
-                    key={cat}
-                    className="flex items-center gap-3 py-1.5 cursor-pointer"
+                    key={c.key}
+                    className="flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer hover:bg-white"
                   >
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={() => toggleCat(cat)}
-                      className="w-4 h-4 rounded border-gray-300 text-amber-500 focus:ring-amber-400"
+                      onChange={() => toggle("productCats", c.key)}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-400"
                     />
-                    <span className="text-sm text-gray-700">{cat}</span>
+                    <span className="text-sm text-gray-700">{c.label}</span>
                   </label>
                 );
               })}
+            </div>
+          </section>
+
+          {/* Service categories */}
+          <section>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+              <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">
+                Danh mục Dịch vụ
+              </h3>
+            </div>
+            <div className="space-y-1 rounded-xl bg-emerald-50/60 p-2">
+              {serviceCategories.length === 0 ? (
+                <p className="text-xs text-gray-500 italic px-2 py-1.5">
+                  Chưa có danh mục dịch vụ
+                </p>
+              ) : (
+                serviceCategories.map((c) => {
+                  const checked = state.serviceCats.includes(c);
+                  return (
+                    <label
+                      key={c}
+                      className="flex items-center gap-3 px-2 py-1.5 rounded-md cursor-pointer hover:bg-white"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggle("serviceCats", c)}
+                        className="w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-400"
+                      />
+                      <span className="text-sm text-gray-700">{c}</span>
+                    </label>
+                  );
+                })
+              )}
             </div>
           </section>
 
@@ -123,11 +175,13 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
             </h3>
             <div className="space-y-2">
               {RATINGS.map((r) => {
-                const active = selectedRating === r;
+                const active = state.rating === r;
                 return (
                   <button
                     key={r}
-                    onClick={() => setSelectedRating(active ? null : r)}
+                    onClick={() =>
+                      setState((p) => ({ ...p, rating: active ? null : r }))
+                    }
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
                       active
                         ? "border-amber-500 bg-amber-50"
@@ -156,7 +210,6 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
           </section>
         </div>
 
-        {/* Sticky Footer */}
         <footer className="shrink-0 border-t border-gray-100 px-4 py-3 flex gap-2 bg-white">
           <button
             onClick={reset}
@@ -166,7 +219,7 @@ export function FilterSidebar({ open, onClose, onApply }: Props) {
           </button>
           <button
             onClick={() => {
-              onApply?.();
+              onApply?.(state);
               onClose();
             }}
             className="flex-1 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold shadow-sm hover:bg-amber-600"

@@ -52,6 +52,7 @@ import { Route as PublicContactRouteImport } from './routes/_public.contact'
 import { Route as PublicCommunityRouteImport } from './routes/_public.community'
 import { Route as PublicBookingRouteImport } from './routes/_public.booking'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicServicesIndexRouteImport } from './routes/_public.services.index'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
@@ -284,6 +285,11 @@ const PublicAboutRoute = PublicAboutRouteImport.update({
   path: '/about',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicServicesIndexRoute = PublicServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -433,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof PublicAboutIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
+  '/services/': typeof PublicServicesIndexRoute
 }
 export interface FileRoutesByTo {
   '/dang-ky': typeof DangKyRoute
@@ -489,6 +496,7 @@ export interface FileRoutesByTo {
   '/about': typeof PublicAboutIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
+  '/services': typeof PublicServicesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -552,6 +560,7 @@ export interface FileRoutesById {
   '/_public/about/': typeof PublicAboutIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
+  '/_public/services/': typeof PublicServicesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/news/'
     | '/products/'
+    | '/services/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dang-ky'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/news'
     | '/products'
+    | '/services'
   id:
     | '__root__'
     | '/_public'
@@ -733,6 +744,7 @@ export interface FileRouteTypes {
     | '/_public/about/'
     | '/_public/news/'
     | '/_public/products/'
+    | '/_public/services/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1048,6 +1060,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAboutRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/services/': {
+      id: '/_public/services/'
+      path: '/services'
+      fullPath: '/services/'
+      preLoaderRoute: typeof PublicServicesIndexRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/products/': {
       id: '/_public/products/'
       path: '/'
@@ -1240,6 +1259,7 @@ interface PublicRouteChildren {
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
   PublicIndexRoute: typeof PublicIndexRoute
+  PublicServicesIndexRoute: typeof PublicServicesIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -1252,6 +1272,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
   PublicIndexRoute: PublicIndexRoute,
+  PublicServicesIndexRoute: PublicServicesIndexRoute,
 }
 
 const PublicRouteWithChildren =
