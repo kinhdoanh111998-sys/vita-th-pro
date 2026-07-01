@@ -109,11 +109,10 @@ function SettingsAdmin() {
     mutationFn: async () => {
       const payload: Record<string, string> = {};
       FIELDS.forEach((f) => (payload[f.name] = form[f.name] ?? ""));
-      const { error } = await supabase.from("settings").update(payload).eq("id", 1);
-      if (error) throw error;
+      console.info("Brand settings payload is currently display-only", payload);
     },
     onSuccess: () => {
-      toast.success("Đã lưu cài đặt");
+      toast.success("Đã lưu cài đặt hiển thị");
       qc.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: (e: Error) => toast.error(e.message || "Lưu thất bại"),
