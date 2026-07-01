@@ -33,6 +33,8 @@ interface Props {
 
 const BUCKET = "product-images";
 const MAX_MB = 5;
+// Bucket riêng tư -> phải dùng signed URL. Đặt TTL rất dài (~100 năm) để nhúng bền vững.
+const SIGNED_TTL = 60 * 60 * 24 * 365 * 100;
 
 async function uploadEditorImage(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Chỉ hỗ trợ file ảnh");
@@ -44,8 +46,13 @@ async function uploadEditorImage(file: File): Promise<string> {
     .from(BUCKET)
     .upload(path, file, { cacheControl: "3600", upsert: false });
   if (error) throw error;
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  const { data, error: signErr } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, SIGNED_TTL);
+  if (signErr || !data?.signedUrl) {
+    throw signErr ?? new Error("Không tạo được liên kết ảnh");
+  }
+  return data.signedUrl;
 }
 
 function Btn({
