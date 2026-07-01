@@ -15,11 +15,18 @@ import {
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
+import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 
 const MOCK_BANNERS = [
   { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
   { id: 2, image: "https://placehold.co/800x400/png?text=Khuyen+Mai+Thang+10" },
   { id: 3, image: "https://placehold.co/800x400/png?text=Ra+Mat+San+Pham+Moi" },
+];
+
+const MOCK_STORES = [
+  { id: 1, name: "VITA Clinic Quận 1", address: "123 Nguyễn Huệ, Bến Nghé, Q.1", image: "https://placehold.co/400x250/png", rating: "4.9", distance: "1.2 km" },
+  { id: 2, name: "VITA Spa Center HN", address: "456 Thái Hà, Đống Đa, Hà Nội", image: "https://placehold.co/400x250/png", rating: "4.8", distance: "3.5 km" },
+  { id: 3, name: "VITA Wellness Đà Nẵng", address: "789 Nguyễn Văn Linh, Đà Nẵng", image: "https://placehold.co/400x250/png", rating: "5.0", distance: "5.0 km" },
 ];
 
 
@@ -150,9 +157,27 @@ function CommunityHome() {
         </div>
       </section>
 
+      {/* Affiliate Stores */}
+      <section className="pt-6">
+        <div className="flex items-center justify-between mb-3 px-4">
+          <h2 className="text-base font-heading font-bold text-gray-900">
+            Cửa hàng liên kết
+          </h2>
+          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 pb-2">
+          {MOCK_STORES.map((s) => (
+            <AffiliateStoreCard key={s.id} store={s} />
+          ))}
+        </div>
+      </section>
+
       {/* Featured Events */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-3">
+
           <h2 className="text-base font-heading font-bold text-gray-900">
             Sự kiện nổi bật
           </h2>
