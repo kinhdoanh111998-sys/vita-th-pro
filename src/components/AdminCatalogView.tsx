@@ -138,6 +138,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       name: s.name ?? "",
       sku: s.sku ?? "",
       description: s.description ?? "",
+      features: s.features ?? "",
       category: s.category ?? "",
       cost_price: s.cost_price != null ? String(s.cost_price) : "",
       price: s.price != null ? String(s.price) : "",
