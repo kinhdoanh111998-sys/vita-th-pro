@@ -104,6 +104,50 @@ export type Database = {
         }
         Relationships: []
       }
+      commissions: {
+        Row: {
+          amount: number
+          commission_type: string
+          created_at: string
+          id: string
+          note: string | null
+          paid_at: string | null
+          reference_id: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          amount?: number
+          commission_type?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          reference_id?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          commission_type?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          paid_at?: string | null
+          reference_id?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           affiliate_ref: string | null
@@ -512,6 +556,61 @@ export type Database = {
           zalo_link?: string | null
         }
         Relationships: []
+      }
+      tours: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          customer_id: string
+          id: string
+          notes: string | null
+          status: string
+          technician_id: string
+          treatment_id: string
+        }
+        Insert: {
+          commission_amount?: number
+          created_at?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          status?: string
+          technician_id: string
+          treatment_id: string
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          technician_id?: string
+          treatment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tours_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tours_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tours_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       treatments: {
         Row: {

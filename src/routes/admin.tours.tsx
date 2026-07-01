@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
@@ -7,202 +9,168 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 
 export const Route = createFileRoute("/admin/tours")({
   component: ToursPage,
 });
 
-type Option = { id: string; label: string; sub?: string };
-type TreatmentOpt = Option & { remaining?: number; used?: number };
+type Customer = { id: string; name: string; phone: string | null };
+type UserRow = { id: string; full_name: string | null; role: string };
+type Treatment = { id: string; order_id: string; customer_id: string; session_number: number; status: string };
+type Order = { id: string; service_id: string };
+type Service = { id: string; name: string };
+type Tour = {
+  id: string; treatment_id: string; customer_id: string; technician_id: string;
+  notes: string | null; commission_amount: number | null; status: string; created_at: string;
+};
 
 function ToursPage() {
-  const [customers, setCustomers] = useState<Option[]>([]);
-  const [treatments, setTreatments] = useState<TreatmentOpt[]>([]);
-  const [technicians, setTechnicians] = useState<Option[]>([]);
+  const qc = useQueryClient();
+
+  const customersQ = useQuery({
+    queryKey: ["tours", "customers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customers").select("id,name,phone").order("name");
+      if (error) throw error;
+      return (data ?? []) as Customer[];
+    },
+  });
+  const usersQ = useQuery({
+    queryKey: ["tours", "users"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("users").select("id,full_name,role").in("role", ["admin", "staff", "manager"]);
+      if (error) throw error;
+      return (data ?? []) as UserRow[];
+    },
+  });
+  const treatmentsQ = useQuery({
+    queryKey: ["tours", "treatments"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("treatments").select("id,order_id,customer_id,session_number,status").eq("status", "pending").order("session_number");
+      if (error) throw error;
+      return (data ?? []) as Treatment[];
+    },
+  });
+  const ordersQ = useQuery({
+    queryKey: ["tours", "orders"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("orders").select("id,service_id");
+      if (error) throw error;
+      return (data ?? []) as Order[];
+    },
+  });
+  const servicesQ = useQuery({
+    queryKey: ["tours", "services"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("services").select("id,name");
+      if (error) throw error;
+      return (data ?? []) as Service[];
+    },
+  });
 
   const [customerId, setCustomerId] = useState("");
   const [treatmentId, setTreatmentId] = useState("");
   const [technicianId, setTechnicianId] = useState("");
   const [notes, setNotes] = useState("");
-  const [commissionAmount, setCommissionAmount] = useState<string>("");
-  const [submitting, setSubmitting] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [commissionAmount, setCommissionAmount] = useState("");
 
-  useEffect(() => {
-    (async () => {
-      const [c, t, e] = await Promise.all([
-        supabase.from("customers").select("id,name,phone"),
-        supabase
-          .from("treatments")
-          .select("id,package_name,customer_id,used_sessions,remaining_sessions,status"),
-        supabase.from("users").select("id,full_name,role"),
-      ]);
-      if (c.error || t.error || e.error) {
-        setLoadError(c.error?.message || t.error?.message || e.error?.message || null);
-      }
-      setCustomers(
-        (c.data ?? []).map((r: Record<string, unknown>) => ({
-          id: String(r.id),
-          label: String(r.name ?? "—"),
-          sub: r.phone ? String(r.phone) : undefined,
-        })),
-      );
-      setTreatments(
-        (t.data ?? []).map((r: Record<string, unknown>) => ({
-          id: String(r.id),
-          label: String(r.package_name ?? "Liệu trình"),
-          sub: `Còn ${r.remaining_sessions ?? 0} buổi`,
-          remaining: Number(r.remaining_sessions ?? 0),
-          used: Number(r.used_sessions ?? 0),
-          customer_id: r.customer_id ? String(r.customer_id) : undefined,
-        })) as TreatmentOpt[],
-      );
-      setTechnicians(
-        (e.data ?? []).map((r: Record<string, unknown>) => ({
-          id: String(r.id),
-          label: String(r.full_name ?? "—"),
-          sub: r.role ? String(r.role) : undefined,
-        })),
-      );
-    })();
-  }, []);
+  const serviceByOrder = useMemo(() => {
+    const smap = new Map((servicesQ.data ?? []).map((s) => [s.id, s.name]));
+    const omap = new Map<string, string>();
+    (ordersQ.data ?? []).forEach((o) => omap.set(o.id, smap.get(o.service_id) ?? "—"));
+    return omap;
+  }, [ordersQ.data, servicesQ.data]);
 
-  const selectedTreatment = useMemo(
-    () => treatments.find((x) => x.id === treatmentId),
-    [treatments, treatmentId],
-  );
+  const availableTreatments = useMemo(() => {
+    if (!customerId) return [];
+    return (treatmentsQ.data ?? []).filter((t) => t.customer_id === customerId);
+  }, [treatmentsQ.data, customerId]);
 
-  // ====== HÀM LOGIC CHUẨN – KHÔNG ĐƯỢC THAY ĐỔI ======
-  const handleCompleteTour = async (
-    treatmentId: string,
-    customerId: string,
-    technicianId: string,
-    notes: string,
-    commissionAmount: number,
-  ) => {
-    try {
-      // Bước 1: Ghi nhận Ca làm (Tour) mới vào Database
-      const { data: tourData, error: tourError } = await supabase
-        .from("tours")
-        .insert([
-          {
-            treatment_id: treatmentId,
-            customer_id: customerId,
-            technician_id: technicianId,
-            notes: notes,
-            status: "completed",
-          },
-        ])
-        .select()
-        .single();
-      if (tourError) throw tourError;
+  const selectedTreatment = availableTreatments.find((t) => t.id === treatmentId);
 
-      // Bước 2: Cập nhật (Trừ đi 1 buổi) trong bảng Liệu trình (Treatments)
-      const { data: treatmentData, error: fetchError } = await supabase
-        .from("treatments")
-        .select("used_sessions, remaining_sessions")
-        .eq("id", treatmentId)
-        .single();
+  const completeTour = useMutation({
+    mutationFn: async () => {
+      if (!customerId || !treatmentId || !technicianId) throw new Error("Chọn đủ khách hàng, buổi và nhân viên.");
+      const commission = Number(commissionAmount || 0);
 
-      if (fetchError) throw fetchError;
+      const { data: tour, error: tErr } = await supabase.from("tours").insert({
+        treatment_id: treatmentId,
+        customer_id: customerId,
+        technician_id: technicianId,
+        notes: notes.trim() || null,
+        commission_amount: commission,
+        status: "completed",
+      }).select().single();
+      if (tErr) throw tErr;
 
-      const { error: updateError } = await supabase
-        .from("treatments")
-        .update({
-          used_sessions: treatmentData.used_sessions + 1,
-          remaining_sessions: treatmentData.remaining_sessions - 1,
-          status: treatmentData.remaining_sessions - 1 === 0 ? "completed" : "active",
-        })
-        .eq("id", treatmentId);
-      if (updateError) throw updateError;
+      const { error: uErr } = await supabase.from("treatments").update({ status: "completed" }).eq("id", treatmentId);
+      if (uErr) throw uErr;
 
-      // Bước 3: Ghi nhận Hoa hồng cho Kỹ thuật viên
-      const { error: commissionError } = await supabase.from("commissions").insert([
-        {
+      if (commission > 0) {
+        const { error: cErr } = await supabase.from("commissions").insert({
           staff_id: technicianId,
           commission_type: "tour_service",
-          reference_id: tourData.id,
-          amount: commissionAmount,
+          reference_id: tour.id,
+          amount: commission,
           status: "pending",
-        },
-      ]);
-      if (commissionError) throw commissionError;
-
-      alert("Hoàn thành ca làm thành công! Đã tự động trừ buổi và tính hoa hồng.");
-    } catch (error) {
-      console.error("Lỗi khi xử lý Tour:", error);
-      alert("Có lỗi xảy ra, vui lòng thử lại!");
-    }
-  };
-  // ====== HẾT HÀM LOGIC CHUẨN ======
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!treatmentId || !customerId || !technicianId) {
-      alert("Vui lòng chọn đầy đủ khách hàng, liệu trình và kỹ thuật viên.");
-      return;
-    }
-    setSubmitting(true);
-    await handleCompleteTour(
-      treatmentId,
-      customerId,
-      technicianId,
-      notes,
-      Number(commissionAmount || 0),
-    );
-    setSubmitting(false);
-    setNotes("");
-    setCommissionAmount("");
-  };
+        });
+        if (cErr) throw cErr;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Hoàn thành ca làm!", { description: "Đã trừ 1 buổi + ghi nhận hoa hồng (chờ duyệt)." });
+      setTreatmentId(""); setNotes(""); setCommissionAmount("");
+      qc.invalidateQueries({ queryKey: ["tours"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <>
       <AdminTopbar
         title="Quản lý Ca làm (Tours)"
-        subtitle="Ghi nhận ca làm, tự động trừ buổi liệu trình và tính hoa hồng kỹ thuật viên."
+        subtitle="Chia buổi liệu trình cho nhân viên — tự động trừ buổi & ghi nhận hoa hồng."
       />
-
-      {loadError && (
-        <div className="mb-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-          Lỗi tải dữ liệu: {loadError}
-        </div>
-      )}
 
       <div className="grid lg:grid-cols-3 gap-5">
         <form
-          onSubmit={onSubmit}
+          onSubmit={(e) => { e.preventDefault(); completeTour.mutate(); }}
           className="lg:col-span-2 bg-white border border-hairline rounded-2xl p-6 space-y-5 shadow-sm"
         >
           <div className="flex items-center gap-3 pb-3 border-b border-hairline">
-            <div className="size-10 grid place-items-center rounded-xl bg-brand-soft text-brand-dark text-lg font-black">
-              T
-            </div>
+            <div className="size-10 grid place-items-center rounded-xl bg-brand-soft text-brand-dark text-lg font-black">T</div>
             <div>
-              <h2 className="font-black text-lg">Tạo ca làm mới</h2>
-              <p className="text-xs text-ink-muted">
-                Chọn khách – liệu trình – kỹ thuật viên rồi bấm Hoàn thành.
-              </p>
+              <h2 className="font-black text-lg">Ghi nhận ca làm</h2>
+              <p className="text-xs text-ink-muted">Chọn khách → buổi liệu trình còn lại → nhân viên thực hiện.</p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>Khách hàng *</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn khách hàng" />
-                </SelectTrigger>
+              <Select value={customerId} onValueChange={(v) => { setCustomerId(v); setTreatmentId(""); }}>
+                <SelectTrigger><SelectValue placeholder="Chọn khách hàng" /></SelectTrigger>
                 <SelectContent>
-                  {customers.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                      {o.sub ? ` · ${o.sub}` : ""}
+                  {(customersQ.data ?? []).map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.name}{o.phone ? ` · ${o.phone}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>Buổi liệu trình còn lại *</Label>
+              <Select value={treatmentId} onValueChange={setTreatmentId} disabled={!customerId}>
+                <SelectTrigger><SelectValue placeholder={customerId ? "Chọn buổi" : "Chọn khách trước"} /></SelectTrigger>
+                <SelectContent>
+                  {availableTreatments.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-ink-muted">Khách này không còn buổi pending.</div>
+                  )}
+                  {availableTreatments.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      Buổi #{t.session_number} · {serviceByOrder.get(t.order_id) ?? "—"}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -210,162 +178,102 @@ function ToursPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Liệu trình *</Label>
-              <Select value={treatmentId} onValueChange={setTreatmentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn liệu trình" />
-                </SelectTrigger>
-                <SelectContent>
-                  {treatments.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label} · {o.sub}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Kỹ thuật viên *</Label>
+              <Label>Nhân viên thực hiện *</Label>
               <Select value={technicianId} onValueChange={setTechnicianId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn kỹ thuật viên" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Chọn nhân viên" /></SelectTrigger>
                 <SelectContent>
-                  {technicians.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.label}
-                      {o.sub ? ` · ${o.sub}` : ""}
-                    </SelectItem>
+                  {(usersQ.data ?? []).map((u) => (
+                    <SelectItem key={u.id} value={u.id}>{u.full_name ?? "—"} · {u.role}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Hoa hồng (VND)</Label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="VD: 50000"
+              <Label>Hoa hồng (₫)</Label>
+              <Input type="number" min={0} placeholder="VD: 50000"
                 value={commissionAmount}
-                onChange={(e) => setCommissionAmount(e.target.value)}
-              />
+                onChange={(e) => setCommissionAmount(e.target.value)} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Ghi chú ca làm</Label>
-            <Textarea
-              rows={4}
-              placeholder="Tình trạng da, phản hồi khách, lưu ý buổi sau..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
+            <Label>Ghi chú</Label>
+            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
+              placeholder="Tình trạng, phản hồi, lưu ý buổi sau..." />
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setCustomerId("");
-                setTreatmentId("");
-                setTechnicianId("");
-                setNotes("");
-                setCommissionAmount("");
-              }}
-            >
-              Làm mới
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Đang xử lý..." : "✓ Hoàn thành Ca làm"}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => {
+              setCustomerId(""); setTreatmentId(""); setTechnicianId(""); setNotes(""); setCommissionAmount("");
+            }}>Làm mới</Button>
+            <Button type="submit" disabled={completeTour.isPending}>
+              {completeTour.isPending ? "Đang xử lý..." : "✓ Hoàn thành Ca làm"}
             </Button>
           </div>
         </form>
 
-        <aside className="bg-gradient-to-br from-brand-soft to-white border border-hairline rounded-2xl p-6 space-y-4">
-          <h3 className="font-black text-base">Tóm tắt ca làm</h3>
-          <Row label="Khách hàng" value={customers.find((x) => x.id === customerId)?.label} />
-          <Row label="Liệu trình" value={selectedTreatment?.label} />
-          <Row
-            label="Buổi còn lại"
-            value={
-              selectedTreatment
-                ? `${selectedTreatment.remaining} → ${Math.max(0, (selectedTreatment.remaining ?? 0) - 1)}`
-                : undefined
-            }
-          />
-          <Row label="Kỹ thuật viên" value={technicians.find((x) => x.id === technicianId)?.label} />
-          <Row
-            label="Hoa hồng"
-            value={
-              commissionAmount
-                ? Number(commissionAmount).toLocaleString("vi-VN") + " ₫"
-                : undefined
-            }
-          />
+        <aside className="bg-gradient-to-br from-brand-soft to-white border border-hairline rounded-2xl p-6 space-y-3 h-fit">
+          <h3 className="font-black text-base">Tóm tắt</h3>
+          <Row label="Khách" value={(customersQ.data ?? []).find((c) => c.id === customerId)?.name} />
+          <Row label="Buổi" value={selectedTreatment ? `#${selectedTreatment.session_number} · ${serviceByOrder.get(selectedTreatment.order_id) ?? ""}` : undefined} />
+          <Row label="Nhân viên" value={(usersQ.data ?? []).find((u) => u.id === technicianId)?.full_name ?? undefined} />
+          <Row label="Hoa hồng" value={commissionAmount ? Number(commissionAmount).toLocaleString("vi-VN") + " ₫" : undefined} />
           <div className="pt-3 mt-3 border-t border-hairline text-xs text-ink-muted leading-relaxed">
-            Khi bấm <b className="text-brand-dark">Hoàn thành</b>, hệ thống tạo tour, trừ 1 buổi
-            liệu trình và ghi nhận hoa hồng (trạng thái <i>pending</i>).
+            Bấm <b>Hoàn thành</b>: tạo Tour, chuyển buổi liệu trình sang <i>completed</i>, ghi nhận hoa hồng nhân viên (trạng thái <i>pending</i>).
           </div>
         </aside>
       </div>
 
-      <ToursList technicians={technicians} customers={customers} />
+      <ToursList />
     </>
   );
 }
 
-function ToursList({
-  technicians,
-  customers,
-}: {
-  technicians: Option[];
-  customers: Option[];
-}) {
+function ToursList() {
   const [day, setDay] = useState("");
   const [techId, setTechId] = useState("all");
-  const [tours, setTours] = useState<Record<string, unknown>[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("tours")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(200);
-      if (active) {
-        setTours((data ?? []) as Record<string, unknown>[]);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const usersQ = useQuery({
+    queryKey: ["tours-list", "users"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("users").select("id,full_name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; full_name: string | null }[];
+    },
+  });
+  const customersQ = useQuery({
+    queryKey: ["tours-list", "customers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customers").select("id,name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string }[];
+    },
+  });
+  const toursQ = useQuery({
+    queryKey: ["tours-list", "tours"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("tours").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      return (data ?? []) as Tour[];
+    },
+  });
 
-  const filtered = tours.filter((t) => {
-    if (day) {
-      const created = String(t.created_at ?? "").slice(0, 10);
-      if (created !== day) return false;
-    }
-    if (techId !== "all" && String(t.technician_id ?? "") !== techId) return false;
+  const filtered = (toursQ.data ?? []).filter((t) => {
+    if (day && String(t.created_at).slice(0, 10) !== day) return false;
+    if (techId !== "all" && t.technician_id !== techId) return false;
     return true;
   });
 
-  const nameOf = (list: Option[], id: unknown) =>
-    list.find((x) => x.id === String(id))?.label ?? "—";
+  const nameOfUser = (id: string) => (usersQ.data ?? []).find((u) => u.id === id)?.full_name ?? "—";
+  const nameOfCustomer = (id: string) => (customersQ.data ?? []).find((c) => c.id === id)?.name ?? "—";
 
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-end justify-between flex-wrap gap-3">
         <div>
           <h3 className="font-black text-lg">Danh sách ca làm</h3>
-          <p className="text-xs text-ink-muted">Tra cứu theo ngày và kỹ thuật viên để chấm công.</p>
+          <p className="text-xs text-ink-muted">Tra cứu theo ngày và nhân viên.</p>
         </div>
         <div className="flex gap-3 items-end bg-white border border-hairline rounded-2xl p-3">
           <div className="space-y-1.5">
@@ -373,12 +281,12 @@ function ToursList({
             <Input type="date" value={day} onChange={(e) => setDay(e.target.value)} className="w-[170px]" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs">Kỹ thuật viên</Label>
+            <Label className="text-xs">Nhân viên</Label>
             <Select value={techId} onValueChange={setTechId}>
               <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tất cả</SelectItem>
-                {technicians.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}
+                {(usersQ.data ?? []).map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name ?? "—"}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -386,25 +294,28 @@ function ToursList({
       </div>
 
       <div className="overflow-auto bg-white border border-hairline rounded-2xl">
-        <table className="w-full min-w-[760px] border-collapse">
+        <table className="w-full min-w-[840px] border-collapse">
           <thead>
             <tr>
-              {["Ngày", "Khách hàng", "Kỹ thuật viên", "Ghi chú", "Trạng thái"].map((h) => (
+              {["Thời gian", "Khách hàng", "Nhân viên", "Hoa hồng", "Ghi chú", "Trạng thái"].map((h) => (
                 <th key={h} className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && !loading ? (
-              <tr><td colSpan={5} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có ca làm phù hợp.</td></tr>
+            {filtered.length === 0 ? (
+              <tr><td colSpan={6} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có ca làm phù hợp.</td></tr>
             ) : filtered.map((t) => (
-              <tr key={String(t.id)}>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{t.created_at ? new Date(String(t.created_at)).toLocaleString("vi-VN") : "—"}</td>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{nameOf(customers, t.customer_id)}</td>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{nameOf(technicians, t.technician_id)}</td>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] max-w-[280px] truncate">{String(t.notes ?? "")}</td>
+              <tr key={t.id}>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{new Date(t.created_at).toLocaleString("vi-VN")}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{nameOfCustomer(t.customer_id)}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{nameOfUser(t.technician_id)}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-brand-dark">
+                  {t.commission_amount ? Number(t.commission_amount).toLocaleString("vi-VN") + " ₫" : "—"}
+                </td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] max-w-[280px] truncate">{t.notes ?? ""}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
-                  <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">{String(t.status ?? "—")}</span>
+                  <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">{t.status}</span>
                 </td>
               </tr>
             ))}
@@ -415,12 +326,11 @@ function ToursList({
   );
 }
 
-
 function Row({ label, value }: { label: string; value?: string }) {
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
       <span className="text-ink-muted">{label}</span>
-      <span className="font-bold text-right">{value || "—"}</span>
+      <span className="font-bold text-right break-words max-w-[60%]">{value || "—"}</span>
     </div>
   );
 }
