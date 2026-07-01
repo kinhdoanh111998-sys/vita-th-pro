@@ -19,8 +19,6 @@ import {
   Quote,
 } from "lucide-react";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
-import { FeaturedEventCard } from "@/components/FeaturedEventCard";
-import { NewsCard } from "@/components/NewsCard";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
