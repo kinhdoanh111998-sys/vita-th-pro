@@ -211,16 +211,48 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
           </div>
         </div>
 
-        {/* Description full-width */}
-        {item.description && (
-          <div className="mt-12 bg-white rounded-2xl border border-hairline shadow-sm p-6 md:p-10">
-            <h2 className="font-heading text-2xl md:text-3xl font-black text-brand-text mb-6 pb-4 border-b border-hairline">
-              Mô tả chi tiết
-            </h2>
-            <div
-              className="prose prose-slate max-w-none prose-headings:font-heading prose-headings:font-black prose-h2:text-2xl prose-h3:text-xl prose-strong:text-brand-text prose-a:text-brand-primary prose-li:my-1"
-              dangerouslySetInnerHTML={{ __html: item.description }}
-            />
+        {/* Tabs Ô cửa sổ: Mô tả chi tiết + Đặc trưng */}
+        {(item.description || item.features) && (
+          <div className="mt-12 bg-white rounded-2xl border border-hairline shadow-sm overflow-hidden">
+            <Tabs defaultValue={item.description ? "description" : "features"}>
+              <div className="border-b border-hairline bg-brand-bg/40 px-4 md:px-6 pt-4">
+                <TabsList className="bg-transparent h-auto p-0 gap-2">
+                  {item.description && (
+                    <TabsTrigger
+                      value="description"
+                      className="rounded-t-lg rounded-b-none px-5 py-3 text-sm md:text-base font-bold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-none data-[state=active]:border data-[state=active]:border-b-white data-[state=active]:border-hairline text-brand-muted -mb-px"
+                    >
+                      Mô tả chi tiết
+                    </TabsTrigger>
+                  )}
+                  {item.features && (
+                    <TabsTrigger
+                      value="features"
+                      className="rounded-t-lg rounded-b-none px-5 py-3 text-sm md:text-base font-bold data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-none data-[state=active]:border data-[state=active]:border-b-white data-[state=active]:border-hairline text-brand-muted -mb-px"
+                    >
+                      {isService ? "Đặc trưng dịch vụ" : "Đặc trưng sản phẩm"}
+                    </TabsTrigger>
+                  )}
+                </TabsList>
+              </div>
+
+              {item.description && (
+                <TabsContent value="description" className="p-6 md:p-10 mt-0">
+                  <div
+                    className="prose prose-slate max-w-none prose-headings:font-heading prose-headings:font-black prose-h2:text-2xl prose-h3:text-xl prose-strong:text-brand-text prose-a:text-brand-primary prose-li:my-1 prose-img:rounded-xl"
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                </TabsContent>
+              )}
+              {item.features && (
+                <TabsContent value="features" className="p-6 md:p-10 mt-0">
+                  <div
+                    className="prose prose-slate max-w-none prose-headings:font-heading prose-headings:font-black prose-h2:text-2xl prose-h3:text-xl prose-strong:text-brand-text prose-a:text-brand-primary prose-li:my-1 prose-img:rounded-xl"
+                    dangerouslySetInnerHTML={{ __html: item.features }}
+                  />
+                </TabsContent>
+              )}
+            </Tabs>
           </div>
         )}
       </div>
