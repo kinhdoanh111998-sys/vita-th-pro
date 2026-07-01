@@ -62,7 +62,10 @@ function AppHome() {
       return (data ?? []) as EventRow[];
     },
   });
-  const upcomingEvents = (eventsQ.data ?? []).filter(isUpcoming).slice(0, 6);
+  const allEvents = eventsQ.data ?? [];
+  const upcomingEvents = allEvents.filter(isUpcoming);
+  const pastEvents = allEvents.filter((e) => !isUpcoming(e));
+
 
   return (
     <div>
