@@ -20,7 +20,6 @@ import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PortalTimesheetRouteImport } from './routes/portal.timesheet'
-import { Route as PortalProductsRouteImport } from './routes/portal.products'
 import { Route as PortalMyTreatmentsRouteImport } from './routes/portal.my-treatments'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
 import { Route as PortalContentRouteImport } from './routes/portal.content'
@@ -119,11 +118,6 @@ const PublicIndexRoute = PublicIndexRouteImport.update({
 const PortalTimesheetRoute = PortalTimesheetRouteImport.update({
   id: '/timesheet',
   path: '/timesheet',
-  getParentRoute: () => PortalRoute,
-} as any)
-const PortalProductsRoute = PortalProductsRouteImport.update({
-  id: '/products',
-  path: '/products',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalMyTreatmentsRoute = PortalMyTreatmentsRouteImport.update({
@@ -391,7 +385,6 @@ export interface FileRoutesByFullPath {
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
-  '/portal/products': typeof PortalProductsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/admin/': typeof AdminIndexRoute
   '/app/': typeof AppIndexRoute
@@ -443,7 +436,6 @@ export interface FileRoutesByTo {
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
-  '/portal/products': typeof PortalProductsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
@@ -503,7 +495,6 @@ export interface FileRoutesById {
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
-  '/portal/products': typeof PortalProductsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
@@ -564,7 +555,6 @@ export interface FileRouteTypes {
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
-    | '/portal/products'
     | '/portal/timesheet'
     | '/admin/'
     | '/app/'
@@ -616,7 +606,6 @@ export interface FileRouteTypes {
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
-    | '/portal/products'
     | '/portal/timesheet'
     | '/'
     | '/admin'
@@ -675,7 +664,6 @@ export interface FileRouteTypes {
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
-    | '/portal/products'
     | '/portal/timesheet'
     | '/_public/'
     | '/admin/'
@@ -786,13 +774,6 @@ declare module '@tanstack/react-router' {
       path: '/timesheet'
       fullPath: '/portal/timesheet'
       preLoaderRoute: typeof PortalTimesheetRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/products': {
-      id: '/portal/products'
-      path: '/products'
-      fullPath: '/portal/products'
-      preLoaderRoute: typeof PortalProductsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/my-treatments': {
@@ -1269,7 +1250,6 @@ interface PortalRouteChildren {
   PortalContentRoute: typeof PortalContentRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
   PortalMyTreatmentsRoute: typeof PortalMyTreatmentsRoute
-  PortalProductsRoute: typeof PortalProductsRoute
   PortalTimesheetRoute: typeof PortalTimesheetRoute
 }
 
@@ -1280,7 +1260,6 @@ const PortalRouteChildren: PortalRouteChildren = {
   PortalContentRoute: PortalContentRoute,
   PortalDashboardRoute: PortalDashboardRoute,
   PortalMyTreatmentsRoute: PortalMyTreatmentsRoute,
-  PortalProductsRoute: PortalProductsRoute,
   PortalTimesheetRoute: PortalTimesheetRoute,
 }
 
