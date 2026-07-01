@@ -16,11 +16,16 @@ export const Route = createFileRoute("/admin/commissions")({
   component: CommissionsAdmin,
 });
 
-type Commission = {
-  id: string; staff_id: string | null; commission_type: string | null;
-  amount: number | null; status: string | null; created_at: string | null;
+type Treatment = {
+  id: string;
+  technician_name: string | null;
+  commission_amount: number | null;
+  commission_status: string | null;
+  created_at: string | null;
 };
-type User = { id: string; full_name: string | null };
+
+const PENDING = "Chưa thanh toán";
+const PAID = "Đã thanh toán";
 
 const formatVND = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
@@ -33,26 +38,19 @@ function CommissionsAdmin() {
   const qc = useQueryClient();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState<string>(String(now.getMonth() + 1));
+  const [payingTech, setPayingTech] = useState<string | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["admin", "commissions"],
+    queryKey: ["admin", "commissions-treatments"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("commissions").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("treatments")
+        .select("id,technician_name,commission_amount,commission_status,created_at")
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Commission[];
+      return (data ?? []) as Treatment[];
     },
   });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ["admin", "users", "all"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("id,full_name");
-      if (error) throw error;
-      return (data ?? []) as User[];
-    },
-  });
-
-  const nameOf = (id: string | null) => users.find((u) => u.id === id)?.full_name ?? "—";
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -64,43 +62,58 @@ function CommissionsAdmin() {
     });
   }, [rows, year, month]);
 
-  const pendingByStaff = useMemo(() => {
-    const map = new Map<string, number>();
+  type Agg = { technician: string; pending: number; paid: number; count: number };
+  const grouped = useMemo<Agg[]>(() => {
+    const map = new Map<string, Agg>();
     filtered.forEach((r) => {
-      if ((r.status ?? "").toLowerCase() === "pending" && r.staff_id) {
-        map.set(r.staff_id, (map.get(r.staff_id) ?? 0) + Number(r.amount ?? 0));
-      }
+      const tech = (r.technician_name ?? "").trim();
+      if (!tech) return;
+      const amt = Number(r.commission_amount ?? 0);
+      const entry = map.get(tech) ?? { technician: tech, pending: 0, paid: 0, count: 0 };
+      if (r.commission_status === PAID) entry.paid += amt;
+      else entry.pending += amt;
+      entry.count += 1;
+      map.set(tech, entry);
     });
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    return Array.from(map.values()).sort((a, b) => b.pending - a.pending);
   }, [filtered]);
 
+  const pendingList = useMemo(() => grouped.filter((g) => g.pending > 0), [grouped]);
+
   const markPaid = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("commissions").update({ status: "paid" }).eq("id", id);
+    mutationFn: async (technician: string) => {
+      const { error } = await supabase
+        .from("treatments")
+        .update({ commission_status: PAID })
+        .eq("technician_name", technician)
+        .eq("commission_status", PENDING);
       if (error) throw error;
+      return technician;
     },
+    onMutate: (technician) => setPayingTech(technician),
     onSuccess: () => {
-      toast.success("Đã đánh dấu thanh toán");
-      qc.invalidateQueries({ queryKey: ["admin", "commissions"] });
+      toast.success("Đã thanh toán hoa hồng thành công");
+      qc.invalidateQueries({ queryKey: ["admin", "commissions-treatments"] });
     },
     onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setPayingTech(null),
   });
 
   const exportCSV = () => {
     const csv = toCSV(
-      filtered.map((r) => ({
-        nhanvien: nameOf(r.staff_id),
-        nguon: r.commission_type ?? "",
-        amount: r.amount ?? 0,
-        ngay: r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "",
-        status: r.status ?? "",
+      grouped.map((g) => ({
+        nhanvien: g.technician,
+        so_buoi: g.count,
+        chua_tt: g.pending,
+        da_tt: g.paid,
+        tong: g.pending + g.paid,
       })),
       [
         { key: "nhanvien", label: "Nhân viên" },
-        { key: "nguon", label: "Nguồn" },
-        { key: "amount", label: "Số tiền (VND)" },
-        { key: "ngay", label: "Ngày tạo" },
-        { key: "status", label: "Trạng thái" },
+        { key: "so_buoi", label: "Số buổi" },
+        { key: "chua_tt", label: "Chưa thanh toán (VND)" },
+        { key: "da_tt", label: "Đã thanh toán (VND)" },
+        { key: "tong", label: "Tổng (VND)" },
       ],
     );
     downloadCSV(`hoa-hong-${year}-${month}.csv`, csv);
@@ -111,7 +124,7 @@ function CommissionsAdmin() {
     <>
       <AdminTopbar
         title="Hoa hồng / Trả thưởng"
-        subtitle={isLoading ? "Đang tải..." : `${filtered.length} bản ghi · ${year}/${month === "all" ? "Cả năm" : month}`}
+        subtitle={isLoading ? "Đang tải..." : `${grouped.length} nhân viên · ${filtered.length} buổi · ${year}/${month === "all" ? "Cả năm" : month}`}
         right={<Button onClick={exportCSV}><Download size={16} /> Xuất Excel/CSV</Button>}
       />
 
@@ -134,14 +147,14 @@ function CommissionsAdmin() {
 
       <div className="mb-5">
         <div className="text-xs font-bold uppercase tracking-wider text-ink-muted mb-2">Tổng chưa thanh toán theo nhân viên</div>
-        {pendingByStaff.length === 0 ? (
+        {pendingList.length === 0 ? (
           <div className="text-sm text-ink-muted bg-white border border-hairline rounded-xl p-4 font-semibold">Không có khoản hoa hồng nào đang chờ.</div>
         ) : (
           <div className="flex flex-wrap gap-2.5">
-            {pendingByStaff.map(([id, total]) => (
-              <div key={id} className="bg-brand-lime border border-[#d6e5c9] rounded-2xl px-4 py-2.5 shadow-sm">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-[#34483a]">{nameOf(id)}</div>
-                <div className="text-base font-black text-brand-dark">{formatVND(total)}</div>
+            {pendingList.map((g) => (
+              <div key={g.technician} className="bg-brand-lime border border-[#d6e5c9] rounded-2xl px-4 py-2.5 shadow-sm">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#34483a]">{g.technician}</div>
+                <div className="text-base font-black text-brand-dark">{formatVND(g.pending)}</div>
               </div>
             ))}
           </div>
@@ -152,28 +165,34 @@ function CommissionsAdmin() {
         <table className="w-full min-w-[820px] border-collapse">
           <thead>
             <tr>
-              {["Nhân viên", "Nguồn", "Số tiền", "Ngày tạo", "Trạng thái", "Thao tác"].map((h) => (
+              {["Nhân viên", "Số buổi", "Chưa thanh toán", "Đã thanh toán", "Tổng", "Thao tác"].map((h) => (
                 <th key={h} className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {grouped.length === 0 ? (
               <tr><td colSpan={6} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có dữ liệu trong kỳ này.</td></tr>
-            ) : filtered.map((r) => {
-              const isPending = (r.status ?? "").toLowerCase() === "pending";
+            ) : grouped.map((g) => {
+              const isPaying = payingTech === g.technician && markPaid.isPending;
               return (
-                <tr key={r.id}>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{nameOf(r.staff_id)}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.commission_type ?? "—"}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-brand-dark">{formatVND(Number(r.amount ?? 0))}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "—"}</td>
+                <tr key={g.technician}>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{g.technician}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{g.count}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-amber-700">{formatVND(g.pending)}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-emerald-700">{formatVND(g.paid)}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-brand-dark">{formatVND(g.pending + g.paid)}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${isPending ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{r.status ?? "—"}</span>
-                  </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
-                    {isPending && (
-                      <Button size="sm" onClick={() => markPaid.mutate(r.id)} disabled={markPaid.isPending}>Đã thanh toán</Button>
+                    {g.pending > 0 ? (
+                      <Button
+                        size="sm"
+                        onClick={() => markPaid.mutate(g.technician)}
+                        disabled={isPaying || markPaid.isPending}
+                      >
+                        {isPaying ? "Đang xử lý..." : "Thanh toán"}
+                      </Button>
+                    ) : (
+                      <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">Đã trả đủ</span>
                     )}
                   </td>
                 </tr>
