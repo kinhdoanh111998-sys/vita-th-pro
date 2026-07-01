@@ -106,50 +106,62 @@ const MOCK_POSTS = [
 
 function CommunityHome() {
   return (
-    <div className="mx-auto w-full max-w-[480px] min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24">
+    <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24 md:pb-12">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3">
           <div className="flex items-center gap-1 shrink-0">
             <span className="text-lg font-heading font-bold text-emerald-600">VITA</span>
             <span className="text-xs font-semibold text-emerald-500">TH®Pro</span>
           </div>
-          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2">
+
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-6 ml-6 text-sm font-medium text-gray-700">
+            <Link to="/" className="text-emerald-600">Trang chủ</Link>
+            <Link to="/products" className="hover:text-emerald-600">Cửa hàng</Link>
+            <a href="#events" className="hover:text-emerald-600">Sự kiện</a>
+            <a href="#stores" className="hover:text-emerald-600">Cửa hàng liên kết</a>
+            <a href="#feed" className="hover:text-emerald-600">Cộng đồng</a>
+          </nav>
+
+          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 md:max-w-xs md:ml-auto">
             <Search className="w-4 h-4 text-gray-500" />
             <input
               type="text"
-              placeholder="Tìm kiếm sản phẩm, dịch vụ..."
+              placeholder="Tìm kiếm..."
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
             />
           </div>
           <Link
             to="/login"
-            className="shrink-0 w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center"
+            className="shrink-0 h-9 md:px-4 w-9 md:w-auto rounded-full bg-emerald-600 text-white flex items-center justify-center gap-2 text-sm font-medium"
             aria-label="Đăng nhập"
           >
             <LogIn className="w-4 h-4" />
+            <span className="hidden md:inline">Đăng nhập</span>
           </Link>
         </div>
       </header>
+
 
       {/* Hero Banner Carousel */}
       <HeroCarousel />
 
 
       {/* Shortcuts */}
-      <section className="px-4 pt-5">
-        <div className="grid grid-cols-4 gap-3">
+      <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
+        <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
           {SHORTCUTS.map((s) => (
             <button
               key={s.label}
-              className="flex flex-col items-center gap-1.5 group"
+              className="flex flex-col items-center gap-1.5 md:gap-2 group"
             >
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+                className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
               >
-                <s.icon className="w-6 h-6" />
+                <s.icon className="w-6 h-6 md:w-7 md:h-7" />
               </div>
-              <span className="text-[11px] text-gray-700 text-center leading-tight">
+              <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
                 {s.label}
               </span>
             </button>
@@ -157,17 +169,18 @@ function CommunityHome() {
         </div>
       </section>
 
+
       {/* Affiliate Stores */}
-      <section className="pt-6">
-        <div className="flex items-center justify-between mb-3 px-4">
-          <h2 className="text-base font-heading font-bold text-gray-900">
+      <section id="stores" className="pt-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Cửa hàng liên kết
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 pb-2">
+        <div className="flex md:grid md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
           {MOCK_STORES.map((s) => (
             <AffiliateStoreCard key={s.id} store={s} />
           ))}
@@ -175,17 +188,16 @@ function CommunityHome() {
       </section>
 
       {/* Featured Events */}
-      <section className="px-4 pt-6">
-        <div className="flex items-center justify-between mb-3">
-
-          <h2 className="text-base font-heading font-bold text-gray-900">
+      <section id="events" className="pt-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Sự kiện nổi bật
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
+        <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
           {MOCK_EVENTS.map((e) => (
             <EventCard
               key={e.id}
@@ -199,26 +211,62 @@ function CommunityHome() {
         </div>
       </section>
 
-      {/* Community Feed */}
-      <section className="px-4 pt-6">
+      {/* Community Feed + Sidebar */}
+      <section id="feed" className="pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-heading font-bold text-gray-900">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Hoạt động cộng đồng
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="space-y-4">
-          {MOCK_POSTS.map((post) => (
-            <CommunityPost key={post.id} {...post} />
-          ))}
+        <div className="md:grid md:grid-cols-12 md:gap-6">
+          <div className="md:col-span-8 space-y-4">
+            {MOCK_POSTS.map((post) => (
+              <CommunityPost key={post.id} {...post} />
+            ))}
+          </div>
+          <aside className="hidden md:block md:col-span-4 space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-sm font-heading font-bold text-gray-900 mb-2">
+                Về VITA THPro
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Cộng đồng sống khỏe, gắn kết và phát triển bền vững. Hơn 48.500 thành viên tích cực trên cả nước.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-sm font-heading font-bold text-gray-900 mb-3">
+                Con số nổi bật
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-lg font-bold text-emerald-600">48.5K+</p>
+                  <p className="text-[11px] text-gray-500">Thành viên</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-500">1.200+</p>
+                  <p className="text-[11px] text-gray-500">Cửa hàng</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-sky-500">380+</p>
+                  <p className="text-[11px] text-gray-500">Sự kiện</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-rose-500">95%</p>
+                  <p className="text-[11px] text-gray-500">Hài lòng</p>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
 
+
       {/* Public Bottom Navigation */}
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
+      <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
         <div className="grid grid-cols-3 h-16">
           <Link
             to="/"
@@ -280,7 +328,7 @@ function HeroCarousel() {
   };
 
   return (
-    <section className="pt-4">
+    <section className="pt-4 max-w-7xl mx-auto w-full">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}

@@ -11,7 +11,7 @@ export type AffiliateStore = {
 
 export function AffiliateStoreCard({ store }: { store: AffiliateStore }) {
   return (
-    <article className="shrink-0 w-64 snap-start bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <article className="shrink-0 md:shrink w-64 md:w-auto snap-start bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       {/* Cover */}
       <div className="relative aspect-[16/10] bg-gray-100">
         <img
