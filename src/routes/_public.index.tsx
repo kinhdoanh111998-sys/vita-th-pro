@@ -395,7 +395,7 @@ function UnifiedHeader() {
       : "/";
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0b1f14] md:bg-[#0b1f14] bg-white/95 backdrop-blur border-b border-gray-100 md:border-white/5 text-gray-800 md:text-white/90">
+    <header className="sticky top-0 z-40 bg-white/95 md:bg-[#0b1f14] backdrop-blur border-b border-gray-100 md:border-white/5 text-gray-800 md:text-white/90">
       <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3 md:py-4">
         {/* Logo VITA gold */}
         <Link to="/" className="flex items-center gap-1.5 shrink-0 group">
