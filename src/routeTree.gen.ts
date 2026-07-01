@@ -22,6 +22,7 @@ import { Route as PortalProductsRouteImport } from './routes/portal.products'
 import { Route as PortalMyTreatmentsRouteImport } from './routes/portal.my-treatments'
 import { Route as PortalDashboardRouteImport } from './routes/portal.dashboard'
 import { Route as PortalContentRouteImport } from './routes/portal.content'
+import { Route as PortalContactsRouteImport } from './routes/portal.contacts'
 import { Route as PortalBookingsRouteImport } from './routes/portal.bookings'
 import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
@@ -120,6 +121,11 @@ const PortalDashboardRoute = PortalDashboardRouteImport.update({
 const PortalContentRoute = PortalContentRouteImport.update({
   id: '/content',
   path: '/content',
+  getParentRoute: () => PortalRoute,
+} as any)
+const PortalContactsRoute = PortalContactsRouteImport.update({
+  id: '/contacts',
+  path: '/contacts',
   getParentRoute: () => PortalRoute,
 } as any)
 const PortalBookingsRoute = PortalBookingsRouteImport.update({
@@ -328,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/contacts': typeof PortalContactsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
@@ -372,6 +379,7 @@ export interface FileRoutesByTo {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/contacts': typeof PortalContactsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
+  '/portal/contacts': typeof PortalContactsRoute
   '/portal/content': typeof PortalContentRoute
   '/portal/dashboard': typeof PortalDashboardRoute
   '/portal/my-treatments': typeof PortalMyTreatmentsRoute
@@ -475,6 +484,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/portal/affiliate'
     | '/portal/bookings'
+    | '/portal/contacts'
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
@@ -519,6 +529,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/portal/affiliate'
     | '/portal/bookings'
+    | '/portal/contacts'
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/portal/affiliate'
     | '/portal/bookings'
+    | '/portal/contacts'
     | '/portal/content'
     | '/portal/dashboard'
     | '/portal/my-treatments'
@@ -693,6 +705,13 @@ declare module '@tanstack/react-router' {
       path: '/content'
       fullPath: '/portal/content'
       preLoaderRoute: typeof PortalContentRouteImport
+      parentRoute: typeof PortalRoute
+    }
+    '/portal/contacts': {
+      id: '/portal/contacts'
+      path: '/contacts'
+      fullPath: '/portal/contacts'
+      preLoaderRoute: typeof PortalContactsRouteImport
       parentRoute: typeof PortalRoute
     }
     '/portal/bookings': {
@@ -1063,6 +1082,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface PortalRouteChildren {
   PortalAffiliateRoute: typeof PortalAffiliateRoute
   PortalBookingsRoute: typeof PortalBookingsRoute
+  PortalContactsRoute: typeof PortalContactsRoute
   PortalContentRoute: typeof PortalContentRoute
   PortalDashboardRoute: typeof PortalDashboardRoute
   PortalMyTreatmentsRoute: typeof PortalMyTreatmentsRoute
@@ -1073,6 +1093,7 @@ interface PortalRouteChildren {
 const PortalRouteChildren: PortalRouteChildren = {
   PortalAffiliateRoute: PortalAffiliateRoute,
   PortalBookingsRoute: PortalBookingsRoute,
+  PortalContactsRoute: PortalContactsRoute,
   PortalContentRoute: PortalContentRoute,
   PortalDashboardRoute: PortalDashboardRoute,
   PortalMyTreatmentsRoute: PortalMyTreatmentsRoute,
