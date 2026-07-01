@@ -222,6 +222,83 @@ export type Database = {
         }
         Relationships: []
       }
+      news: {
+        Row: {
+          category: string
+          content_rich: string | null
+          cover_url: string | null
+          created_at: string
+          id: string
+          is_featured: boolean
+          published_at: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content_rich?: string | null
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          published_at?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content_rich?: string | null
+          cover_url?: string | null
+          created_at?: string
+          id?: string
+          is_featured?: boolean
+          published_at?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      news_comments: {
+        Row: {
+          contact_info: string | null
+          content: string
+          created_at: string
+          full_name: string
+          id: string
+          news_id: string
+          status: string
+        }
+        Insert: {
+          contact_info?: string | null
+          content: string
+          created_at?: string
+          full_name: string
+          id?: string
+          news_id: string
+          status?: string
+        }
+        Update: {
+          contact_info?: string | null
+          content?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          news_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_comments_news_id_fkey"
+            columns: ["news_id"]
+            isOneToOne: false
+            referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string
