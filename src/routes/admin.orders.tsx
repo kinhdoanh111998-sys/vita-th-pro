@@ -378,7 +378,7 @@ function OrdersPage() {
                 <th className="px-4 py-3 font-bold">Ngày tạo</th>
                 <th className="px-4 py-3 font-bold">Khách hàng</th>
                 <th className="px-4 py-3 font-bold">Dịch vụ</th>
-                <th className="px-4 py-3 font-bold">Số buổi</th>
+                <th className="px-4 py-3 font-bold">Số lượng</th>
                 <th className="px-4 py-3 font-bold">Tổng tiền</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
               </tr>
