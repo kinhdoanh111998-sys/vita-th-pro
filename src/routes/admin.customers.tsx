@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon } from "lucide-react";
+import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon, Pencil } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
@@ -22,12 +22,22 @@ export const Route = createFileRoute("/admin/customers")({
 });
 
 type Customer = {
-  id: string; name: string | null; phone: string | null;
+  id: string; name: string | null; full_name?: string | null; phone: string | null;
+  email?: string | null; dob?: string | null; gender?: string | null; notes?: string | null;
   source: string | null; note: string | null; status: string | null;
-  email?: string | null; address?: string | null;
+  address?: string | null;
 };
 
-const EMPTY = { name: "", phone: "", source: "", note: "", status: "Đang chăm sóc" };
+const EMPTY = {
+  full_name: "",
+  phone: "",
+  email: "",
+  dob: "",
+  gender: "",
+  source: "",
+  status: "Đang chăm sóc",
+  notes: "",
+};
 
 const money = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
@@ -37,6 +47,7 @@ function CustomersAdmin() {
   const [search, setSearch] = useState("");
   const [openAdd, setOpenAdd] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
@@ -51,21 +62,69 @@ function CustomersAdmin() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) => (r.name ?? "").toLowerCase().includes(q) || (r.phone ?? "").includes(q));
+    return rows.filter((r) => (r.full_name ?? r.name ?? "").toLowerCase().includes(q) || (r.phone ?? "").includes(q));
   }, [rows, search]);
+
+  const openCreateForm = () => {
+    setEditingCustomer(null);
+    setForm(EMPTY);
+    setOpenAdd(true);
+  };
+
+  const openEditForm = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setForm({
+      full_name: customer.full_name ?? customer.name ?? "",
+      phone: customer.phone ?? "",
+      email: customer.email ?? "",
+      dob: customer.dob ?? "",
+      gender: customer.gender ?? "",
+      source: customer.source ?? "",
+      status: customer.status ?? "Đang chăm sóc",
+      notes: customer.notes ?? customer.note ?? "",
+    });
+    setOpenAdd(true);
+  };
+
+  const closeForm = () => {
+    setOpenAdd(false);
+    setEditingCustomer(null);
+    setForm(EMPTY);
+  };
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!form.name.trim() || !form.phone.trim()) throw new Error("Vui lòng nhập tên và SĐT");
-      const { error } = await supabase.from("customers").insert(form);
-      if (error) throw error;
+      const fullName = form.full_name.trim();
+      const phone = form.phone.trim();
+      if (!fullName || !phone) throw new Error("Vui lòng nhập họ tên và SĐT");
+
+      const payload = {
+        full_name: fullName,
+        name: fullName,
+        phone,
+        email: form.email.trim() || null,
+        dob: form.dob || null,
+        gender: form.gender || null,
+        source: form.source.trim() || null,
+        status: form.status.trim() || "Đang chăm sóc",
+        notes: form.notes.trim() || null,
+        note: form.notes.trim() || null,
+      };
+
+      const result = editingCustomer
+        ? await supabase.from("customers").update(payload).eq("id", editingCustomer.id)
+        : await supabase.from("customers").insert(payload);
+
+      if (result.error) {
+        throw new Error(result.error.message || "Không thể lưu khách hàng");
+      }
     },
     onSuccess: () => {
-      toast.success("Đã thêm khách hàng");
+      toast.success(editingCustomer ? "Đã cập nhật khách hàng" : "Đã thêm khách hàng");
       qc.invalidateQueries({ queryKey: ["admin", "customers"] });
-      setOpenAdd(false); setForm(EMPTY);
+      closeForm();
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(`Không thể lưu khách hàng: ${e.message}`),
   });
 
   const selected = rows.find((r) => r.id === selectedId) ?? null;
@@ -75,7 +134,7 @@ function CustomersAdmin() {
       <AdminTopbar
         title="Khách hàng"
         subtitle={isLoading ? "Đang tải..." : `${filtered.length}/${rows.length} khách`}
-        right={<Button onClick={() => setOpenAdd(true)}><Plus size={16} /> Thêm khách</Button>}
+        right={<Button onClick={openCreateForm}><Plus size={16} /> Thêm khách</Button>}
       />
 
       <div className="mb-4 bg-white border border-hairline rounded-2xl p-3">
@@ -104,14 +163,19 @@ function CustomersAdmin() {
               <tr><td colSpan={5} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có khách hàng phù hợp.</td></tr>
             ) : filtered.map((r) => (
               <tr key={r.id}>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{r.name}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{r.full_name ?? r.name}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.phone}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.source ?? "—"}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.status ?? "—"}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedId(r.id)}>
-                    <Eye size={14} /> Xem chi tiết
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedId(r.id)}>
+                      <Eye size={14} /> Xem chi tiết
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEditForm(r)}>
+                      <Pencil size={14} /> Sửa
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -120,22 +184,39 @@ function CustomersAdmin() {
       </div>
 
       {/* Add customer */}
-      <Dialog open={openAdd} onOpenChange={setOpenAdd}>
+      <Dialog open={openAdd} onOpenChange={(v) => (v ? setOpenAdd(true) : closeForm())}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Thêm khách hàng</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingCustomer ? "Chỉnh sửa khách hàng" : "Thêm khách hàng"}</DialogTitle></DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
             <div className="space-y-1.5"><Label>Họ tên *</Label>
-              <Input required value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} /></div>
+              <Input required value={form.full_name} onChange={(e) => setForm((p) => ({ ...p, full_name: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>Số điện thoại *</Label>
               <Input required value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} /></div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5"><Label>Ngày sinh</Label>
+                <Input type="date" value={form.dob} onChange={(e) => setForm((p) => ({ ...p, dob: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Giới tính</Label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm((p) => ({ ...p, gender: e.target.value }))}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">Chọn giới tính</option>
+                  <option value="Nữ">Nữ</option>
+                  <option value="Nam">Nam</option>
+                  <option value="Khác">Khác</option>
+                </select></div>
+            </div>
             <div className="space-y-1.5"><Label>Nguồn</Label>
               <Input value={form.source} onChange={(e) => setForm((p) => ({ ...p, source: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>Trạng thái</Label>
               <Input value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))} /></div>
-            <div className="space-y-1.5"><Label>Ghi chú</Label>
-              <Textarea value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Ghi chú y tế</Label>
+              <Textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} /></div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setOpenAdd(false)}>Huỷ</Button>
+              <Button type="button" variant="ghost" onClick={closeForm}>Huỷ</Button>
               <Button type="submit" disabled={save.isPending}>{save.isPending ? "Đang lưu..." : "Lưu"}</Button>
             </DialogFooter>
           </form>
@@ -188,20 +269,22 @@ function Customer360({ customer }: { customer: Customer }) {
       <section className="rounded-2xl border border-hairline bg-gradient-to-br from-brand-soft to-white p-4">
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-brand text-white grid place-items-center font-black text-lg">
-            {(customer.name ?? "?").charAt(0).toUpperCase()}
+            {(customer.full_name ?? customer.name ?? "?").charAt(0).toUpperCase()}
           </div>
           <div>
-            <div className="font-black text-lg">{customer.name}</div>
+            <div className="font-black text-lg">{customer.full_name ?? customer.name}</div>
             <div className="text-xs text-ink-muted">{customer.status ?? "—"}</div>
           </div>
         </div>
         <div className="mt-3 grid gap-2 text-sm">
           <div className="flex items-center gap-2"><Phone size={14} className="text-brand-dark" /> {customer.phone ?? "—"}</div>
           {customer.email && <div className="flex items-center gap-2"><Mail size={14} className="text-brand-dark" /> {customer.email}</div>}
+          {customer.dob && <div className="flex items-center gap-2"><UserIcon size={14} className="text-brand-dark" /> Ngày sinh: {customer.dob}</div>}
+          {customer.gender && <div className="flex items-center gap-2"><UserIcon size={14} className="text-brand-dark" /> Giới tính: {customer.gender}</div>}
           {customer.address && <div className="flex items-center gap-2"><MapPin size={14} className="text-brand-dark" /> {customer.address}</div>}
           <div className="flex items-center gap-2"><UserIcon size={14} className="text-brand-dark" /> Nguồn: {customer.source ?? "—"}</div>
         </div>
-        {customer.note && <div className="mt-3 text-sm bg-white/60 rounded-xl p-2.5">Ghi chú: {customer.note}</div>}
+        {(customer.notes || customer.note) && <div className="mt-3 text-sm bg-white/60 rounded-xl p-2.5">Ghi chú y tế: {customer.notes ?? customer.note}</div>}
       </section>
 
       <section>
