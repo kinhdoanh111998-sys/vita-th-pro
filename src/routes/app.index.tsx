@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, CalendarDays, MapPin } from "lucide-react";
 import {
   SearchBar,
   FilterTabs,
@@ -10,6 +10,7 @@ import {
   HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
+import { mockEvents, mockNews } from "@/lib/mockPosts";
 
 export const Route = createFileRoute("/app/")({
   component: AppHome,
