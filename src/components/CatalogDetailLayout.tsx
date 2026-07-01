@@ -9,6 +9,8 @@ import {
   CalendarCheck,
   Package,
   Sparkles,
+  Minus,
+  Plus,
 } from "lucide-react";
 import type { CatalogItem } from "@/lib/useServiceCatalog";
 import { productCategoryLabel } from "@/lib/catalogCategories";
@@ -30,6 +32,7 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
   }, [item]);
 
   const [active, setActive] = useState(0);
+  const [qty, setQty] = useState(1);
 
   const isService = item.type === "service";
   const hasSale =
