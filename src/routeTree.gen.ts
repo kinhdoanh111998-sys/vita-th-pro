@@ -29,6 +29,7 @@ import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
 import { Route as AppStoreRouteImport } from './routes/app.store'
 import { Route as AppScanRouteImport } from './routes/app.scan'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppNewsRouteImport } from './routes/app.news'
 import { Route as AppEventsRouteImport } from './routes/app.events'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
@@ -38,6 +39,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
@@ -62,6 +64,7 @@ import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
 import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
+import { Route as AppNewsIdRouteImport } from './routes/app.news.$id'
 import { Route as AppEventsIdRouteImport } from './routes/app.events.$id'
 import { Route as PublicServicesIdRouteImport } from './routes/_public.services.$id'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
@@ -72,6 +75,7 @@ import { Route as PublicProductsIdRouteImport } from './routes/_public.products.
 import { Route as PublicNewsTrainingRouteImport } from './routes/_public.news.training'
 import { Route as PublicNewsEventsRouteImport } from './routes/_public.news.events'
 import { Route as PublicNewsActivitiesRouteImport } from './routes/_public.news.activities'
+import { Route as PublicNewsIdRouteImport } from './routes/_public.news.$id'
 import { Route as PublicEventsIdRouteImport } from './routes/_public.events.$id'
 import { Route as PublicAboutTestimonialsRouteImport } from './routes/_public.about.testimonials'
 import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team'
@@ -177,6 +181,11 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNewsRoute = AppNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppEventsRoute = AppEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -220,6 +229,11 @@ const AdminPostsRoute = AdminPostsRouteImport.update({
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNewsRoute = AdminNewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
@@ -342,6 +356,11 @@ const AppStoreProductIdRoute = AppStoreProductIdRouteImport.update({
   path: '/$productId',
   getParentRoute: () => AppStoreRoute,
 } as any)
+const AppNewsIdRoute = AppNewsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppNewsRoute,
+} as any)
 const AppEventsIdRoute = AppEventsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -392,6 +411,11 @@ const PublicNewsEventsRoute = PublicNewsEventsRouteImport.update({
 const PublicNewsActivitiesRoute = PublicNewsActivitiesRouteImport.update({
   id: '/activities',
   path: '/activities',
+  getParentRoute: () => PublicNewsRoute,
+} as any)
+const PublicNewsIdRoute = PublicNewsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => PublicNewsRoute,
 } as any)
 const PublicEventsIdRoute = PublicEventsIdRouteImport.update({
@@ -447,6 +471,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -456,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
+  '/app/news': typeof AppNewsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -473,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/about/team': typeof PublicAboutTeamRoute
   '/about/testimonials': typeof PublicAboutTestimonialsRoute
   '/events/$id': typeof PublicEventsIdRoute
+  '/news/$id': typeof PublicNewsIdRoute
   '/news/activities': typeof PublicNewsActivitiesRoute
   '/news/events': typeof PublicNewsEventsRoute
   '/news/training': typeof PublicNewsTrainingRoute
@@ -483,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
   '/app/events/$id': typeof AppEventsIdRoute
+  '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about/': typeof PublicAboutIndexRoute
@@ -509,6 +537,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -518,6 +547,7 @@ export interface FileRoutesByTo {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
+  '/app/news': typeof AppNewsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -536,6 +566,7 @@ export interface FileRoutesByTo {
   '/about/team': typeof PublicAboutTeamRoute
   '/about/testimonials': typeof PublicAboutTestimonialsRoute
   '/events/$id': typeof PublicEventsIdRoute
+  '/news/$id': typeof PublicNewsIdRoute
   '/news/activities': typeof PublicNewsActivitiesRoute
   '/news/events': typeof PublicNewsEventsRoute
   '/news/training': typeof PublicNewsTrainingRoute
@@ -546,6 +577,7 @@ export interface FileRoutesByTo {
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
   '/app/events/$id': typeof AppEventsIdRoute
+  '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about': typeof PublicAboutIndexRoute
@@ -580,6 +612,7 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -589,6 +622,7 @@ export interface FileRoutesById {
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
+  '/app/news': typeof AppNewsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -607,6 +641,7 @@ export interface FileRoutesById {
   '/_public/about/team': typeof PublicAboutTeamRoute
   '/_public/about/testimonials': typeof PublicAboutTestimonialsRoute
   '/_public/events/$id': typeof PublicEventsIdRoute
+  '/_public/news/$id': typeof PublicNewsIdRoute
   '/_public/news/activities': typeof PublicNewsActivitiesRoute
   '/_public/news/events': typeof PublicNewsEventsRoute
   '/_public/news/training': typeof PublicNewsTrainingRoute
@@ -617,6 +652,7 @@ export interface FileRoutesById {
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/_public/services/$id': typeof PublicServicesIdRoute
   '/app/events/$id': typeof AppEventsIdRoute
+  '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/_public/about/': typeof PublicAboutIndexRoute
@@ -652,6 +688,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/news'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -661,6 +698,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/app/account'
     | '/app/events'
+    | '/app/news'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -678,6 +716,7 @@ export interface FileRouteTypes {
     | '/about/team'
     | '/about/testimonials'
     | '/events/$id'
+    | '/news/$id'
     | '/news/activities'
     | '/news/events'
     | '/news/training'
@@ -688,6 +727,7 @@ export interface FileRouteTypes {
     | '/products/technology-transfer'
     | '/services/$id'
     | '/app/events/$id'
+    | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about/'
@@ -714,6 +754,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/news'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -723,6 +764,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/app/account'
     | '/app/events'
+    | '/app/news'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -741,6 +783,7 @@ export interface FileRouteTypes {
     | '/about/team'
     | '/about/testimonials'
     | '/events/$id'
+    | '/news/$id'
     | '/news/activities'
     | '/news/events'
     | '/news/training'
@@ -751,6 +794,7 @@ export interface FileRouteTypes {
     | '/products/technology-transfer'
     | '/services/$id'
     | '/app/events/$id'
+    | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about'
@@ -784,6 +828,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/news'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -793,6 +838,7 @@ export interface FileRouteTypes {
     | '/admin/treatments'
     | '/app/account'
     | '/app/events'
+    | '/app/news'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -811,6 +857,7 @@ export interface FileRouteTypes {
     | '/_public/about/team'
     | '/_public/about/testimonials'
     | '/_public/events/$id'
+    | '/_public/news/$id'
     | '/_public/news/activities'
     | '/_public/news/events'
     | '/_public/news/training'
@@ -821,6 +868,7 @@ export interface FileRouteTypes {
     | '/_public/products/technology-transfer'
     | '/_public/services/$id'
     | '/app/events/$id'
+    | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/_public/about/'
@@ -981,6 +1029,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/news': {
+      id: '/app/news'
+      path: '/news'
+      fullPath: '/app/news'
+      preLoaderRoute: typeof AppNewsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/events': {
       id: '/app/events'
       path: '/events'
@@ -1042,6 +1097,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/news': {
+      id: '/admin/news'
+      path: '/news'
+      fullPath: '/admin/news'
+      preLoaderRoute: typeof AdminNewsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events': {
@@ -1212,6 +1274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStoreProductIdRouteImport
       parentRoute: typeof AppStoreRoute
     }
+    '/app/news/$id': {
+      id: '/app/news/$id'
+      path: '/$id'
+      fullPath: '/app/news/$id'
+      preLoaderRoute: typeof AppNewsIdRouteImport
+      parentRoute: typeof AppNewsRoute
+    }
     '/app/events/$id': {
       id: '/app/events/$id'
       path: '/$id'
@@ -1280,6 +1349,13 @@ declare module '@tanstack/react-router' {
       path: '/activities'
       fullPath: '/news/activities'
       preLoaderRoute: typeof PublicNewsActivitiesRouteImport
+      parentRoute: typeof PublicNewsRoute
+    }
+    '/_public/news/$id': {
+      id: '/_public/news/$id'
+      path: '/$id'
+      fullPath: '/news/$id'
+      preLoaderRoute: typeof PublicNewsIdRouteImport
       parentRoute: typeof PublicNewsRoute
     }
     '/_public/events/$id': {
@@ -1353,6 +1429,7 @@ const PublicEventsRouteWithChildren = PublicEventsRoute._addFileChildren(
 )
 
 interface PublicNewsRouteChildren {
+  PublicNewsIdRoute: typeof PublicNewsIdRoute
   PublicNewsActivitiesRoute: typeof PublicNewsActivitiesRoute
   PublicNewsEventsRoute: typeof PublicNewsEventsRoute
   PublicNewsTrainingRoute: typeof PublicNewsTrainingRoute
@@ -1360,6 +1437,7 @@ interface PublicNewsRouteChildren {
 }
 
 const PublicNewsRouteChildren: PublicNewsRouteChildren = {
+  PublicNewsIdRoute: PublicNewsIdRoute,
   PublicNewsActivitiesRoute: PublicNewsActivitiesRoute,
   PublicNewsEventsRoute: PublicNewsEventsRoute,
   PublicNewsTrainingRoute: PublicNewsTrainingRoute,
@@ -1446,6 +1524,7 @@ interface AdminRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminNewsRoute: typeof AdminNewsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPostsRoute: typeof AdminPostsRoute
   AdminProductsRoute: typeof AdminProductsRoute
@@ -1465,6 +1544,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminNewsRoute: AdminNewsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPostsRoute: AdminPostsRoute,
   AdminProductsRoute: AdminProductsRoute,
@@ -1489,6 +1569,17 @@ const AppEventsRouteWithChildren = AppEventsRoute._addFileChildren(
   AppEventsRouteChildren,
 )
 
+interface AppNewsRouteChildren {
+  AppNewsIdRoute: typeof AppNewsIdRoute
+}
+
+const AppNewsRouteChildren: AppNewsRouteChildren = {
+  AppNewsIdRoute: AppNewsIdRoute,
+}
+
+const AppNewsRouteWithChildren =
+  AppNewsRoute._addFileChildren(AppNewsRouteChildren)
+
 interface AppStoreRouteChildren {
   AppStoreProductIdRoute: typeof AppStoreProductIdRoute
   AppStoreCheckoutRoute: typeof AppStoreCheckoutRoute
@@ -1506,6 +1597,7 @@ const AppStoreRouteWithChildren = AppStoreRoute._addFileChildren(
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppEventsRoute: typeof AppEventsRouteWithChildren
+  AppNewsRoute: typeof AppNewsRouteWithChildren
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppScanRoute: typeof AppScanRoute
   AppStoreRoute: typeof AppStoreRouteWithChildren
@@ -1515,6 +1607,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppEventsRoute: AppEventsRouteWithChildren,
+  AppNewsRoute: AppNewsRouteWithChildren,
   AppNotificationsRoute: AppNotificationsRoute,
   AppScanRoute: AppScanRoute,
   AppStoreRoute: AppStoreRouteWithChildren,
