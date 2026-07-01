@@ -291,6 +291,15 @@ export function RichTextEditor({
           class: "rounded-lg my-3 max-w-full h-auto",
         },
       }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: "rte-table",
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: value || "",
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
