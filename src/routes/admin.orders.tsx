@@ -25,6 +25,7 @@ type Service = {
   name: string;
   price: number | null;
   default_sessions: number | null;
+  type: "product" | "service" | null;
 };
 type OrderRow = {
   id: string;
@@ -56,7 +57,7 @@ function OrdersPage() {
     queryFn: async (): Promise<Service[]> => {
       const { data, error } = await supabase
         .from("services")
-        .select("id,name,price,default_sessions")
+        .select("id,name,price,default_sessions,type")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Service[];
@@ -87,11 +88,14 @@ function OrdersPage() {
 
   const onSelectService = (id: string) => {
     setServiceId(id);
-    const item = servicesQ.data?.find((s) => s.id === id);
-    if (item?.default_sessions && !quantity) {
-      setQuantity(String(item.default_sessions));
-    }
+    if (!quantity) setQuantity("1");
   };
+
+  const totalSessions = useMemo(() => {
+    if (!selectedService || selectedService.type === "product") return 0;
+    const q = Number(quantity) || 0;
+    return q * Math.max(selectedService.default_sessions ?? 1, 1);
+  }, [selectedService, quantity]);
 
   const totalAmount = useMemo(() => {
     const q = Number(quantity) || 0;
@@ -129,9 +133,10 @@ function OrdersPage() {
       return data;
     },
     onSuccess: () => {
-      toast.success("Tạo đơn hàng thành công!", {
-        description: `Đã tự động sinh ${quantity} buổi liệu trình kèm mã QR.`,
-      });
+      const desc = selectedService?.type === "product"
+        ? `Đã ghi nhận đơn sản phẩm (không sinh liệu trình).`
+        : `Đã tự động sinh ${totalSessions} buổi liệu trình kèm mã QR.`;
+      toast.success("Tạo đơn hàng thành công!", { description: desc });
       resetForm();
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["treatments"] });
@@ -223,29 +228,35 @@ function OrdersPage() {
 
             <div className="space-y-1.5 sm:col-span-2">
               <Label>
-                Dịch vụ / Gói *
+                Sản phẩm / Dịch vụ *
                 {selectedService?.price != null && (
                   <span className="ml-2 text-xs font-bold text-brand-dark">
                     · Đơn giá {Number(selectedService.price).toLocaleString("vi-VN")} ₫
                   </span>
                 )}
+                {selectedService?.type && (
+                  <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${selectedService.type === "product" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                    {selectedService.type === "product" ? "Sản phẩm" : "Dịch vụ"}
+                  </span>
+                )}
               </Label>
               <Select value={serviceId} onValueChange={onSelectService}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn dịch vụ" />
+                  <SelectValue placeholder="Chọn sản phẩm hoặc dịch vụ" />
                 </SelectTrigger>
                 <SelectContent>
                   {servicesQ.data?.length === 0 && (
                     <div className="px-3 py-2 text-sm text-ink-muted">
-                      Chưa có dịch vụ nào.
+                      Chưa có mục nào.
                     </div>
                   )}
                   {servicesQ.data?.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
-                      {o.name}
+                      [{o.type === "product" ? "SP" : "DV"}] {o.name}
                       {o.price != null
                         ? ` · ${Number(o.price).toLocaleString("vi-VN")} ₫`
                         : ""}
+                      {o.type === "service" && o.default_sessions ? ` · ${o.default_sessions} buổi/đơn vị` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -253,14 +264,19 @@ function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Số buổi (quantity) *</Label>
+              <Label>Số lượng *</Label>
               <Input
                 type="number"
                 min={1}
-                placeholder="VD: 10"
+                placeholder="VD: 1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
               />
+              {selectedService?.type === "service" && totalSessions > 0 && (
+                <p className="text-[11px] text-brand-dark font-semibold">
+                  = {totalSessions} buổi liệu trình sẽ được sinh tự động
+                </p>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -296,15 +312,18 @@ function OrdersPage() {
                 : undefined
             }
           />
-          <Row label="Số buổi" value={quantity ? `${quantity} buổi` : undefined} />
+          <Row label="Số lượng" value={quantity ? `${quantity}` : undefined} />
+          {selectedService?.type === "service" && totalSessions > 0 && (
+            <Row label="Tổng số buổi" value={`${totalSessions} buổi`} />
+          )}
           <Row
             label="Tổng tiền"
             value={totalAmount ? totalAmount.toLocaleString("vi-VN") + " ₫" : undefined}
           />
           <div className="pt-3 mt-3 border-t border-hairline text-xs text-ink-muted leading-relaxed">
-            Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>, trigger DB sẽ
-            tự động sinh <b>{quantity || "N"}</b> buổi liệu trình, mỗi buổi có{" "}
-            <b>mã QR duy nhất</b>.
+            {selectedService?.type === "product"
+              ? <>Đây là <b>Sản phẩm</b> — hệ thống sẽ ghi nhận đơn hàng, không sinh liệu trình.</>
+              : <>Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>, trigger DB sẽ tự động sinh <b>{totalSessions || "N"}</b> buổi liệu trình (Số lượng × Số buổi gốc), mỗi buổi có <b>mã QR duy nhất</b>.</>}
           </div>
         </aside>
       </div>
