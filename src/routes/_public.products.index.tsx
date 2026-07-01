@@ -131,7 +131,11 @@ function ProductsPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase.from("products").select("*").neq("is_active", false);
+      const { data, error } = await supabase
+        .from("services_public")
+        .select("*")
+        .eq("is_hidden", false)
+        .order("created_at", { ascending: false });
       if (cancelled) return;
       if (error) {
         setError(error.message);
@@ -139,25 +143,22 @@ function ProductsPage() {
         return;
       }
       const rows: Product[] = (data ?? []).map((r: Record<string, unknown>) => {
-        let gallery: string[] | null = null;
-        const g = r.gallery;
-        if (Array.isArray(g)) gallery = g.filter((x) => typeof x === "string") as string[];
-        else if (typeof g === "string" && g.trim().startsWith("[")) {
-          try {
-            const parsed = JSON.parse(g);
-            if (Array.isArray(parsed)) gallery = parsed.filter((x) => typeof x === "string");
-          } catch { /* noop */ }
-        } else if (typeof g === "string" && g) gallery = [g];
+        const arr = Array.isArray(r.image_urls)
+          ? (r.image_urls as unknown[]).filter((x) => typeof x === "string") as string[]
+          : [];
+        const single = typeof r.image_url === "string" && r.image_url ? [r.image_url as string] : [];
+        const gallery = arr.length > 0 ? arr : single.length > 0 ? single : null;
+        const type = (r.type as string) ?? "service";
         return {
           id: (r.id as string | number) ?? "",
           name: (r.name as string) ?? "Chưa đặt tên",
-          short_description: (r.short_description as string) ?? null,
-          summary: (r.summary as string) ?? null,
+          short_description: (r.description as string) ?? null,
+          summary: null,
           price: r.price != null ? Number(r.price) : null,
           sale_price: r.sale_price != null ? Number(r.sale_price) : null,
           gallery,
-          badge: (r.badge as string) ?? null,
-          cta_type: (r.cta_type as string) ?? null,
+          badge: type === "product" ? "Sản phẩm" : "Dịch vụ",
+          cta_type: type === "service" ? "contact" : "buy",
         };
       });
       setItems(rows);
