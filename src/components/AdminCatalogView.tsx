@@ -88,6 +88,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     name: "",
     sku: "",
     description: "",
+    features: "",
     category: "",
     cost_price: "",
     price: "",
