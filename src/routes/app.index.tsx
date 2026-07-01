@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Bell, CalendarDays, MapPin } from "lucide-react";
 import {
   SearchBar,
@@ -10,7 +11,9 @@ import {
   HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
-import { mockEvents, mockNews } from "@/lib/mockPosts";
+import { mockNews } from "@/lib/mockPosts";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDateTime, isUpcoming, type EventRow } from "@/lib/events";
 
 export const Route = createFileRoute("/app/")({
   component: AppHome,
