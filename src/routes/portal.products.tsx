@@ -162,7 +162,10 @@ function PortalProducts() {
           .eq("id", form.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const slug = `${slugify(form.name)}-${Date.now().toString(36)}`;
+        const { error } = await supabase
+          .from("products")
+          .insert({ ...payload, slug });
         if (error) throw error;
       }
     },
