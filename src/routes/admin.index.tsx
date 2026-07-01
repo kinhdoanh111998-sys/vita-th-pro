@@ -36,34 +36,36 @@ function Dashboard() {
         queryFn: async () => {
           const { data, error } = await supabase
             .from("orders")
-            .select("total_price")
-            .eq("status", "Đã thanh toán");
+            .select("total_amount,status")
+            .in("status", ["Thành công", "Đã thanh toán"]);
           if (error) throw error;
-          return (data ?? []).reduce((s, r: { total_price: number | null }) => s + Number(r.total_price ?? 0), 0);
+          return (data ?? []).reduce(
+            (s, r: { total_amount: number | null }) => s + Number(r.total_amount ?? 0),
+            0,
+          );
         },
       },
       {
-        queryKey: ["dash", "commission-pending"],
-        queryFn: async () => {
-          const { data, error } = await supabase
-            .from("commissions")
-            .select("amount")
-            .eq("status", "pending");
-          if (error) throw error;
-          return (data ?? []).reduce((s, r: { amount: number | null }) => s + Number(r.amount ?? 0), 0);
-        },
-      },
-      {
-        queryKey: ["dash", "bookings-today", today],
+        queryKey: ["dash", "orders-count"],
         queryFn: async () => {
           const { count, error } = await supabase
-            .from("bookings")
-            .select("*", { count: "exact", head: true })
-            .eq("booking_date", today);
+            .from("orders")
+            .select("*", { count: "exact", head: true });
           if (error) throw error;
           return count ?? 0;
         },
       },
+      {
+        queryKey: ["dash", "treatments-count"],
+        queryFn: async () => {
+          const { count, error } = await supabase
+            .from("treatments")
+            .select("*", { count: "exact", head: true });
+          if (error) throw error;
+          return count ?? 0;
+        },
+      },
+
       {
         queryKey: ["dash", "recent-bookings"],
         queryFn: async () => {
