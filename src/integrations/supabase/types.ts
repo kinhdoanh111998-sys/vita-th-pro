@@ -14,7 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      system_settings: {
+        Row: {
+          facebook_link: string | null
+          hotline: string | null
+          id: string
+          updated_at: string
+          zalo_link: string | null
+        }
+        Insert: {
+          facebook_link?: string | null
+          hotline?: string | null
+          id?: string
+          updated_at?: string
+          zalo_link?: string | null
+        }
+        Update: {
+          facebook_link?: string | null
+          hotline?: string | null
+          id?: string
+          updated_at?: string
+          zalo_link?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
