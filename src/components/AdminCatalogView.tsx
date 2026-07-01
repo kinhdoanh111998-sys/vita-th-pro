@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
@@ -37,6 +38,7 @@ type Service = {
   name: string;
   description: string | null;
   features: string | null;
+  short_description: string | null;
   price: number;
   default_sessions: number;
   sku: string | null;
@@ -56,6 +58,7 @@ type FormState = {
   sku: string;
   description: string;
   features: string;
+  short_description: string;
   category: string;
   cost_price: string;
   price: string;
@@ -89,6 +92,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     sku: "",
     description: "",
     features: "",
+    short_description: "",
     category: "",
     cost_price: "",
     price: "",
@@ -139,6 +143,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       sku: s.sku ?? "",
       description: s.description ?? "",
       features: s.features ?? "",
+      short_description: (s as unknown as { short_description?: string | null }).short_description ?? "",
       category: s.category ?? "",
       cost_price: s.cost_price != null ? String(s.cost_price) : "",
       price: s.price != null ? String(s.price) : "",
@@ -232,6 +237,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
         sku: form.sku.trim() || null,
         description: form.description.trim() || null,
         features: form.features.trim() || null,
+        short_description: form.short_description.trim() || null,
         category: form.category.trim() || null,
         cost_price: form.cost_price ? Number(form.cost_price) : 0,
         price: Number(form.price),
