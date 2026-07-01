@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, MapPin, CheckCircle2, Wallet, CreditCard, Smartphone } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ChevronLeft, MapPin, CheckCircle2, Wallet, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient";
 
 const MOCK_CART = [
   {
@@ -32,10 +34,50 @@ function formatVnd(n: number) {
 }
 
 function CheckoutPage() {
+  const navigate = useNavigate();
   const [method, setMethod] = useState("vita");
+  const [submitting, setSubmitting] = useState(false);
+  const [customerName, setCustomerName] = useState("Lê Văn A");
+  const [customerPhone, setCustomerPhone] = useState("0900000111");
+  const [shippingAddress, setShippingAddress] = useState(
+    "123 Nguyễn Văn Cừ, Phường 4, Quận 5, TP. Hồ Chí Minh",
+  );
+  const [affCode, setAffCode] = useState("AFF-VITA-21012");
 
   const subtotal = MOCK_CART.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + SHIPPING_FEE;
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+    if (!customerName.trim() || !customerPhone.trim() || !shippingAddress.trim()) {
+      toast.error("Vui lòng nhập đầy đủ thông tin nhận hàng");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const paymentLabel =
+        PAYMENT_METHODS.find((p) => p.id === method)?.label ?? method;
+      const { error } = await supabase.from("orders").insert([
+        {
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          shipping_address: shippingAddress.trim(),
+          payment_method: paymentLabel,
+          total_amount: total,
+          status: "Thành công",
+          affiliate_ref: affCode.trim() || null,
+        },
+      ]);
+      if (error) throw error;
+      toast.success("Đặt hàng và kích hoạt liệu trình thành công!");
+      navigate({ to: "/app" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Đặt hàng thất bại: ${message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
@@ -134,7 +176,8 @@ function CheckoutPage() {
           <label className="text-sm font-bold text-gray-900">Mã AFF</label>
           <input
             type="text"
-            defaultValue="AFF-VITA-21012"
+            value={affCode}
+            onChange={(e) => setAffCode(e.target.value)}
             className="mt-2 w-full px-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-green-500"
           />
         </div>
@@ -166,9 +209,17 @@ function CheckoutPage() {
             {formatVnd(total)}
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-xl text-sm">
-          <CheckCircle2 className="w-4 h-4" />
-          Xác nhận đặt hàng
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl text-sm"
+        >
+          {submitting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4" />
+          )}
+          {submitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
         </button>
       </div>
     </div>
