@@ -6,7 +6,7 @@ import {
   SearchBar,
   FilterTabs,
   StoreCard,
-  ArticleCard,
+  
   HorizontalScrollList,
   HScrollItem,
   SectionHeader,
