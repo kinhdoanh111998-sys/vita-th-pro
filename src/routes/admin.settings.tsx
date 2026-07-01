@@ -2,14 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, Save, ShieldCheck, Building2 } from "lucide-react";
+import { Download, Save, ShieldCheck, Building2, Phone, Loader2 } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabaseClient";
+import { supabase as cloudSupabase } from "@/integrations/supabase/client";
 import { useSettings, type Settings } from "@/lib/useSettings";
+import { useSystemSettings, SYSTEM_SETTINGS_KEY } from "@/lib/useSystemSettings";
 import { downloadCSV, toCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/admin/settings")({
