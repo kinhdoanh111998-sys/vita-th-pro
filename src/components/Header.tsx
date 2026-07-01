@@ -123,7 +123,7 @@ export function Header() {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
+              className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
               style={{ borderColor: "#E3E3E3", color: "#484848" }}
               aria-label="Mở menu"
             >
