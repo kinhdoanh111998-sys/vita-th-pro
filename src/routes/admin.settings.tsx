@@ -61,7 +61,9 @@ const EXPORT_TABLES: { table: string; label: string; columns: { key: string; lab
 function SettingsAdmin() {
   const qc = useQueryClient();
   const { data, isLoading, error } = useSettings();
+  const { data: sys, isLoading: sysLoading } = useSystemSettings();
   const [form, setForm] = useState<Record<string, string>>({});
+  const [sysForm, setSysForm] = useState({ hotline: "", zalo_link: "", facebook_link: "" });
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -71,6 +73,37 @@ function SettingsAdmin() {
       setForm(next);
     }
   }, [data]);
+
+  useEffect(() => {
+    if (sys) {
+      setSysForm({
+        hotline: sys.hotline ?? "",
+        zalo_link: sys.zalo_link ?? "",
+        facebook_link: sys.facebook_link ?? "",
+      });
+    }
+  }, [sys]);
+
+  const saveSystem = useMutation({
+    mutationFn: async () => {
+      if (!sys?.id) {
+        const { error } = await cloudSupabase.from("system_settings").insert(sysForm);
+        if (error) throw error;
+      } else {
+        const { error } = await cloudSupabase
+          .from("system_settings")
+          .update(sysForm)
+          .eq("id", sys.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Đã cập nhật thông tin liên hệ");
+      qc.invalidateQueries({ queryKey: SYSTEM_SETTINGS_KEY });
+    },
+    onError: (e: Error) => toast.error(e.message || "Lưu thất bại"),
+  });
+
 
   const save = useMutation({
     mutationFn: async () => {
