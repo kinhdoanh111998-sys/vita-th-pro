@@ -77,6 +77,18 @@ const ARTICLES = [
 
 function AppHome() {
   const [tab, setTab] = useState("Tất cả");
+  const eventsQ = useQuery({
+    queryKey: ["public", "events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .order("start_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as EventRow[];
+    },
+  });
+  const upcomingEvents = (eventsQ.data ?? []).filter(isUpcoming).slice(0, 6);
 
   return (
     <div>
@@ -98,19 +110,37 @@ function AppHome() {
 
       {tab === "Sự kiện" ? (
         <>
-          <SectionHeader title="Sự kiện sắp diễn ra" />
+          <SectionHeader
+            title="Sự kiện sắp diễn ra"
+            action={
+              <Link to="/app/events" className="text-xs text-brand-primary">
+                Xem tất cả
+              </Link>
+            }
+          />
           <div className="px-4 flex flex-col gap-3 pb-4">
-            {mockEvents.map((e) => (
-              <article
+            {upcomingEvents.length === 0 && (
+              <div className="rounded-2xl bg-white border border-gray-100 p-6 text-center text-gray-500 text-sm">
+                Chưa có sự kiện sắp diễn ra
+              </div>
+            )}
+            {upcomingEvents.map((e) => (
+              <Link
                 key={e.id}
+                to="/app/events/$id"
+                params={{ id: e.id }}
                 className="flex gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.99] transition-transform"
               >
-                <img
-                  src={e.image}
-                  alt={e.title}
-                  loading="lazy"
-                  className="w-28 h-28 object-cover shrink-0"
-                />
+                {e.cover_url ? (
+                  <img
+                    src={e.cover_url}
+                    alt={e.title}
+                    loading="lazy"
+                    className="w-28 h-28 object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-28 h-28 bg-gradient-to-br from-emerald-100 to-amber-50 shrink-0" />
+                )}
                 <div className="flex-1 py-2.5 pr-3 flex flex-col gap-1 min-w-0">
                   <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
                     Sắp diễn ra
@@ -120,7 +150,7 @@ function AppHome() {
                   </h3>
                   <div className="flex items-center gap-1 text-[11px] text-gray-600">
                     <CalendarDays className="w-3 h-3 text-emerald-600" />
-                    <span className="truncate">{e.eventDate}</span>
+                    <span className="truncate">{formatDateTime(e.start_at)}</span>
                   </div>
                   {e.location && (
                     <div className="flex items-center gap-1 text-[11px] text-gray-500">
@@ -128,14 +158,8 @@ function AppHome() {
                       <span className="truncate">{e.location}</span>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    className="mt-auto self-start h-8 px-3 rounded-full bg-brand-primary text-white text-[11px] font-semibold"
-                  >
-                    Đăng ký
-                  </button>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </>
