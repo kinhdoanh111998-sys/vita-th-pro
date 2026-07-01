@@ -339,3 +339,159 @@ function HeroCarousel() {
     </section>
   );
 }
+
+type NavGroup = {
+  label: string;
+  to: string;
+  children?: Array<{ label: string; to: string; search?: Record<string, string> }>;
+};
+
+const HEADER_NAV: NavGroup[] = [
+  { label: "Trang chủ", to: "/" },
+  {
+    label: "Giới thiệu",
+    to: "/about",
+    children: [
+      { label: "Về chúng tôi", to: "/about" },
+      { label: "Lịch sử phát triển", to: "/about/history" },
+      { label: "Đội ngũ", to: "/about/team" },
+      { label: "Khách hàng nói về chúng tôi", to: "/about/testimonials" },
+      { label: "Chứng nhận - chứng chỉ", to: "/about/certifications" },
+    ],
+  },
+  {
+    label: "Tin tức",
+    to: "/news",
+    children: [
+      { label: "Tất cả", to: "/news" },
+      { label: "Hoạt động", to: "/news", search: { category: "Hoạt động" } },
+      { label: "Sự kiện", to: "/news", search: { category: "Sự kiện" } },
+      { label: "Lịch đào tạo", to: "/news", search: { category: "Lịch đào tạo" } },
+    ],
+  },
+  {
+    label: "Sản phẩm",
+    to: "/products",
+    children: [
+      { label: "Tất cả", to: "/products" },
+      { label: "Máy công nghệ", to: "/products", search: { category: "Máy công nghệ" } },
+      { label: "Phụ kiện", to: "/products", search: { category: "Phụ kiện" } },
+      { label: "Dịch vụ", to: "/products", search: { category: "Dịch vụ" } },
+      { label: "Chuyển giao công nghệ", to: "/products", search: { category: "Chuyển giao công nghệ" } },
+    ],
+  },
+  { label: "Liên hệ", to: "/contact" },
+];
+
+function UnifiedHeader() {
+  const { session, role } = useAuth();
+  const accountTo =
+    role === "admin"
+      ? "/admin"
+      : role === "manager" || role === "staff" || role === "employee"
+      ? "/portal/timesheet"
+      : role === "customer"
+      ? "/portal/my-treatments"
+      : "/";
+
+  return (
+    <header className="sticky top-0 z-40 bg-[#0b1f14] md:bg-[#0b1f14] bg-white/95 backdrop-blur border-b border-gray-100 md:border-white/5 text-gray-800 md:text-white/90">
+      <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3 md:py-4">
+        {/* Logo VITA gold */}
+        <Link to="/" className="flex items-center gap-1.5 shrink-0 group">
+          <div className="relative">
+            <Crown className="hidden md:block absolute -top-3 left-1/2 -translate-x-1/2 w-3.5 h-3.5 text-amber-400" strokeWidth={2.5} />
+            <span className="font-heading font-black text-xl md:text-2xl tracking-tight text-emerald-600 md:text-amber-400">
+              VITA
+            </span>
+          </div>
+          <span className="text-[11px] md:text-xs font-bold text-emerald-500 md:text-amber-300/80 mt-1">
+            TH®Pro
+          </span>
+        </Link>
+
+        {/* Desktop nav (từ Header cũ) */}
+        <nav className="hidden md:flex items-center gap-1 ml-4 lg:ml-6">
+          {HEADER_NAV.map((g) => (
+            <div key={g.label} className="relative group">
+              <Link
+                to={g.to}
+                className="flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold text-white/85 hover:text-amber-400 hover:bg-white/5 transition-colors"
+                activeProps={{ className: "text-amber-400" }}
+                activeOptions={{ exact: g.to === "/" }}
+              >
+                {g.label}
+                {g.children && <ChevronDown className="w-3.5 h-3.5 opacity-70" />}
+              </Link>
+              {g.children && (
+                <div className="absolute left-0 top-full min-w-[240px] bg-[#0f2a1c] border border-white/10 rounded-2xl p-2 shadow-2xl opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
+                  {g.children.map((c) => (
+                    <Link
+                      key={c.label}
+                      to={c.to}
+                      search={c.search as never}
+                      className="block rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:text-amber-400 hover:bg-white/5"
+                    >
+                      {c.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* Search: mobile chiếm chỗ, desktop nhỏ gọn nằm cuối */}
+        <div className="flex-1 md:flex-none md:ml-auto md:w-64 flex items-center gap-2 bg-gray-100 md:bg-white/10 rounded-full px-3 py-2">
+          <Search className="w-4 h-4 text-gray-500 md:text-white/60" />
+          <input
+            type="text"
+            placeholder="Tìm kiếm..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400 md:placeholder:text-white/50 md:text-white"
+          />
+        </div>
+
+        {/* Desktop CTA buttons */}
+        <div className="hidden md:flex items-center gap-2">
+          <Link
+            to="/lookup"
+            className="rounded-full px-4 py-2 text-sm font-semibold text-white/90 border border-white/20 hover:border-amber-400 hover:text-amber-400 transition-colors"
+          >
+            Tra cứu liệu trình
+          </Link>
+          <Link
+            to="/booking"
+            className="rounded-full px-4 py-2 text-sm font-bold bg-amber-400 text-[#0b1f14] hover:bg-amber-300 transition-colors"
+          >
+            Đặt lịch
+          </Link>
+          {session ? (
+            <Link
+              to={accountTo}
+              className="rounded-full px-4 py-2 text-sm font-semibold text-amber-400 hover:bg-white/5"
+            >
+              Khu vực của tôi
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="rounded-full px-4 py-2 text-sm font-semibold text-white/90 hover:text-amber-400"
+            >
+              Đăng nhập
+            </Link>
+          )}
+        </div>
+
+        {/* Mobile login icon (giữ nguyên UX cũ) */}
+        <Link
+          to={session ? accountTo : "/login"}
+          className="md:hidden shrink-0 h-9 w-9 rounded-full bg-emerald-600 text-white flex items-center justify-center"
+          aria-label={session ? "Khu vực của tôi" : "Đăng nhập"}
+        >
+          {session ? <User className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+        </Link>
+      </div>
+    </header>
+  );
+}
+
