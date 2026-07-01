@@ -53,6 +53,7 @@ function BookingPage() {
         typeof window !== "undefined"
           ? sessionStorage.getItem("vita_affiliate_ref")
           : null;
+      const numericRef = refCode && /^\d+$/.test(refCode) ? refCode : null;
 
       const appointmentDate = new Date(appointmentAt);
       const bookingDate = appointmentDate.toISOString().slice(0, 10);
@@ -67,6 +68,7 @@ function BookingPage() {
         note: note.trim() || null,
         status: "pending",
         affiliate_ref: refCode,
+        referrer_phone: numericRef,
       });
 
       if (error) throw error;
