@@ -679,6 +679,21 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
             </div>
 
             <div className="space-y-1.5">
+              <Label>Mô tả ngắn gọn</Label>
+              <Textarea
+                rows={3}
+                value={form.short_description}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, short_description: e.target.value }))
+                }
+                placeholder="Tóm tắt 1-3 dòng nổi bật, hiển thị ngay dưới nút Thêm vào giỏ hàng."
+              />
+              <p className="text-xs text-ink-muted">
+                Tối đa ~300 ký tự để đảm bảo trải nghiệm gọn gàng.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
               <Label>Mô tả chi tiết</Label>
               <RichTextEditor
                 value={form.description}
@@ -688,6 +703,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
                 placeholder="Nhập mô tả chi tiết, hỗ trợ định dạng đậm/nghiêng, danh sách, tiêu đề..."
               />
             </div>
+
 
             <div className="space-y-1.5">
               <Label>
