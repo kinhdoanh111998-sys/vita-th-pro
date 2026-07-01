@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import type { CatalogItem } from "@/lib/useServiceCatalog";
 import { productCategoryLabel } from "@/lib/catalogCategories";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/app/store/$productId")({
   component: ProductDetailPage,
