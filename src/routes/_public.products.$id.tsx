@@ -94,7 +94,7 @@ function ProductDetailPage() {
     setError(null);
     (async () => {
       const { data, error } = await supabase
-        .from("products")
+        .from("services_public")
         .select("*")
         .eq("id", id)
         .maybeSingle();
@@ -110,18 +110,24 @@ function ProductDetailPage() {
         return;
       }
       const r = data as Record<string, unknown>;
+      const arr = Array.isArray(r.image_urls)
+        ? ((r.image_urls as unknown[]).filter((x) => typeof x === "string") as string[])
+        : [];
+      const single = typeof r.image_url === "string" && r.image_url ? [r.image_url as string] : [];
+      const gallery = arr.length > 0 ? arr : single;
+      const type = (r.type as string) ?? "service";
       setProduct({
         id: (r.id as string | number) ?? id,
         name: (r.name as string) ?? "Chưa đặt tên",
-        short_description: (r.short_description as string) ?? null,
-        summary: (r.summary as string) ?? null,
+        short_description: (r.description as string) ?? null,
+        summary: null,
         description: (r.description as string) ?? null,
         price: r.price != null ? Number(r.price) : null,
         sale_price: r.sale_price != null ? Number(r.sale_price) : null,
-        gallery: parseGallery(r.gallery),
-        badge: (r.badge as string) ?? null,
-        cta_type: (r.cta_type as string) ?? null,
-        specifications: parseSpecs(r.specifications),
+        gallery,
+        badge: type === "product" ? "Sản phẩm" : "Dịch vụ",
+        cta_type: type === "service" ? "contact" : "buy",
+        specifications: null,
       });
       setLoading(false);
       setActiveImg(0);
