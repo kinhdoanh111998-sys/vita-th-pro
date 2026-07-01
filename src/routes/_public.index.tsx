@@ -15,9 +15,11 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
+import { FeaturedEventCard } from "@/components/FeaturedEventCard";
+import { NewsCard } from "@/components/NewsCard";
+import { mockEvents, mockNews } from "@/lib/mockPosts";
 import { useSettings } from "@/lib/useSettings";
 import logo from "@/assets/vita-th-pro-logo.png";
 
@@ -34,39 +36,6 @@ const MOCK_STORES = [
 ];
 
 
-const MOCK_EVENTS: Array<{
-  id: number;
-  title: string;
-  status: EventStatus;
-  date: string;
-  location: string;
-  image: string;
-}> = [
-  {
-    id: 1,
-    title: "Hội thảo Da liễu Chuyên sâu",
-    status: "Sắp tổ chức",
-    date: "20/10/2026 - 08:00",
-    location: "Khách sạn JW Marriott",
-    image: "https://placehold.co/400x200/png",
-  },
-  {
-    id: 2,
-    title: "Lễ ra mắt Máy VITA M04",
-    status: "Đang diễn ra",
-    date: "Hôm nay",
-    location: "VITA Center HN",
-    image: "https://placehold.co/400x200/png",
-  },
-  {
-    id: 3,
-    title: "Workshop Chăm sóc da mùa đông",
-    status: "Đã diễn ra",
-    date: "01/10/2026",
-    location: "Online Zoom",
-    image: "https://placehold.co/400x200/png",
-  },
-];
 
 export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
@@ -375,26 +344,57 @@ function CommunityHome() {
         </div>
       </section>
 
-      {/* Featured Events */}
-      <section id="events" className="pt-6 max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
-          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
-            Sự kiện nổi bật
-          </h2>
-          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
+      {/* Featured Events – upgraded */}
+      <section id="events" className="pt-8 md:pt-12 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-4 px-4 md:px-8">
+          <div>
+            <p className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-amber-600">
+              Đừng bỏ lỡ
+            </p>
+            <h2 className="text-lg md:text-2xl font-heading font-bold text-gray-900 mt-0.5">
+              Sự kiện nổi bật
+            </h2>
+          </div>
+          <Link
+            to="/events"
+            className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5 font-semibold"
+          >
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
-        <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
-          {MOCK_EVENTS.map((e) => (
-            <EventCard
+        <div className="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
+          {mockEvents.map((e) => (
+            <div
               key={e.id}
-              title={e.title}
-              status={e.status}
-              date={e.date}
-              location={e.location}
-              image={e.image}
-            />
+              className="shrink-0 w-[85%] sm:w-[60%] md:w-auto snap-start"
+            >
+              <FeaturedEventCard post={e} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Kiến thức & Tin tức VITA */}
+      <section id="news" className="pt-10 md:pt-14 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-5 px-4 md:px-8">
+          <div>
+            <p className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-emerald-600">
+              Blog VITA
+            </p>
+            <h2 className="text-lg md:text-2xl font-heading font-bold text-gray-900 mt-0.5">
+              Kiến thức & Tin tức VITA
+            </h2>
+          </div>
+          <Link
+            to="/news"
+            className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5 font-semibold"
+          >
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 md:px-8">
+          {mockNews.map((n) => (
+            <NewsCard key={n.id} post={n} />
           ))}
         </div>
       </section>

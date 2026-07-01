@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, CalendarDays, MapPin } from "lucide-react";
 import {
   SearchBar,
   FilterTabs,
@@ -10,6 +10,7 @@ import {
   HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
+import { mockEvents, mockNews } from "@/lib/mockPosts";
 
 export const Route = createFileRoute("/app/")({
   component: AppHome,
@@ -92,55 +93,131 @@ function AppHome() {
         <FilterTabs tabs={TABS} active={tab} onChange={setTab} />
       </header>
 
-      {/* Hero banner */}
-      <section className="px-4 mt-2">
-        <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-primary to-brand-primary-dark text-white p-5 shadow-lg">
-          <span className="inline-flex text-[11px] font-semibold uppercase tracking-wide bg-white/20 rounded-full px-2 py-0.5">
-            Ưu đãi thành viên
-          </span>
-          <h2 className="font-heading text-xl mt-2 text-white">
-            Trải nghiệm liệu trình miễn phí
-          </h2>
-          <p className="text-sm text-white/85 mt-1">
-            Đặt lịch ngay để nhận buổi trải nghiệm và tư vấn cá nhân hoá.
-          </p>
-          <button className="mt-3 bg-white text-brand-primary text-sm font-semibold px-4 py-2 rounded-full">
-            Khám phá ngay
-          </button>
-        </div>
-      </section>
+      {tab === "Sự kiện" ? (
+        <>
+          <SectionHeader title="Sự kiện sắp diễn ra" />
+          <div className="px-4 flex flex-col gap-3 pb-4">
+            {mockEvents.map((e) => (
+              <article
+                key={e.id}
+                className="flex gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.99] transition-transform"
+              >
+                <img
+                  src={e.image}
+                  alt={e.title}
+                  loading="lazy"
+                  className="w-28 h-28 object-cover shrink-0"
+                />
+                <div className="flex-1 py-2.5 pr-3 flex flex-col gap-1 min-w-0">
+                  <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
+                    Sắp diễn ra
+                  </span>
+                  <h3 className="text-sm font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
+                    {e.title}
+                  </h3>
+                  <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                    <CalendarDays className="w-3 h-3 text-emerald-600" />
+                    <span className="truncate">{e.eventDate}</span>
+                  </div>
+                  {e.location && (
+                    <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                      <MapPin className="w-3 h-3 text-emerald-600" />
+                      <span className="truncate">{e.location}</span>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="mt-auto self-start h-8 px-3 rounded-full bg-brand-primary text-white text-[11px] font-semibold"
+                  >
+                    Đăng ký
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Hero banner */}
+          <section className="px-4 mt-2">
+            <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-primary to-brand-primary-dark text-white p-5 shadow-lg">
+              <span className="inline-flex text-[11px] font-semibold uppercase tracking-wide bg-white/20 rounded-full px-2 py-0.5">
+                Ưu đãi thành viên
+              </span>
+              <h2 className="font-heading text-xl mt-2 text-white">
+                Trải nghiệm liệu trình miễn phí
+              </h2>
+              <p className="text-sm text-white/85 mt-1">
+                Đặt lịch ngay để nhận buổi trải nghiệm và tư vấn cá nhân hoá.
+              </p>
+              <button className="mt-3 bg-white text-brand-primary text-sm font-semibold px-4 py-2 rounded-full">
+                Khám phá ngay
+              </button>
+            </div>
+          </section>
 
-      {/* Sự kiện nổi bật – horizontal */}
-      <SectionHeader
-        title="Sự kiện nổi bật"
-        action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
-      />
-      <HorizontalScrollList>
-        {ARTICLES.map((a) => (
-          <HScrollItem key={a.title}>
-            <ArticleCard {...a} />
-          </HScrollItem>
-        ))}
-      </HorizontalScrollList>
+          {/* Sự kiện nổi bật – horizontal */}
+          <SectionHeader
+            title="Sự kiện nổi bật"
+            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
+          />
+          <HorizontalScrollList>
+            {ARTICLES.map((a) => (
+              <HScrollItem key={a.title}>
+                <ArticleCard {...a} />
+              </HScrollItem>
+            ))}
+          </HorizontalScrollList>
 
-      {/* Cửa hàng gần bạn */}
-      <SectionHeader
-        title="Cửa hàng gần bạn"
-        action={<span className="text-xs text-brand-primary">Xem bản đồ</span>}
-      />
-      <div className="px-4 flex flex-col gap-3">
-        {STORES.map((s) => (
-          <StoreCard key={s.name} {...s} />
-        ))}
-      </div>
+          {/* Bản tin sức khoẻ – horizontal thumbnails */}
+          <SectionHeader
+            title="Bản tin sức khoẻ"
+            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
+          />
+          <div className="px-4 pb-1 flex flex-row gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
+            {mockNews.map((n) => (
+              <article
+                key={n.id}
+                className="shrink-0 w-40 snap-start bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.98] transition-transform"
+              >
+                <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+                  <img
+                    src={n.image}
+                    alt={n.title}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-2.5">
+                  <h3 className="text-[12.5px] font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
+                    {n.title}
+                  </h3>
+                  <p className="mt-1 text-[10.5px] text-gray-400">{n.date}</p>
+                </div>
+              </article>
+            ))}
+          </div>
 
-      {/* Bài viết cộng đồng – vertical */}
-      <SectionHeader title="Bài viết cộng đồng" />
-      <div className="px-4 grid grid-cols-1 gap-3">
-        {ARTICLES.map((a) => (
-          <ArticleCard key={"v-" + a.title} {...a} />
-        ))}
-      </div>
+          {/* Cửa hàng gần bạn */}
+          <SectionHeader
+            title="Cửa hàng gần bạn"
+            action={<span className="text-xs text-brand-primary">Xem bản đồ</span>}
+          />
+          <div className="px-4 flex flex-col gap-3">
+            {STORES.map((s) => (
+              <StoreCard key={s.name} {...s} />
+            ))}
+          </div>
+
+          {/* Bài viết cộng đồng – vertical */}
+          <SectionHeader title="Bài viết cộng đồng" />
+          <div className="px-4 grid grid-cols-1 gap-3">
+            {ARTICLES.map((a) => (
+              <ArticleCard key={"v-" + a.title} {...a} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
