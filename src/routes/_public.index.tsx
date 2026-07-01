@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import {
   Search,
   LogIn,
@@ -14,6 +15,12 @@ import {
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
+
+const MOCK_BANNERS = [
+  { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
+  { id: 2, image: "https://placehold.co/800x400/png?text=Khuyen+Mai+Thang+10" },
+  { id: 3, image: "https://placehold.co/800x400/png?text=Ra+Mat+San+Pham+Moi" },
+];
 
 
 const MOCK_EVENTS: Array<{
@@ -118,26 +125,9 @@ function CommunityHome() {
         </div>
       </header>
 
-      {/* Hero Banner */}
-      <section className="px-4 pt-4">
-        <div className="relative rounded-2xl overflow-hidden aspect-[16/9] bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 shadow-md">
-          <div className="absolute top-3 left-3 bg-white/95 rounded-lg px-3 py-1.5 shadow">
-            <p className="text-[10px] text-gray-500">Thành viên mới hôm nay</p>
-            <p className="text-sm font-bold text-emerald-600">+127</p>
-          </div>
-          <div className="absolute bottom-3 right-3 bg-white/95 rounded-lg px-3 py-2 shadow max-w-[70%]">
-            <p className="text-[10px] text-gray-500">Sự kiện sắp tới</p>
-            <p className="text-sm font-semibold text-gray-900">VITA Marathon Mùa Hè 2025</p>
-            <p className="text-[11px] text-emerald-600 mt-0.5">🏆 +500 điểm khi tham dự</p>
-          </div>
-        </div>
-        {/* Dots */}
-        <div className="flex justify-center gap-1.5 mt-3">
-          <span className="w-6 h-1.5 rounded-full bg-emerald-500" />
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-        </div>
-      </section>
+      {/* Hero Banner Carousel */}
+      <HeroCarousel />
+
 
       {/* Shortcuts */}
       <section className="px-4 pt-5">
@@ -229,5 +219,79 @@ function CommunityHome() {
         </div>
       </nav>
     </div>
+  );
+}
+
+function HeroCarousel() {
+  const [active, setActive] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-advance
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive((prev) => {
+        const next = (prev + 1) % MOCK_BANNERS.length;
+        const el = scrollerRef.current;
+        if (el) {
+          el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+        }
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== active) setActive(idx);
+  };
+
+  const goTo = (i: number) => {
+    const el = scrollerRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    setActive(i);
+  };
+
+  return (
+    <section className="pt-4">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth"
+      >
+        {MOCK_BANNERS.map((b) => (
+          <div
+            key={b.id}
+            className="shrink-0 w-full snap-center px-4"
+          >
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] shadow-md bg-gray-100">
+              <img
+                src={b.image}
+                alt={`Banner ${b.id}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Slider Indicator */}
+      <div className="flex justify-center items-center gap-1.5 mt-3">
+        {MOCK_BANNERS.map((b, i) => (
+          <button
+            key={b.id}
+            onClick={() => goTo(i)}
+            aria-label={`Chuyển tới banner ${i + 1}`}
+            className={
+              i === active
+                ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
+                : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
+            }
+          />
+        ))}
+      </div>
+    </section>
   );
 }
