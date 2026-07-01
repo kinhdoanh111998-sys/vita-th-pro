@@ -193,13 +193,13 @@ function EmployeesAdmin() {
           {
             key: "role",
             label: "Vai trò",
-            render: (v) => ROLE_LABEL[String(v ?? "")] ?? String(v ?? "—"),
+            render: (row) => ROLE_LABEL[String(row.role ?? "")] ?? String(row.role ?? "—"),
           },
           {
             key: "created_at",
             label: "Ngày tạo",
-            render: (v) =>
-              v ? new Date(String(v)).toLocaleDateString("vi-VN") : "—",
+            render: (row) =>
+              row.created_at ? new Date(String(row.created_at)).toLocaleDateString("vi-VN") : "—",
           },
         ]}
         rows={rows}
