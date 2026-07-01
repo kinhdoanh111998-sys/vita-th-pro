@@ -20,6 +20,10 @@ export type Database = {
           cta: string | null
           id: string
           image: string | null
+          image_url: string | null
+          is_active: boolean
+          link_url: string | null
+          sort_order: number
           subtitle: string | null
           title: string
           type: string | null
@@ -30,6 +34,10 @@ export type Database = {
           cta?: string | null
           id?: string
           image?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
           subtitle?: string | null
           title: string
           type?: string | null
@@ -40,6 +48,10 @@ export type Database = {
           cta?: string | null
           id?: string
           image?: string | null
+          image_url?: string | null
+          is_active?: boolean
+          link_url?: string | null
+          sort_order?: number
           subtitle?: string | null
           title?: string
           type?: string | null
