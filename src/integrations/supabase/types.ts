@@ -532,8 +532,11 @@ export type Database = {
           category: string | null
           cover_url: string | null
           created_at: string | null
+          end_at: string | null
           id: string | null
           post_type: string | null
+          start_at: string | null
+          summary: string | null
           title: string | null
         }
         Relationships: []

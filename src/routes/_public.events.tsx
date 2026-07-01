@@ -203,9 +203,17 @@ function EventCard({ e }: { e: EventRow }) {
             <span className="truncate">{e.location}</span>
           </div>
         )}
-        <span className="mt-auto pt-3 text-sm font-semibold text-emerald-700 group-hover:underline">
-          Xem chi tiết →
+        <span className="mt-auto pt-3 flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold text-emerald-700 group-hover:underline">
+            Xem chi tiết →
+          </span>
+          {up && (
+            <span className="inline-flex items-center h-8 px-3 rounded-full bg-amber-500 text-white text-[11px] font-bold shadow-sm">
+              Đăng ký tham gia
+            </span>
+          )}
         </span>
+
       </div>
     </Link>
   );

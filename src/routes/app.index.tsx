@@ -62,7 +62,10 @@ function AppHome() {
       return (data ?? []) as EventRow[];
     },
   });
-  const upcomingEvents = (eventsQ.data ?? []).filter(isUpcoming).slice(0, 6);
+  const allEvents = eventsQ.data ?? [];
+  const upcomingEvents = allEvents.filter(isUpcoming);
+  const pastEvents = allEvents.filter((e) => !isUpcoming(e));
+
 
   return (
     <div>
@@ -84,60 +87,28 @@ function AppHome() {
 
       {tab === "Sự kiện" ? (
         <>
-          <SectionHeader
+          <EventList
             title="Sự kiện sắp diễn ra"
-            action={
-              <Link to="/app/events" className="text-xs text-brand-primary">
-                Xem tất cả
-              </Link>
-            }
+            items={upcomingEvents}
+            empty="Chưa có sự kiện sắp diễn ra"
+            upcoming
           />
-          <div className="px-4 flex flex-col gap-3 pb-4">
-            {upcomingEvents.length === 0 && (
-              <div className="rounded-2xl bg-white border border-gray-100 p-6 text-center text-gray-500 text-sm">
-                Chưa có sự kiện sắp diễn ra
-              </div>
-            )}
-            {upcomingEvents.map((e) => (
-              <Link
-                key={e.id}
-                to="/app/events/$id"
-                params={{ id: e.id }}
-                className="flex gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.99] transition-transform"
-              >
-                {e.cover_url ? (
-                  <img
-                    src={e.cover_url}
-                    alt={e.title}
-                    loading="lazy"
-                    className="w-28 h-28 object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="w-28 h-28 bg-gradient-to-br from-emerald-100 to-amber-50 shrink-0" />
-                )}
-                <div className="flex-1 py-2.5 pr-3 flex flex-col gap-1 min-w-0">
-                  <span className="inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700">
-                    Sắp diễn ra
-                  </span>
-                  <h3 className="text-sm font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
-                    {e.title}
-                  </h3>
-                  <div className="flex items-center gap-1 text-[11px] text-gray-600">
-                    <CalendarDays className="w-3 h-3 text-emerald-600" />
-                    <span className="truncate">{formatDateTime(e.start_at)}</span>
-                  </div>
-                  {e.location && (
-                    <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                      <MapPin className="w-3 h-3 text-emerald-600" />
-                      <span className="truncate">{e.location}</span>
-                    </div>
-                  )}
-                </div>
-              </Link>
-            ))}
+          <EventList
+            title="Sự kiện đã diễn ra"
+            items={pastEvents}
+            empty="Chưa có sự kiện đã diễn ra"
+          />
+          <div className="px-4 pt-2 pb-4">
+            <Link
+              to="/app/events"
+              className="block text-center h-11 leading-[44px] rounded-xl bg-white border border-gray-200 text-sm font-semibold text-brand-primary"
+            >
+              Xem tất cả sự kiện
+            </Link>
           </div>
         </>
       ) : (
+
         <>
           {/* Hero banner */}
           <section className="px-4 mt-2">
@@ -177,3 +148,78 @@ function AppHome() {
     </div>
   );
 }
+
+function EventList({
+  title,
+  items,
+  empty,
+  upcoming = false,
+}: {
+  title: string;
+  items: EventRow[];
+  empty: string;
+  upcoming?: boolean;
+}) {
+  return (
+    <>
+      <SectionHeader title={title} />
+      <div className="px-4 flex flex-col gap-3 pb-3">
+        {items.length === 0 ? (
+          <div className="rounded-2xl bg-white border border-gray-100 p-6 text-center text-gray-500 text-sm">
+            {empty}
+          </div>
+        ) : (
+          items.map((e) => (
+            <Link
+              key={e.id}
+              to="/app/events/$id"
+              params={{ id: e.id }}
+              className="flex gap-3 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.99] transition-transform"
+            >
+              {e.cover_url ? (
+                <img
+                  src={e.cover_url}
+                  alt={e.title}
+                  loading="lazy"
+                  className="w-28 h-28 object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-28 h-28 bg-gradient-to-br from-emerald-100 to-amber-50 shrink-0" />
+              )}
+              <div className="flex-1 py-2.5 pr-3 flex flex-col gap-1 min-w-0">
+                <span
+                  className={`inline-flex w-fit items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                    upcoming
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {upcoming ? "Sắp diễn ra" : "Đã diễn ra"}
+                </span>
+                <h3 className="text-sm font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
+                  {e.title}
+                </h3>
+                <div className="flex items-center gap-1 text-[11px] text-gray-600">
+                  <CalendarDays className="w-3 h-3 text-emerald-600" />
+                  <span className="truncate">{formatDateTime(e.start_at)}</span>
+                </div>
+                {e.location && (
+                  <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                    <MapPin className="w-3 h-3 text-emerald-600" />
+                    <span className="truncate">{e.location}</span>
+                  </div>
+                )}
+                {upcoming && (
+                  <span className="mt-1 inline-flex w-fit items-center h-7 px-3 rounded-full bg-brand-primary text-white text-[11px] font-bold">
+                    Đăng ký tham gia
+                  </span>
+                )}
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
