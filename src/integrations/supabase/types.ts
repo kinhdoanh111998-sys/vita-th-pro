@@ -102,6 +102,13 @@ export type Database = {
             referencedRelation: "services"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       services: {
@@ -271,7 +278,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      services_public: {
+        Row: {
+          created_at: string | null
+          default_sessions: number | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          image_urls: string[] | null
+          is_hidden: boolean | null
+          name: string | null
+          price: number | null
+          sale_price: number | null
+          sku: string | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_sessions?: number | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          image_urls?: string[] | null
+          is_hidden?: boolean | null
+          name?: string | null
+          price?: number | null
+          sale_price?: number | null
+          sku?: string | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_sessions?: number | null
+          description?: string | null
+          id?: string | null
+          image_url?: string | null
+          image_urls?: string[] | null
+          is_hidden?: boolean | null
+          name?: string | null
+          price?: number | null
+          sale_price?: number | null
+          sku?: string | null
+          type?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
