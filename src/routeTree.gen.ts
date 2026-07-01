@@ -44,6 +44,7 @@ import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminPageRouteImport } from './routes/admin.$page'
+import { Route as PublicServicesRouteImport } from './routes/_public.services'
 import { Route as PublicProductsRouteImport } from './routes/_public.products'
 import { Route as PublicNewsRouteImport } from './routes/_public.news'
 import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
@@ -245,6 +246,11 @@ const AdminPageRoute = AdminPageRouteImport.update({
   path: '/$page',
   getParentRoute: () => AdminRoute,
 } as any)
+const PublicServicesRoute = PublicServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicProductsRoute = PublicProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -286,9 +292,9 @@ const PublicAboutRoute = PublicAboutRouteImport.update({
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicServicesIndexRoute = PublicServicesIndexRouteImport.update({
-  id: '/services/',
-  path: '/services/',
-  getParentRoute: () => PublicRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicServicesRoute,
 } as any)
 const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
   id: '/',
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/lookup': typeof PublicLookupRoute
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
+  '/services': typeof PublicServicesRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -515,6 +522,7 @@ export interface FileRoutesById {
   '/_public/lookup': typeof PublicLookupRoute
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
+  '/_public/services': typeof PublicServicesRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -580,6 +588,7 @@ export interface FileRouteTypes {
     | '/lookup'
     | '/news'
     | '/products'
+    | '/services'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -699,6 +708,7 @@ export interface FileRouteTypes {
     | '/_public/lookup'
     | '/_public/news'
     | '/_public/products'
+    | '/_public/services'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -1004,6 +1014,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_public/services': {
+      id: '/_public/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof PublicServicesRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/products': {
       id: '/_public/products'
       path: '/products'
@@ -1062,10 +1079,10 @@ declare module '@tanstack/react-router' {
     }
     '/_public/services/': {
       id: '/_public/services/'
-      path: '/services'
+      path: '/'
       fullPath: '/services/'
       preLoaderRoute: typeof PublicServicesIndexRouteImport
-      parentRoute: typeof PublicRoute
+      parentRoute: typeof PublicServicesRoute
     }
     '/_public/products/': {
       id: '/_public/products/'
@@ -1249,6 +1266,18 @@ const PublicProductsRouteWithChildren = PublicProductsRoute._addFileChildren(
   PublicProductsRouteChildren,
 )
 
+interface PublicServicesRouteChildren {
+  PublicServicesIndexRoute: typeof PublicServicesIndexRoute
+}
+
+const PublicServicesRouteChildren: PublicServicesRouteChildren = {
+  PublicServicesIndexRoute: PublicServicesIndexRoute,
+}
+
+const PublicServicesRouteWithChildren = PublicServicesRoute._addFileChildren(
+  PublicServicesRouteChildren,
+)
+
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRouteWithChildren
   PublicBookingRoute: typeof PublicBookingRoute
@@ -1258,8 +1287,8 @@ interface PublicRouteChildren {
   PublicLookupRoute: typeof PublicLookupRoute
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
+  PublicServicesRoute: typeof PublicServicesRouteWithChildren
   PublicIndexRoute: typeof PublicIndexRoute
-  PublicServicesIndexRoute: typeof PublicServicesIndexRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
@@ -1271,8 +1300,8 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicLookupRoute: PublicLookupRoute,
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
+  PublicServicesRoute: PublicServicesRouteWithChildren,
   PublicIndexRoute: PublicIndexRoute,
-  PublicServicesIndexRoute: PublicServicesIndexRoute,
 }
 
 const PublicRouteWithChildren =
