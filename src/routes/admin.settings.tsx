@@ -2,14 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, Save, ShieldCheck, Building2 } from "lucide-react";
+import { Download, Save, ShieldCheck, Building2, Phone, Loader2 } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabaseClient";
+import { supabase as cloudSupabase } from "@/integrations/supabase/client";
 import { useSettings, type Settings } from "@/lib/useSettings";
+import { useSystemSettings, SYSTEM_SETTINGS_KEY } from "@/lib/useSystemSettings";
 import { downloadCSV, toCSV } from "@/lib/csv";
 
 export const Route = createFileRoute("/admin/settings")({
@@ -59,7 +61,9 @@ const EXPORT_TABLES: { table: string; label: string; columns: { key: string; lab
 function SettingsAdmin() {
   const qc = useQueryClient();
   const { data, isLoading, error } = useSettings();
+  const { data: sys, isLoading: sysLoading } = useSystemSettings();
   const [form, setForm] = useState<Record<string, string>>({});
+  const [sysForm, setSysForm] = useState({ hotline: "", zalo_link: "", facebook_link: "" });
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -69,6 +73,37 @@ function SettingsAdmin() {
       setForm(next);
     }
   }, [data]);
+
+  useEffect(() => {
+    if (sys) {
+      setSysForm({
+        hotline: sys.hotline ?? "",
+        zalo_link: sys.zalo_link ?? "",
+        facebook_link: sys.facebook_link ?? "",
+      });
+    }
+  }, [sys]);
+
+  const saveSystem = useMutation({
+    mutationFn: async () => {
+      if (!sys?.id) {
+        const { error } = await cloudSupabase.from("system_settings").insert(sysForm);
+        if (error) throw error;
+      } else {
+        const { error } = await cloudSupabase
+          .from("system_settings")
+          .update(sysForm)
+          .eq("id", sys.id);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Đã cập nhật thông tin liên hệ");
+      qc.invalidateQueries({ queryKey: SYSTEM_SETTINGS_KEY });
+    },
+    onError: (e: Error) => toast.error(e.message || "Lưu thất bại"),
+  });
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -120,8 +155,71 @@ function SettingsAdmin() {
       )}
 
       <div className="grid lg:grid-cols-2 gap-5">
+        {/* Khu vực 0 — Liên hệ toàn cục (Header/Footer) */}
+        <section className="bg-white border border-hairline rounded-2xl p-6 shadow-sm lg:col-span-2">
+          <div className="flex items-center gap-3 pb-3 mb-4 border-b border-hairline">
+            <div className="size-10 grid place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+              <Phone size={20} />
+            </div>
+            <div>
+              <h2 className="font-black text-lg">Liên hệ toàn cục</h2>
+              <p className="text-xs text-ink-muted">
+                Đồng bộ Hotline / Zalo / Facebook ra Header &amp; Footer trang chủ.
+              </p>
+            </div>
+          </div>
+
+          <form
+            onSubmit={(e) => { e.preventDefault(); saveSystem.mutate(); }}
+            className="grid gap-4 md:grid-cols-3"
+          >
+            {sysLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-10 bg-slate-100 rounded animate-pulse" />
+              ))
+            ) : (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sys_hotline">Hotline</Label>
+                  <Input
+                    id="sys_hotline"
+                    value={sysForm.hotline}
+                    onChange={(e) => setSysForm((p) => ({ ...p, hotline: e.target.value }))}
+                    placeholder="0988 000 888"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sys_zalo">Link Zalo</Label>
+                  <Input
+                    id="sys_zalo"
+                    value={sysForm.zalo_link}
+                    onChange={(e) => setSysForm((p) => ({ ...p, zalo_link: e.target.value }))}
+                    placeholder="https://zalo.me/..."
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sys_fb">Link Facebook</Label>
+                  <Input
+                    id="sys_fb"
+                    value={sysForm.facebook_link}
+                    onChange={(e) => setSysForm((p) => ({ ...p, facebook_link: e.target.value }))}
+                    placeholder="https://facebook.com/..."
+                  />
+                </div>
+              </>
+            )}
+            <div className="md:col-span-3">
+              <Button type="submit" disabled={saveSystem.isPending || sysLoading}>
+                {saveSystem.isPending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                {saveSystem.isPending ? "Đang lưu..." : "Lưu liên hệ"}
+              </Button>
+            </div>
+          </form>
+        </section>
+
         {/* Khu vực 1 — Thông tin hệ thống */}
         <section className="bg-white border border-hairline rounded-2xl p-6 shadow-sm">
+
           <div className="flex items-center gap-3 pb-3 mb-4 border-b border-hairline">
             <div className="size-10 grid place-items-center rounded-xl bg-brand-soft text-brand-dark">
               <Building2 size={20} />

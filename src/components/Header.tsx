@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "./Button";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
+import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
@@ -52,9 +53,10 @@ const navGroups: NavGroup[] = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const { data: settings } = useSettings();
+  const { data: sys } = useSystemSettings();
   const { session, role } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
-  const hotline = settings?.hotline;
+  const hotline = sys?.hotline ?? settings?.hotline;
 
   const accountTo =
     role === "admin"

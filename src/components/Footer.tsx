@@ -1,16 +1,20 @@
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
+import { useSystemSettings } from "@/lib/useSystemSettings";
 
 export function Footer() {
   const { data } = useSettings();
+  const { data: sys } = useSystemSettings();
   const brand = data?.brand ?? "Vita TH Pro";
-  const hotline = data?.hotline ?? "0988 000 888";
-  const zalo = data?.zalo ?? hotline;
+  const hotline = sys?.hotline ?? data?.hotline ?? "0988 000 888";
+  const zaloLink = sys?.zalo_link ?? (data?.zalo ? `https://zalo.me/${data.zalo}` : "#");
+  const facebookLink = sys?.facebook_link ?? "#";
   const email = data?.email ?? "contact@vitath.pro";
   const address = data?.address ?? "Hà Nội, Việt Nam";
   const tagline =
     data?.tagline ??
     "Website demo hoàn chỉnh: giới thiệu, sản phẩm/dịch vụ, tin tức, đặt lịch và quản trị vận hành.";
+
 
   return (
     <footer className="bg-[#112218] text-white pt-12 pb-6 mt-12">
@@ -34,8 +38,15 @@ export function Footer() {
           />
           <div>
             <h4 className="font-bold mb-2">Liên hệ</h4>
-            <p className="text-sm text-[#d7f4d8]">Hotline: {hotline}</p>
-            <p className="text-sm text-[#d7f4d8]">Zalo: {zalo}</p>
+            <p className="text-sm text-[#d7f4d8]">
+              Hotline: <a href={`tel:${hotline}`} className="hover:underline">{hotline}</a>
+            </p>
+            <p className="text-sm text-[#d7f4d8]">
+              Zalo: <a href={zaloLink} target="_blank" rel="noreferrer" className="hover:underline">Chat qua Zalo</a>
+            </p>
+            <p className="text-sm text-[#d7f4d8]">
+              Facebook: <a href={facebookLink} target="_blank" rel="noreferrer" className="hover:underline">Fanpage</a>
+            </p>
             <p className="text-sm text-[#d7f4d8]">Email: {email}</p>
             <p className="text-sm text-[#d7f4d8] mt-1">{address}</p>
           </div>
