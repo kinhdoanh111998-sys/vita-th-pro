@@ -20,28 +20,21 @@ export const Route = createFileRoute("/admin/orders")({
 });
 
 type Customer = { id: string; name: string; phone?: string | null };
-type Staff = { id: string; full_name: string; role?: string | null };
-type CatalogItem = {
+type Service = {
   id: string;
   name: string;
   price: number | null;
-  type: string | null;
+  default_sessions: number | null;
 };
 type OrderRow = {
   id: string;
   created_at: string;
-  customer_id: string | null;
-  staff_id: string | null;
-  catalog_id?: string | null;
-  package_name: string | null;
-  total_sessions: number | null;
-  total_price: number | null;
+  customer_id: string;
+  service_id: string;
+  quantity: number;
+  total_amount: number;
   status: string | null;
 };
-
-const TREATMENT_TYPES = new Set(["dịch vụ", "liệu trình", "dich vu", "lieu trinh"]);
-const isTreatmentType = (t?: string | null) =>
-  !!t && TREATMENT_TYPES.has(t.trim().toLowerCase());
 
 function OrdersPage() {
   const qc = useQueryClient();
@@ -58,23 +51,15 @@ function OrdersPage() {
     },
   });
 
-  const staffsQ = useQuery({
-    queryKey: ["users", "list"],
-    queryFn: async (): Promise<Staff[]> => {
-      const { data, error } = await supabase.from("users").select("id,full_name,role");
-      if (error) throw error;
-      return (data ?? []) as Staff[];
-    },
-  });
-
-  const catalogQ = useQuery({
-    queryKey: ["catalog", "list"],
-    queryFn: async (): Promise<CatalogItem[]> => {
+  const servicesQ = useQuery({
+    queryKey: ["services", "list"],
+    queryFn: async (): Promise<Service[]> => {
       const { data, error } = await supabase
-        .from("catalog")
-        .select("id,name,price,type");
+        .from("services")
+        .select("id,name,price,default_sessions")
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as CatalogItem[];
+      return (data ?? []) as Service[];
     },
   });
 
@@ -92,101 +77,64 @@ function OrdersPage() {
 
   // Form state
   const [customerId, setCustomerId] = useState("");
-  const [staffId, setStaffId] = useState("");
-  const [catalogId, setCatalogId] = useState("");
-  const [totalSessions, setTotalSessions] = useState("");
-  const [totalPrice, setTotalPrice] = useState("");
-  const [commissionAmount, setCommissionAmount] = useState("");
+  const [serviceId, setServiceId] = useState("");
+  const [quantity, setQuantity] = useState("");
 
-  const selectedCatalog = useMemo(
-    () => catalogQ.data?.find((c) => c.id === catalogId),
-    [catalogQ.data, catalogId],
+  const selectedService = useMemo(
+    () => servicesQ.data?.find((s) => s.id === serviceId),
+    [servicesQ.data, serviceId],
   );
 
-  const onSelectCatalog = (id: string) => {
-    setCatalogId(id);
-    const item = catalogQ.data?.find((c) => c.id === id);
-    if (item && item.price != null) setTotalPrice(String(item.price));
+  const onSelectService = (id: string) => {
+    setServiceId(id);
+    const item = servicesQ.data?.find((s) => s.id === id);
+    if (item?.default_sessions && !quantity) {
+      setQuantity(String(item.default_sessions));
+    }
   };
 
-  const suggestedCommission = useMemo(() => {
-    const n = Number(totalPrice || 0);
-    return n > 0 ? Math.round(n * 0.05) : 0;
-  }, [totalPrice]);
+  const totalAmount = useMemo(() => {
+    const q = Number(quantity) || 0;
+    const p = Number(selectedService?.price ?? 0);
+    return q * p;
+  }, [quantity, selectedService]);
 
   const resetForm = () => {
     setCustomerId("");
-    setStaffId("");
-    setCatalogId("");
-    setTotalSessions("");
-    setTotalPrice("");
-    setCommissionAmount("");
+    setServiceId("");
+    setQuantity("");
   };
 
   const createOrder = useMutation({
     mutationFn: async () => {
-      if (!selectedCatalog) throw new Error("Vui lòng chọn sản phẩm/dịch vụ.");
-      const packageName = selectedCatalog.name;
-      const sessions = Number(totalSessions) || 0;
-      const price = Number(totalPrice) || 0;
-      const commission = Number(commissionAmount) || 0;
+      if (!customerId) throw new Error("Vui lòng chọn khách hàng.");
+      if (!selectedService) throw new Error("Vui lòng chọn dịch vụ.");
+      const q = Number(quantity) || 0;
+      if (q <= 0) throw new Error("Số buổi phải lớn hơn 0.");
 
-      // 1) Insert order
-      const { data: orderData, error: orderError } = await supabase
+      const { data, error } = await supabase
         .from("orders")
         .insert([
           {
             customer_id: customerId,
-            staff_id: staffId,
-            package_name: packageName,
-            total_sessions: sessions,
-            total_price: price,
-            status: "completed",
+            service_id: selectedService.id,
+            quantity: q,
+            total_amount: totalAmount,
+            status: "paid",
           },
         ])
         .select()
         .single();
-      if (orderError) throw orderError;
-
-      // 2) If service/treatment type → auto create treatment
-      if (isTreatmentType(selectedCatalog.type) && sessions > 0) {
-        const { error: tErr } = await supabase.from("treatments").insert([
-          {
-            customer_id: customerId,
-            package_name: packageName,
-            total_sessions: sessions,
-            used_sessions: 0,
-            remaining_sessions: sessions,
-            status: "active",
-          },
-        ]);
-        if (tErr) throw tErr;
-      }
-
-      // 3) Commission (if > 0)
-      if (commission > 0) {
-        const { error: cErr } = await supabase.from("commissions").insert([
-          {
-            staff_id: staffId,
-            commission_type: "sale_order",
-            reference_id: orderData.id,
-            amount: commission,
-            status: "pending",
-          },
-        ]);
-        if (cErr) throw cErr;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       toast.success("Tạo đơn hàng thành công!", {
-        description: isTreatmentType(selectedCatalog?.type)
-          ? "Đã tự động khởi tạo liệu trình cho khách."
-          : undefined,
+        description: `Đã tự động sinh ${quantity} buổi liệu trình kèm mã QR.`,
       });
       resetForm();
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["treatments"] });
-      qc.invalidateQueries({ queryKey: ["commissions"] });
     },
     onError: (e: unknown) => {
       const msg = e instanceof Error ? e.message : "Có lỗi xảy ra, vui lòng thử lại!";
@@ -197,10 +145,6 @@ function OrdersPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!customerId || !staffId || !catalogId || !totalSessions || !totalPrice) {
-      toast.error("Vui lòng nhập đủ thông tin đơn hàng.");
-      return;
-    }
     createOrder.mutate();
   };
 
@@ -213,11 +157,11 @@ function OrdersPage() {
     customersQ.data?.forEach((c) => m.set(c.id, c.name));
     return m;
   }, [customersQ.data]);
-  const staffMap = useMemo(() => {
+  const serviceMap = useMemo(() => {
     const m = new Map<string, string>();
-    staffsQ.data?.forEach((s) => m.set(s.id, s.full_name));
+    servicesQ.data?.forEach((s) => m.set(s.id, s.name));
     return m;
-  }, [staffsQ.data]);
+  }, [servicesQ.data]);
 
   const filteredOrders = useMemo(() => {
     const list = ordersQ.data ?? [];
@@ -230,13 +174,11 @@ function OrdersPage() {
     });
   }, [ordersQ.data, fromDate, toDate]);
 
-  const isService = isTreatmentType(selectedCatalog?.type);
-
   return (
     <>
       <AdminTopbar
         title="Quản lý Đơn hàng (Orders)"
-        subtitle="Tạo đơn bán gói – tự động khởi tạo liệu trình và tính hoa hồng cho sale."
+        subtitle="Tạo đơn – hệ thống tự sinh các buổi liệu trình kèm mã QR độc nhất."
       />
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -251,19 +193,24 @@ function OrdersPage() {
             <div>
               <h2 className="font-black text-lg">Tạo đơn hàng mới</h2>
               <p className="text-xs text-ink-muted">
-                Bán gói dịch vụ cho khách – hệ thống tự tạo liệu trình tương ứng.
+                Chọn khách hàng, dịch vụ và số buổi – hệ thống lo phần còn lại.
               </p>
             </div>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>Khách hàng *</Label>
               <Select value={customerId} onValueChange={setCustomerId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn khách hàng" />
                 </SelectTrigger>
                 <SelectContent>
+                  {customersQ.data?.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-ink-muted">
+                      Chưa có khách hàng nào.
+                    </div>
+                  )}
                   {customersQ.data?.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.name}
@@ -274,39 +221,26 @@ function OrdersPage() {
               </Select>
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Nhân viên chốt đơn *</Label>
-              <Select value={staffId} onValueChange={setStaffId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Chọn nhân viên" />
-                </SelectTrigger>
-                <SelectContent>
-                  {staffsQ.data?.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.full_name}
-                      {o.role ? ` · ${o.role}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-1.5 sm:col-span-2">
               <Label>
-                Sản phẩm / Dịch vụ *{" "}
-                {selectedCatalog && (
+                Dịch vụ / Gói *
+                {selectedService?.price != null && (
                   <span className="ml-2 text-xs font-bold text-brand-dark">
-                    [{selectedCatalog.type}]
-                    {isService ? " → tự tạo liệu trình" : ""}
+                    · Đơn giá {Number(selectedService.price).toLocaleString("vi-VN")} ₫
                   </span>
                 )}
               </Label>
-              <Select value={catalogId} onValueChange={onSelectCatalog}>
+              <Select value={serviceId} onValueChange={onSelectService}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn sản phẩm / dịch vụ" />
+                  <SelectValue placeholder="Chọn dịch vụ" />
                 </SelectTrigger>
                 <SelectContent>
-                  {catalogQ.data?.map((o) => (
+                  {servicesQ.data?.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-ink-muted">
+                      Chưa có dịch vụ nào.
+                    </div>
+                  )}
+                  {servicesQ.data?.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.name}
                       {o.price != null
@@ -319,46 +253,23 @@ function OrdersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Số buổi *</Label>
+              <Label>Số buổi (quantity) *</Label>
               <Input
                 type="number"
                 min={1}
                 placeholder="VD: 10"
-                value={totalSessions}
-                onChange={(e) => setTotalSessions(e.target.value)}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Tổng tiền (VND) *</Label>
+              <Label>Tổng tiền (tự tính)</Label>
               <Input
-                type="number"
-                min={0}
-                placeholder="VD: 5000000"
-                value={totalPrice}
-                onChange={(e) => setTotalPrice(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label>
-                Hoa hồng sale (VND){" "}
-                {suggestedCommission > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setCommissionAmount(String(suggestedCommission))}
-                    className="ml-2 text-xs font-bold text-brand-dark underline"
-                  >
-                    Gợi ý 5%: {suggestedCommission.toLocaleString("vi-VN")} ₫
-                  </button>
-                )}
-              </Label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="VD: 250000"
-                value={commissionAmount}
-                onChange={(e) => setCommissionAmount(e.target.value)}
+                readOnly
+                value={totalAmount ? totalAmount.toLocaleString("vi-VN") + " ₫" : ""}
+                placeholder="—"
+                className="bg-brand-soft/30 font-bold text-brand-dark"
               />
             </div>
           </div>
@@ -376,39 +287,24 @@ function OrdersPage() {
         <aside className="bg-gradient-to-br from-brand-soft to-white border border-hairline rounded-2xl p-6 space-y-4 h-fit">
           <h3 className="font-black text-base">Tóm tắt đơn hàng</h3>
           <Row label="Khách hàng" value={customerMap.get(customerId)} />
-          <Row label="Sale phụ trách" value={staffMap.get(staffId)} />
-          <Row label="Gói" value={selectedCatalog?.name} />
+          <Row label="Dịch vụ" value={selectedService?.name} />
           <Row
-            label="Loại"
-            value={selectedCatalog?.type ?? undefined}
-          />
-          <Row
-            label="Số buổi"
-            value={totalSessions ? `${totalSessions} buổi` : undefined}
-          />
-          <Row
-            label="Tổng tiền"
+            label="Đơn giá"
             value={
-              totalPrice ? Number(totalPrice).toLocaleString("vi-VN") + " ₫" : undefined
-            }
-          />
-          <Row
-            label="Hoa hồng"
-            value={
-              commissionAmount
-                ? Number(commissionAmount).toLocaleString("vi-VN") + " ₫"
+              selectedService?.price != null
+                ? Number(selectedService.price).toLocaleString("vi-VN") + " ₫"
                 : undefined
             }
           />
+          <Row label="Số buổi" value={quantity ? `${quantity} buổi` : undefined} />
+          <Row
+            label="Tổng tiền"
+            value={totalAmount ? totalAmount.toLocaleString("vi-VN") + " ₫" : undefined}
+          />
           <div className="pt-3 mt-3 border-t border-hairline text-xs text-ink-muted leading-relaxed">
-            {isService ? (
-              <>
-                Sản phẩm là <b className="text-brand-dark">{selectedCatalog?.type}</b> →
-                hệ thống sẽ tự khởi tạo liệu trình <i>active</i> cho khách.
-              </>
-            ) : (
-              <>Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>: ghi nhận order & hoa hồng.</>
-            )}
+            Khi bấm <b className="text-brand-dark">Tạo Đơn hàng</b>, trigger DB sẽ
+            tự động sinh <b>{quantity || "N"}</b> buổi liệu trình, mỗi buổi có{" "}
+            <b>mã QR duy nhất</b>.
           </div>
         </aside>
       </div>
@@ -462,23 +358,22 @@ function OrdersPage() {
               <tr className="text-ink-muted">
                 <th className="px-4 py-3 font-bold">Ngày tạo</th>
                 <th className="px-4 py-3 font-bold">Khách hàng</th>
-                <th className="px-4 py-3 font-bold">Sản phẩm / Gói</th>
+                <th className="px-4 py-3 font-bold">Dịch vụ</th>
                 <th className="px-4 py-3 font-bold">Số buổi</th>
                 <th className="px-4 py-3 font-bold">Tổng tiền</th>
-                <th className="px-4 py-3 font-bold">Sale</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {ordersQ.isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
                     Đang tải...
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
                     Chưa có đơn hàng nào.
                   </td>
                 </tr>
@@ -491,17 +386,14 @@ function OrdersPage() {
                         : "—"}
                     </td>
                     <td className="px-4 py-3 font-bold">
-                      {(o.customer_id && customerMap.get(o.customer_id)) || "—"}
+                      {customerMap.get(o.customer_id) || "—"}
                     </td>
-                    <td className="px-4 py-3">{o.package_name || "—"}</td>
-                    <td className="px-4 py-3">{o.total_sessions ?? "—"}</td>
+                    <td className="px-4 py-3">{serviceMap.get(o.service_id) || "—"}</td>
+                    <td className="px-4 py-3">{o.quantity ?? "—"}</td>
                     <td className="px-4 py-3 font-bold text-brand-dark">
-                      {o.total_price != null
-                        ? Number(o.total_price).toLocaleString("vi-VN") + " ₫"
+                      {o.total_amount != null
+                        ? Number(o.total_amount).toLocaleString("vi-VN") + " ₫"
                         : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      {(o.staff_id && staffMap.get(o.staff_id)) || "—"}
                     </td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-brand-soft text-brand-dark">
