@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import {
   Search,
   LogIn,
@@ -14,6 +15,12 @@ import {
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
+
+const MOCK_BANNERS = [
+  { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
+  { id: 2, image: "https://placehold.co/800x400/png?text=Khuyen+Mai+Thang+10" },
+  { id: 3, image: "https://placehold.co/800x400/png?text=Ra+Mat+San+Pham+Moi" },
+];
 
 
 const MOCK_EVENTS: Array<{
