@@ -111,41 +111,8 @@ const MOCK_POSTS = [
 function CommunityHome() {
   return (
     <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24 md:pb-12">
-      {/* Top Bar */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="mx-auto max-w-7xl flex items-center gap-3 px-4 md:px-8 py-3">
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-lg font-heading font-bold text-emerald-600">VITA</span>
-            <span className="text-xs font-semibold text-emerald-500">TH®Pro</span>
-          </div>
+      <UnifiedHeader />
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-6 ml-6 text-sm font-medium text-gray-700">
-            <Link to="/" className="text-emerald-600">Trang chủ</Link>
-            <Link to="/products" className="hover:text-emerald-600">Cửa hàng</Link>
-            <a href="#events" className="hover:text-emerald-600">Sự kiện</a>
-            <a href="#stores" className="hover:text-emerald-600">Cửa hàng liên kết</a>
-            <a href="#feed" className="hover:text-emerald-600">Cộng đồng</a>
-          </nav>
-
-          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2 md:max-w-xs md:ml-auto">
-            <Search className="w-4 h-4 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm..."
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
-            />
-          </div>
-          <Link
-            to="/login"
-            className="shrink-0 h-9 md:px-4 w-9 md:w-auto rounded-full bg-emerald-600 text-white flex items-center justify-center gap-2 text-sm font-medium"
-            aria-label="Đăng nhập"
-          >
-            <LogIn className="w-4 h-4" />
-            <span className="hidden md:inline">Đăng nhập</span>
-          </Link>
-        </div>
-      </header>
 
 
       {/* Hero Banner Carousel */}
