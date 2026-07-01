@@ -13,54 +13,116 @@ export const Route = createFileRoute("/admin/treatments")({
   component: TreatmentsAdmin,
 });
 
-type Treatment = {
-  id: string; customer_id: string | null; package_name: string | null;
-  total_sessions: number | null; used_sessions: number | null; remaining_sessions: number | null;
-  status: string | null; created_at: string | null;
+type TRow = {
+  id: string;
+  order_id: string;
+  customer_id: string;
+  session_number: number;
+  status: string;
+  created_at: string;
 };
-type Customer = { id: string; name: string | null };
+type Order = { id: string; service_id: string; quantity: number; created_at: string };
+type Service = { id: string; name: string; default_sessions: number | null };
+type Customer = { id: string; name: string | null; phone: string | null };
 
-const STATUS_STYLES: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-800",
-  completed: "bg-blue-100 text-blue-800",
-  cancelled: "bg-rose-100 text-rose-800",
+type Aggregate = {
+  order_id: string;
+  customer_id: string;
+  customer_name: string;
+  customer_phone: string | null;
+  service_name: string;
+  total: number;
+  completed: number;
+  remaining: number;
+  created_at: string;
+  status: "active" | "done";
 };
 
 function TreatmentsAdmin() {
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: rows = [], isLoading, error } = useQuery({
-    queryKey: ["admin", "treatments"],
+  const treatmentsQ = useQuery({
+    queryKey: ["admin", "treatments", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("treatments").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("treatments").select("id,order_id,customer_id,session_number,status,created_at").order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Treatment[];
+      return (data ?? []) as TRow[];
     },
   });
-
-  const { data: customers = [] } = useQuery({
-    queryKey: ["admin", "customers", "all"],
+  const ordersQ = useQuery({
+    queryKey: ["admin", "orders", "min"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("id,name");
+      const { data, error } = await supabase.from("orders").select("id,service_id,quantity,created_at");
+      if (error) throw error;
+      return (data ?? []) as Order[];
+    },
+  });
+  const servicesQ = useQuery({
+    queryKey: ["admin", "services", "min"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("services").select("id,name,default_sessions");
+      if (error) throw error;
+      return (data ?? []) as Service[];
+    },
+  });
+  const customersQ = useQuery({
+    queryKey: ["admin", "customers", "min"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("customers").select("id,name,phone");
       if (error) throw error;
       return (data ?? []) as Customer[];
     },
   });
 
-  const nameOf = (id: string | null) => customers.find((c) => c.id === id)?.name ?? "—";
+  const isLoading = treatmentsQ.isLoading || ordersQ.isLoading || servicesQ.isLoading || customersQ.isLoading;
+  const error = treatmentsQ.error || ordersQ.error || servicesQ.error || customersQ.error;
+
+  const aggregates: Aggregate[] = useMemo(() => {
+    const orders = new Map((ordersQ.data ?? []).map((o) => [o.id, o]));
+    const services = new Map((servicesQ.data ?? []).map((s) => [s.id, s]));
+    const customers = new Map((customersQ.data ?? []).map((c) => [c.id, c]));
+    const grouped = new Map<string, Aggregate>();
+    for (const t of treatmentsQ.data ?? []) {
+      const key = t.order_id;
+      let agg = grouped.get(key);
+      if (!agg) {
+        const o = orders.get(t.order_id);
+        const svc = o ? services.get(o.service_id) : null;
+        const cus = customers.get(t.customer_id);
+        agg = {
+          order_id: t.order_id,
+          customer_id: t.customer_id,
+          customer_name: cus?.name ?? "—",
+          customer_phone: cus?.phone ?? null,
+          service_name: svc?.name ?? "—",
+          total: 0,
+          completed: 0,
+          remaining: 0,
+          created_at: o?.created_at ?? t.created_at,
+          status: "active",
+        };
+        grouped.set(key, agg);
+      }
+      agg.total += 1;
+      if (t.status === "completed") agg.completed += 1;
+    }
+    return Array.from(grouped.values()).map((a) => {
+      a.remaining = Math.max(a.total - a.completed, 0);
+      a.status = a.remaining <= 0 ? "done" : "active";
+      return a;
+    }).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  }, [treatmentsQ.data, ordersQ.data, servicesQ.data, customersQ.data]);
 
   const filtered = useMemo(() => {
-    if (statusFilter === "all") return rows;
-    if (statusFilter === "active") return rows.filter((r) => (r.remaining_sessions ?? 0) > 0 && (r.status ?? "active") !== "cancelled");
-    if (statusFilter === "done") return rows.filter((r) => (r.remaining_sessions ?? 0) <= 0);
-    return rows.filter((r) => (r.status ?? "") === statusFilter);
-  }, [rows, statusFilter]);
+    if (statusFilter === "all") return aggregates;
+    return aggregates.filter((a) => a.status === statusFilter);
+  }, [aggregates, statusFilter]);
 
   return (
     <>
       <AdminTopbar
         title="Liệu trình khách hàng"
-        subtitle={isLoading ? "Đang tải..." : `${filtered.length}/${rows.length} liệu trình`}
+        subtitle={isLoading ? "Đang tải..." : `${filtered.length}/${aggregates.length} liệu trình`}
       />
 
       {error && (
@@ -77,9 +139,7 @@ function TreatmentsAdmin() {
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
               <SelectItem value="active">Đang active (còn buổi)</SelectItem>
-              <SelectItem value="done">Đã hết buổi</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="done">Đã hoàn thành</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -89,7 +149,7 @@ function TreatmentsAdmin() {
         <table className="w-full min-w-[920px] border-collapse">
           <thead>
             <tr>
-              {["Khách hàng", "Tên gói", "Tiến độ", "Trạng thái", "Ngày tạo"].map((h) => (
+              {["Khách hàng", "Dịch vụ", "Tiến độ", "Trạng thái", "Ngày tạo"].map((h) => (
                 <th key={h} className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">{h}</th>
               ))}
             </tr>
@@ -98,24 +158,24 @@ function TreatmentsAdmin() {
             {filtered.length === 0 && !isLoading ? (
               <tr><td colSpan={5} className="px-3.5 py-10 text-center text-ink-muted font-semibold">Không có liệu trình.</td></tr>
             ) : filtered.map((r) => {
-              const used = r.used_sessions ?? 0;
-              const total = r.total_sessions ?? 0;
-              const remaining = r.remaining_sessions ?? Math.max(total - used, 0);
-              const pct = total > 0 ? Math.round((used / total) * 100) : 0;
+              const pct = r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0;
               return (
-                <tr key={r.id}>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{nameOf(r.customer_id)}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.package_name ?? "—"}</td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] min-w-[240px]">
+                <tr key={r.order_id}>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
+                    <div className="font-semibold">{r.customer_name}</div>
+                    {r.customer_phone && <div className="text-xs text-ink-muted">{r.customer_phone}</div>}
+                  </td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.service_name}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] min-w-[260px]">
                     <div className="flex justify-between text-xs mb-1.5">
-                      <span>Đã dùng <b>{used}</b> / <b>{total}</b></span>
-                      <span className="text-brand-dark font-bold">Còn {remaining}</span>
+                      <span>Đã dùng <b>{r.completed}</b> / <b>{r.total}</b></span>
+                      <span className="text-brand-dark font-bold">Còn {r.remaining}</span>
                     </div>
                     <Progress value={pct} />
                   </td>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
-                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${STATUS_STYLES[r.status ?? ""] ?? "bg-slate-100 text-slate-700"}`}>
-                      {r.status ?? "—"}
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${r.status === "done" ? "bg-blue-100 text-blue-800" : "bg-emerald-100 text-emerald-800"}`}>
+                      {r.status === "done" ? "Hoàn thành" : "Đang thực hiện"}
                     </span>
                   </td>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
