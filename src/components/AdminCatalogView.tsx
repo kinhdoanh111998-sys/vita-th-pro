@@ -683,6 +683,19 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
               />
             </div>
 
+            <div className="space-y-1.5">
+              <Label>
+                {isService ? "Đặc trưng dịch vụ" : "Đặc trưng sản phẩm"}
+              </Label>
+              <RichTextEditor
+                value={form.features}
+                onChange={(html) =>
+                  setForm((p) => ({ ...p, features: html }))
+                }
+                placeholder="Liệt kê các đặc trưng nổi bật: thành phần, công nghệ, thông số kỹ thuật, lợi ích..."
+              />
+            </div>
+
             <div className="flex items-center gap-3 p-3 bg-brand-bg rounded-card border border-hairline">
               <Switch
                 checked={!form.is_hidden}
