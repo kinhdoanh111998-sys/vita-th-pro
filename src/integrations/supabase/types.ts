@@ -113,6 +113,7 @@ export type Database = {
       }
       services: {
         Row: {
+          category: string | null
           cost_price: number
           created_at: string
           default_sessions: number
@@ -129,6 +130,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          category?: string | null
           cost_price?: number
           created_at?: string
           default_sessions?: number
@@ -145,6 +147,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          category?: string | null
           cost_price?: number
           created_at?: string
           default_sessions?: number
@@ -280,6 +283,7 @@ export type Database = {
     Views: {
       services_public: {
         Row: {
+          category: string | null
           created_at: string | null
           default_sessions: number | null
           description: string | null
@@ -294,6 +298,7 @@ export type Database = {
           type: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string | null
           default_sessions?: number | null
           description?: string | null
@@ -308,6 +313,7 @@ export type Database = {
           type?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string | null
           default_sessions?: number | null
           description?: string | null
