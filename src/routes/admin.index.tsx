@@ -10,14 +10,8 @@ export const Route = createFileRoute("/admin/")({
 const formatVND = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
-function todayISO() {
-  const d = new Date();
-  const tz = d.getTimezoneOffset();
-  return new Date(d.getTime() - tz * 60000).toISOString().slice(0, 10);
-}
-
 function Dashboard() {
-  const today = todayISO();
+
 
   const results = useQueries({
     queries: [
