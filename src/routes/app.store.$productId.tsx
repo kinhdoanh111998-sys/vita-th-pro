@@ -255,16 +255,47 @@ function ProductDetailPage() {
         </div>
       )}
 
-      {/* Description full-width */}
-      {p.description && (
-        <div className="bg-white mt-2 p-4">
-          <h2 className="text-base font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100">
-            Mô tả chi tiết
-          </h2>
-          <div
-            className="prose prose-sm max-w-none prose-headings:font-bold prose-strong:text-gray-900 prose-a:text-emerald-600 prose-li:my-1"
-            dangerouslySetInnerHTML={{ __html: p.description }}
-          />
+      {/* Tabs Ô cửa sổ: Mô tả + Đặc trưng */}
+      {(p.description || p.features) && (
+        <div className="bg-white mt-2 rounded-t-2xl overflow-hidden">
+          <Tabs defaultValue={p.description ? "description" : "features"}>
+            <div className="border-b border-gray-100 px-3 pt-3">
+              <TabsList className="bg-transparent h-auto p-0 gap-1">
+                {p.description && (
+                  <TabsTrigger
+                    value="description"
+                    className="rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-bold data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none text-gray-500"
+                  >
+                    Mô tả
+                  </TabsTrigger>
+                )}
+                {p.features && (
+                  <TabsTrigger
+                    value="features"
+                    className="rounded-t-lg rounded-b-none px-4 py-2.5 text-sm font-bold data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:shadow-none text-gray-500"
+                  >
+                    {isService ? "Đặc trưng dịch vụ" : "Đặc trưng sản phẩm"}
+                  </TabsTrigger>
+                )}
+              </TabsList>
+            </div>
+            {p.description && (
+              <TabsContent value="description" className="p-4 mt-0">
+                <div
+                  className="prose prose-sm max-w-none prose-headings:font-bold prose-strong:text-gray-900 prose-a:text-emerald-600 prose-li:my-1 prose-img:rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: p.description }}
+                />
+              </TabsContent>
+            )}
+            {p.features && (
+              <TabsContent value="features" className="p-4 mt-0">
+                <div
+                  className="prose prose-sm max-w-none prose-headings:font-bold prose-strong:text-gray-900 prose-a:text-emerald-600 prose-li:my-1 prose-img:rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: p.features }}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
         </div>
       )}
 
