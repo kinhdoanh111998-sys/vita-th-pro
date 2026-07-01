@@ -1,33 +1,81 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
-import { FilterSidebar } from "@/components/app/FilterSidebar";
+import { FilterSidebar, type AppStoreFilters } from "@/components/app/FilterSidebar";
 import { ServiceCard } from "@/components/ServiceCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
 
 const CATEGORIES = [
   { key: "all", label: "Tất cả" },
   { key: "product", label: "Sản phẩm" },
-  { key: "service", label: "Liệu trình" },
+  { key: "service", label: "Dịch vụ" },
 ] as const;
+
+const DEFAULT_FILTERS: AppStoreFilters = {
+  priceMin: "",
+  priceMax: "",
+  productCats: [],
+  serviceCats: [],
+  rating: null,
+};
 
 function StorePage() {
   const [tab, setTab] = useState<(typeof CATEGORIES)[number]["key"]>("all");
   const [search, setSearch] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<AppStoreFilters>(DEFAULT_FILTERS);
   const { data = [], isLoading, error } = useServiceCatalog();
 
-  const filtered = useMemo(
-    () =>
-      data.filter((p) => {
-        const matchCat = tab === "all" || p.type === tab;
-        const matchSearch = search
-          ? p.name.toLowerCase().includes(search.toLowerCase())
-          : true;
-        return matchCat && matchSearch;
-      }),
-    [data, tab, search],
-  );
+  const serviceCategories = useMemo(() => {
+    const set = new Set<string>();
+    data.forEach((d) => d.type === "service" && d.category && set.add(d.category));
+    return Array.from(set).sort();
+  }, [data]);
+
+  const activeFilterCount =
+    (filters.priceMin ? 1 : 0) +
+    (filters.priceMax ? 1 : 0) +
+    filters.productCats.length +
+    filters.serviceCats.length +
+    (filters.rating ? 1 : 0);
+
+  const filtered = useMemo(() => {
+    const min = filters.priceMin ? Number(filters.priceMin) : null;
+    const max = filters.priceMax ? Number(filters.priceMax) : null;
+    return data.filter((p) => {
+      const matchTab = tab === "all" || p.type === tab;
+      const matchSearch = search
+        ? p.name.toLowerCase().includes(search.toLowerCase())
+        : true;
+
+      // Category filter — apply per type
+      let matchCat = true;
+      const hasProd = filters.productCats.length > 0;
+      const hasSvc = filters.serviceCats.length > 0;
+      if (hasProd || hasSvc) {
+        if (p.type === "product") {
+          matchCat = hasProd
+            ? filters.productCats.includes(p.category ?? "")
+            : !hasSvc; // if only service filter set, hide products
+        } else {
+          matchCat = hasSvc
+            ? filters.serviceCats.includes(p.category ?? "")
+            : !hasProd;
+        }
+      }
+
+      const price =
+        p.sale_price && p.sale_price > 0
+          ? p.sale_price
+          : p.price && p.price > 0
+            ? p.price
+            : null;
+      const matchMin = min == null || (price != null && price >= min);
+      const matchMax = max == null || (price != null && price <= max);
+
+      return matchTab && matchSearch && matchCat && matchMin && matchMax;
+    });
+  }, [data, tab, search, filters]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24 md:pb-12">
@@ -48,10 +96,15 @@ function StorePage() {
             <button
               onClick={() => setFilterOpen(true)}
               aria-label="Mở bộ lọc"
-              className="flex items-center gap-1.5 bg-white rounded-full px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-700"
+              className="relative flex items-center gap-1.5 bg-white rounded-full px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-700"
             >
               <SlidersHorizontal className="w-4 h-4" />
               <span>Lọc</span>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold grid place-items-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -112,7 +165,13 @@ function StorePage() {
         )}
       </div>
 
-      <FilterSidebar open={filterOpen} onClose={() => setFilterOpen(false)} />
+      <FilterSidebar
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        serviceCategories={serviceCategories}
+        value={filters}
+        onApply={setFilters}
+      />
     </div>
   );
 }

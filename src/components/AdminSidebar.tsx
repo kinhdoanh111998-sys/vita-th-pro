@@ -12,7 +12,8 @@ type Tab = {
 const tabs: Tab[] = [
   { to: "/admin", label: "Dashboard", exact: true, roles: ["admin", "manager"] },
   { to: "/admin/banners", label: "Banner sự kiện", roles: ["admin"] },
-  { to: "/admin/catalog", label: "Sản phẩm/Dịch vụ", roles: ["admin"] },
+  { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin"] },
+  { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin"] },
   { to: "/admin/posts", label: "Tin tức/Hoạt động/Đào tạo", roles: ["admin", "manager"] },
   { to: "/admin/customers", label: "Khách hàng", roles: ["admin", "manager"] },
   { to: "/admin/bookings", label: "Lịch hẹn", roles: ["admin"] },

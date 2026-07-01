@@ -12,6 +12,7 @@ export type CatalogItem = {
   image_urls: string[] | null;
   sku: string | null;
   type: "product" | "service";
+  category: string | null;
 };
 
 export function useServiceCatalog() {
@@ -42,6 +43,7 @@ export function useServiceCatalog() {
         type: ((r.type as string) === "product" ? "product" : "service") as
           | "product"
           | "service",
+        category: (r.category as string) ?? null,
       }));
     },
     staleTime: 60_000,

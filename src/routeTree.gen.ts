@@ -33,6 +33,8 @@ import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminServicesRouteImport } from './routes/admin.services'
+import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
@@ -42,6 +44,7 @@ import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminPageRouteImport } from './routes/admin.$page'
+import { Route as PublicServicesRouteImport } from './routes/_public.services'
 import { Route as PublicProductsRouteImport } from './routes/_public.products'
 import { Route as PublicNewsRouteImport } from './routes/_public.news'
 import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
@@ -50,6 +53,7 @@ import { Route as PublicContactRouteImport } from './routes/_public.contact'
 import { Route as PublicCommunityRouteImport } from './routes/_public.community'
 import { Route as PublicBookingRouteImport } from './routes/_public.booking'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
+import { Route as PublicServicesIndexRouteImport } from './routes/_public.services.index'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
@@ -187,6 +191,16 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminServicesRoute = AdminServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminProductsRoute = AdminProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPostsRoute = AdminPostsRouteImport.update({
   id: '/posts',
   path: '/posts',
@@ -232,6 +246,11 @@ const AdminPageRoute = AdminPageRouteImport.update({
   path: '/$page',
   getParentRoute: () => AdminRoute,
 } as any)
+const PublicServicesRoute = PublicServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicProductsRoute = PublicProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -271,6 +290,11 @@ const PublicAboutRoute = PublicAboutRouteImport.update({
   id: '/about',
   path: '/about',
   getParentRoute: () => PublicRoute,
+} as any)
+const PublicServicesIndexRoute = PublicServicesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicServicesRoute,
 } as any)
 const PublicProductsIndexRoute = PublicProductsIndexRouteImport.update({
   id: '/',
@@ -377,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/lookup': typeof PublicLookupRoute
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
+  '/services': typeof PublicServicesRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -386,6 +411,8 @@ export interface FileRoutesByFullPath {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
@@ -419,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/about/': typeof PublicAboutIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
+  '/services/': typeof PublicServicesIndexRoute
 }
 export interface FileRoutesByTo {
   '/dang-ky': typeof DangKyRoute
@@ -439,6 +467,8 @@ export interface FileRoutesByTo {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
@@ -473,6 +503,7 @@ export interface FileRoutesByTo {
   '/about': typeof PublicAboutIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
+  '/services': typeof PublicServicesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -491,6 +522,7 @@ export interface FileRoutesById {
   '/_public/lookup': typeof PublicLookupRoute
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
+  '/_public/services': typeof PublicServicesRouteWithChildren
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -500,6 +532,8 @@ export interface FileRoutesById {
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
+  '/admin/products': typeof AdminProductsRoute
+  '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
@@ -534,6 +568,7 @@ export interface FileRoutesById {
   '/_public/about/': typeof PublicAboutIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
+  '/_public/services/': typeof PublicServicesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -553,6 +588,7 @@ export interface FileRouteTypes {
     | '/lookup'
     | '/news'
     | '/products'
+    | '/services'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -562,6 +598,8 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/orders'
     | '/admin/posts'
+    | '/admin/products'
+    | '/admin/services'
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
@@ -595,6 +633,7 @@ export interface FileRouteTypes {
     | '/about/'
     | '/news/'
     | '/products/'
+    | '/services/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dang-ky'
@@ -615,6 +654,8 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/orders'
     | '/admin/posts'
+    | '/admin/products'
+    | '/admin/services'
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
@@ -649,6 +690,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/news'
     | '/products'
+    | '/services'
   id:
     | '__root__'
     | '/_public'
@@ -666,6 +708,7 @@ export interface FileRouteTypes {
     | '/_public/lookup'
     | '/_public/news'
     | '/_public/products'
+    | '/_public/services'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -675,6 +718,8 @@ export interface FileRouteTypes {
     | '/admin/employees'
     | '/admin/orders'
     | '/admin/posts'
+    | '/admin/products'
+    | '/admin/services'
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
@@ -709,6 +754,7 @@ export interface FileRouteTypes {
     | '/_public/about/'
     | '/_public/news/'
     | '/_public/products/'
+    | '/_public/services/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -891,6 +937,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/services': {
+      id: '/admin/services'
+      path: '/services'
+      fullPath: '/admin/services'
+      preLoaderRoute: typeof AdminServicesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/products': {
+      id: '/admin/products'
+      path: '/products'
+      fullPath: '/admin/products'
+      preLoaderRoute: typeof AdminProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/posts': {
       id: '/admin/posts'
       path: '/posts'
@@ -954,6 +1014,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_public/services': {
+      id: '/_public/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof PublicServicesRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/products': {
       id: '/_public/products'
       path: '/products'
@@ -1009,6 +1076,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/about'
       preLoaderRoute: typeof PublicAboutRouteImport
       parentRoute: typeof PublicRoute
+    }
+    '/_public/services/': {
+      id: '/_public/services/'
+      path: '/'
+      fullPath: '/services/'
+      preLoaderRoute: typeof PublicServicesIndexRouteImport
+      parentRoute: typeof PublicServicesRoute
     }
     '/_public/products/': {
       id: '/_public/products/'
@@ -1192,6 +1266,18 @@ const PublicProductsRouteWithChildren = PublicProductsRoute._addFileChildren(
   PublicProductsRouteChildren,
 )
 
+interface PublicServicesRouteChildren {
+  PublicServicesIndexRoute: typeof PublicServicesIndexRoute
+}
+
+const PublicServicesRouteChildren: PublicServicesRouteChildren = {
+  PublicServicesIndexRoute: PublicServicesIndexRoute,
+}
+
+const PublicServicesRouteWithChildren = PublicServicesRoute._addFileChildren(
+  PublicServicesRouteChildren,
+)
+
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRouteWithChildren
   PublicBookingRoute: typeof PublicBookingRoute
@@ -1201,6 +1287,7 @@ interface PublicRouteChildren {
   PublicLookupRoute: typeof PublicLookupRoute
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
+  PublicServicesRoute: typeof PublicServicesRouteWithChildren
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
@@ -1213,6 +1300,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicLookupRoute: PublicLookupRoute,
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
+  PublicServicesRoute: PublicServicesRouteWithChildren,
   PublicIndexRoute: PublicIndexRoute,
 }
 
@@ -1229,6 +1317,8 @@ interface AdminRouteChildren {
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPostsRoute: typeof AdminPostsRoute
+  AdminProductsRoute: typeof AdminProductsRoute
+  AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminToursRoute: typeof AdminToursRoute
   AdminTreatmentsRoute: typeof AdminTreatmentsRoute
@@ -1245,6 +1335,8 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPostsRoute: AdminPostsRoute,
+  AdminProductsRoute: AdminProductsRoute,
+  AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminToursRoute: AdminToursRoute,
   AdminTreatmentsRoute: AdminTreatmentsRoute,

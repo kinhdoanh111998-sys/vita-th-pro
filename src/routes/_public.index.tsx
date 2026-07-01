@@ -117,7 +117,8 @@ function CommunityHome() {
   const navLinks: Array<{ label: string; to: string }> = [
     { label: "Trang chủ", to: "/" },
     { label: "Giới thiệu", to: "/about" },
-    { label: "Sản phẩm & Dịch vụ", to: "/products" },
+    { label: "Sản phẩm", to: "/products" },
+    { label: "Dịch vụ", to: "/services" },
     { label: "Sự kiện", to: "/events" },
     { label: "Cộng đồng", to: "/community" },
     { label: "Tin tức", to: "/news" },
