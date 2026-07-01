@@ -13,8 +13,10 @@ import { Route as PortalRouteImport } from './routes/portal'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as KhachHangRouteImport } from './routes/khach-hang'
 import { Route as DangKyRouteImport } from './routes/dang-ky'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as PublicRouteImport } from './routes/_public'
+import { Route as AppIndexRouteImport } from './routes/app.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as PublicIndexRouteImport } from './routes/_public.index'
 import { Route as PortalTimesheetRouteImport } from './routes/portal.timesheet'
@@ -79,6 +81,11 @@ const DangKyRoute = DangKyRouteImport.update({
   path: '/dang-ky',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -87,6 +94,11 @@ const AdminRoute = AdminRouteImport.update({
 const PublicRoute = PublicRouteImport.update({
   id: '/_public',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -310,6 +322,7 @@ const PublicAboutCertificationsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/dang-ky': typeof DangKyRoute
   '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
@@ -341,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/portal/products': typeof PortalProductsRoute
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/admin/': typeof AdminIndexRoute
+  '/app/': typeof AppIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
   '/about/history': typeof PublicAboutHistoryRoute
   '/about/team': typeof PublicAboutTeamRoute
@@ -387,6 +401,7 @@ export interface FileRoutesByTo {
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminIndexRoute
+  '/app': typeof AppIndexRoute
   '/about/certifications': typeof PublicAboutCertificationsRoute
   '/about/history': typeof PublicAboutHistoryRoute
   '/about/team': typeof PublicAboutTeamRoute
@@ -407,6 +422,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteWithChildren
   '/admin': typeof AdminRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/dang-ky': typeof DangKyRoute
   '/khach-hang': typeof KhachHangRoute
   '/login': typeof LoginRoute
@@ -439,6 +455,7 @@ export interface FileRoutesById {
   '/portal/timesheet': typeof PortalTimesheetRoute
   '/_public/': typeof PublicIndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/app/': typeof AppIndexRoute
   '/_public/about/certifications': typeof PublicAboutCertificationsRoute
   '/_public/about/history': typeof PublicAboutHistoryRoute
   '/_public/about/team': typeof PublicAboutTeamRoute
@@ -460,6 +477,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/app'
     | '/dang-ky'
     | '/khach-hang'
     | '/login'
@@ -491,6 +509,7 @@ export interface FileRouteTypes {
     | '/portal/products'
     | '/portal/timesheet'
     | '/admin/'
+    | '/app/'
     | '/about/certifications'
     | '/about/history'
     | '/about/team'
@@ -537,6 +556,7 @@ export interface FileRouteTypes {
     | '/portal/timesheet'
     | '/'
     | '/admin'
+    | '/app'
     | '/about/certifications'
     | '/about/history'
     | '/about/team'
@@ -556,6 +576,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/app'
     | '/dang-ky'
     | '/khach-hang'
     | '/login'
@@ -588,6 +609,7 @@ export interface FileRouteTypes {
     | '/portal/timesheet'
     | '/_public/'
     | '/admin/'
+    | '/app/'
     | '/_public/about/certifications'
     | '/_public/about/history'
     | '/_public/about/team'
@@ -608,6 +630,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   PublicRoute: typeof PublicRouteWithChildren
   AdminRoute: typeof AdminRouteWithChildren
+  AppRoute: typeof AppRouteWithChildren
   DangKyRoute: typeof DangKyRoute
   KhachHangRoute: typeof KhachHangRoute
   LoginRoute: typeof LoginRoute
@@ -644,6 +667,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DangKyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -657,6 +687,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof PublicRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -1079,6 +1116,16 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AppRouteChildren {
+  AppIndexRoute: typeof AppIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppIndexRoute: AppIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 interface PortalRouteChildren {
   PortalAffiliateRoute: typeof PortalAffiliateRoute
   PortalBookingsRoute: typeof PortalBookingsRoute
@@ -1107,6 +1154,7 @@ const PortalRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   PublicRoute: PublicRouteWithChildren,
   AdminRoute: AdminRouteWithChildren,
+  AppRoute: AppRouteWithChildren,
   DangKyRoute: DangKyRoute,
   KhachHangRoute: KhachHangRoute,
   LoginRoute: LoginRoute,
