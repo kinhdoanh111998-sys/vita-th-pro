@@ -13,6 +13,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
+import { CommunityPost } from "@/components/app/CommunityPost";
+
 
 const MOCK_EVENTS: Array<{
   id: number;
@@ -62,11 +64,31 @@ const SHORTCUTS = [
 ];
 
 
-const ACTIVITIES = [
-  { title: "Cộng đồng làm đẹp VITA", desc: "12.5k thành viên đang hoạt động" },
-  { title: "Chia sẻ hành trình đẹp", desc: "245 bài viết mới tuần này" },
-  { title: "Livestream chuyên gia", desc: "Thứ 5 hàng tuần, 20:00" },
+const MOCK_POSTS = [
+  {
+    id: 1,
+    author: "Hương Tràm",
+    avatar: "https://placehold.co/100x100/png",
+    time: "2 giờ trước",
+    content:
+      "Hôm nay trải nghiệm máy VITA M04 tại cơ sở Q1 cực kỳ ưng ý. Da căng bóng và sáng lên hẳn luôn mọi người ạ!",
+    images: ["https://placehold.co/600x400/png"],
+    likes: 24,
+    comments: 5,
+  },
+  {
+    id: 2,
+    author: "Admin VITA",
+    avatar: "https://placehold.co/100x100/png",
+    time: "5 giờ trước",
+    content:
+      "🎉 Chúc mừng cơ sở liên kết mới tại Đà Nẵng chính thức đi vào hoạt động. Đang có ưu đãi đặc biệt cho các liệu trình chăm sóc da.",
+    images: ["https://placehold.co/600x400/png"],
+    likes: 156,
+    comments: 32,
+  },
 ];
+
 
 function CommunityHome() {
   return (
@@ -162,7 +184,7 @@ function CommunityHome() {
         </div>
       </section>
 
-      {/* Community Activities */}
+      {/* Community Feed */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-heading font-bold text-gray-900">
@@ -172,26 +194,13 @@ function CommunityHome() {
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="space-y-2.5">
-          {ACTIVITIES.map((a) => (
-            <div
-              key={a.title}
-              className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm"
-            >
-              <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {a.title}
-                </p>
-                <p className="text-xs text-gray-500 truncate">{a.desc}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
-            </div>
+        <div className="space-y-4">
+          {MOCK_POSTS.map((post) => (
+            <CommunityPost key={post.id} {...post} />
           ))}
         </div>
       </section>
+
 
       {/* Public Bottom Navigation */}
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
