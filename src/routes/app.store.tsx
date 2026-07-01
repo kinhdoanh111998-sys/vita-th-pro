@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { ProductCard, type StoreProduct } from "@/components/app/ProductCard";
+import { FilterSidebar } from "@/components/app/FilterSidebar";
 
 const MOCK_PRODUCTS: StoreProduct[] = [
   { id: 1, name: "Máy VITA M01", price: "15.000.000đ", category: "Máy móc", image: "https://placehold.co/300x300/png" },
