@@ -29,6 +29,7 @@ import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
 import { Route as AppStoreRouteImport } from './routes/app.store'
 import { Route as AppScanRouteImport } from './routes/app.scan'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppEventsRouteImport } from './routes/app.events'
 import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
@@ -37,6 +38,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCommissionsRouteImport } from './routes/admin.commissions'
@@ -60,6 +62,7 @@ import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
 import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
+import { Route as AppEventsIdRouteImport } from './routes/app.events.$id'
 import { Route as PublicServicesIdRouteImport } from './routes/_public.services.$id'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
@@ -69,6 +72,7 @@ import { Route as PublicProductsIdRouteImport } from './routes/_public.products.
 import { Route as PublicNewsTrainingRouteImport } from './routes/_public.news.training'
 import { Route as PublicNewsEventsRouteImport } from './routes/_public.news.events'
 import { Route as PublicNewsActivitiesRouteImport } from './routes/_public.news.activities'
+import { Route as PublicEventsIdRouteImport } from './routes/_public.events.$id'
 import { Route as PublicAboutTestimonialsRouteImport } from './routes/_public.about.testimonials'
 import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team'
 import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
@@ -173,6 +177,11 @@ const AppNotificationsRoute = AppNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEventsRoute = AppEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
@@ -211,6 +220,11 @@ const AdminPostsRoute = AdminPostsRouteImport.update({
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEmployeesRoute = AdminEmployeesRouteImport.update({
@@ -328,6 +342,11 @@ const AppStoreProductIdRoute = AppStoreProductIdRouteImport.update({
   path: '/$productId',
   getParentRoute: () => AppStoreRoute,
 } as any)
+const AppEventsIdRoute = AppEventsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppEventsRoute,
+} as any)
 const PublicServicesIdRoute = PublicServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -375,6 +394,11 @@ const PublicNewsActivitiesRoute = PublicNewsActivitiesRouteImport.update({
   path: '/activities',
   getParentRoute: () => PublicNewsRoute,
 } as any)
+const PublicEventsIdRoute = PublicEventsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PublicEventsRoute,
+} as any)
 const PublicAboutTestimonialsRoute = PublicAboutTestimonialsRouteImport.update({
   id: '/testimonials',
   path: '/testimonials',
@@ -409,7 +433,7 @@ export interface FileRoutesByFullPath {
   '/booking': typeof PublicBookingRoute
   '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
-  '/events': typeof PublicEventsRoute
+  '/events': typeof PublicEventsRouteWithChildren
   '/lookup': typeof PublicLookupRoute
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
@@ -422,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -430,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
+  '/app/events': typeof AppEventsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -446,6 +472,7 @@ export interface FileRoutesByFullPath {
   '/about/history': typeof PublicAboutHistoryRoute
   '/about/team': typeof PublicAboutTeamRoute
   '/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/events/$id': typeof PublicEventsIdRoute
   '/news/activities': typeof PublicNewsActivitiesRoute
   '/news/events': typeof PublicNewsEventsRoute
   '/news/training': typeof PublicNewsTrainingRoute
@@ -455,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/app/events/$id': typeof AppEventsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about/': typeof PublicAboutIndexRoute
@@ -470,7 +498,7 @@ export interface FileRoutesByTo {
   '/booking': typeof PublicBookingRoute
   '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
-  '/events': typeof PublicEventsRoute
+  '/events': typeof PublicEventsRouteWithChildren
   '/lookup': typeof PublicLookupRoute
   '/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
@@ -480,6 +508,7 @@ export interface FileRoutesByTo {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -488,6 +517,7 @@ export interface FileRoutesByTo {
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
+  '/app/events': typeof AppEventsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -505,6 +535,7 @@ export interface FileRoutesByTo {
   '/about/history': typeof PublicAboutHistoryRoute
   '/about/team': typeof PublicAboutTeamRoute
   '/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/events/$id': typeof PublicEventsIdRoute
   '/news/activities': typeof PublicNewsActivitiesRoute
   '/news/events': typeof PublicNewsEventsRoute
   '/news/training': typeof PublicNewsTrainingRoute
@@ -514,6 +545,7 @@ export interface FileRoutesByTo {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/app/events/$id': typeof AppEventsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about': typeof PublicAboutIndexRoute
@@ -534,7 +566,7 @@ export interface FileRoutesById {
   '/_public/booking': typeof PublicBookingRoute
   '/_public/community': typeof PublicCommunityRoute
   '/_public/contact': typeof PublicContactRoute
-  '/_public/events': typeof PublicEventsRoute
+  '/_public/events': typeof PublicEventsRouteWithChildren
   '/_public/lookup': typeof PublicLookupRoute
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
@@ -547,6 +579,7 @@ export interface FileRoutesById {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -555,6 +588,7 @@ export interface FileRoutesById {
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/app/account': typeof AppAccountRoute
+  '/app/events': typeof AppEventsRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
@@ -572,6 +606,7 @@ export interface FileRoutesById {
   '/_public/about/history': typeof PublicAboutHistoryRoute
   '/_public/about/team': typeof PublicAboutTeamRoute
   '/_public/about/testimonials': typeof PublicAboutTestimonialsRoute
+  '/_public/events/$id': typeof PublicEventsIdRoute
   '/_public/news/activities': typeof PublicNewsActivitiesRoute
   '/_public/news/events': typeof PublicNewsEventsRoute
   '/_public/news/training': typeof PublicNewsTrainingRoute
@@ -581,6 +616,7 @@ export interface FileRoutesById {
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/_public/services/$id': typeof PublicServicesIdRoute
+  '/app/events/$id': typeof AppEventsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/_public/about/': typeof PublicAboutIndexRoute
@@ -615,6 +651,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -623,6 +660,7 @@ export interface FileRouteTypes {
     | '/admin/tours'
     | '/admin/treatments'
     | '/app/account'
+    | '/app/events'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -639,6 +677,7 @@ export interface FileRouteTypes {
     | '/about/history'
     | '/about/team'
     | '/about/testimonials'
+    | '/events/$id'
     | '/news/activities'
     | '/news/events'
     | '/news/training'
@@ -648,6 +687,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/app/events/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about/'
@@ -673,6 +713,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -681,6 +722,7 @@ export interface FileRouteTypes {
     | '/admin/tours'
     | '/admin/treatments'
     | '/app/account'
+    | '/app/events'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -698,6 +740,7 @@ export interface FileRouteTypes {
     | '/about/history'
     | '/about/team'
     | '/about/testimonials'
+    | '/events/$id'
     | '/news/activities'
     | '/news/events'
     | '/news/training'
@@ -707,6 +750,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/app/events/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about'
@@ -739,6 +783,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -747,6 +792,7 @@ export interface FileRouteTypes {
     | '/admin/tours'
     | '/admin/treatments'
     | '/app/account'
+    | '/app/events'
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
@@ -764,6 +810,7 @@ export interface FileRouteTypes {
     | '/_public/about/history'
     | '/_public/about/team'
     | '/_public/about/testimonials'
+    | '/_public/events/$id'
     | '/_public/news/activities'
     | '/_public/news/events'
     | '/_public/news/training'
@@ -773,6 +820,7 @@ export interface FileRouteTypes {
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
     | '/_public/services/$id'
+    | '/app/events/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/_public/about/'
@@ -933,6 +981,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNotificationsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/events': {
+      id: '/app/events'
+      path: '/events'
+      fullPath: '/app/events'
+      preLoaderRoute: typeof AppEventsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/account': {
       id: '/app/account'
       path: '/account'
@@ -987,6 +1042,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/employees': {
@@ -1150,6 +1212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStoreProductIdRouteImport
       parentRoute: typeof AppStoreRoute
     }
+    '/app/events/$id': {
+      id: '/app/events/$id'
+      path: '/$id'
+      fullPath: '/app/events/$id'
+      preLoaderRoute: typeof AppEventsIdRouteImport
+      parentRoute: typeof AppEventsRoute
+    }
     '/_public/services/$id': {
       id: '/_public/services/$id'
       path: '/$id'
@@ -1213,6 +1282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicNewsActivitiesRouteImport
       parentRoute: typeof PublicNewsRoute
     }
+    '/_public/events/$id': {
+      id: '/_public/events/$id'
+      path: '/$id'
+      fullPath: '/events/$id'
+      preLoaderRoute: typeof PublicEventsIdRouteImport
+      parentRoute: typeof PublicEventsRoute
+    }
     '/_public/about/testimonials': {
       id: '/_public/about/testimonials'
       path: '/testimonials'
@@ -1262,6 +1338,18 @@ const PublicAboutRouteChildren: PublicAboutRouteChildren = {
 
 const PublicAboutRouteWithChildren = PublicAboutRoute._addFileChildren(
   PublicAboutRouteChildren,
+)
+
+interface PublicEventsRouteChildren {
+  PublicEventsIdRoute: typeof PublicEventsIdRoute
+}
+
+const PublicEventsRouteChildren: PublicEventsRouteChildren = {
+  PublicEventsIdRoute: PublicEventsIdRoute,
+}
+
+const PublicEventsRouteWithChildren = PublicEventsRoute._addFileChildren(
+  PublicEventsRouteChildren,
 )
 
 interface PublicNewsRouteChildren {
@@ -1323,7 +1411,7 @@ interface PublicRouteChildren {
   PublicBookingRoute: typeof PublicBookingRoute
   PublicCommunityRoute: typeof PublicCommunityRoute
   PublicContactRoute: typeof PublicContactRoute
-  PublicEventsRoute: typeof PublicEventsRoute
+  PublicEventsRoute: typeof PublicEventsRouteWithChildren
   PublicLookupRoute: typeof PublicLookupRoute
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
@@ -1337,7 +1425,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicBookingRoute: PublicBookingRoute,
   PublicCommunityRoute: PublicCommunityRoute,
   PublicContactRoute: PublicContactRoute,
-  PublicEventsRoute: PublicEventsRoute,
+  PublicEventsRoute: PublicEventsRouteWithChildren,
   PublicLookupRoute: PublicLookupRoute,
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
@@ -1357,6 +1445,7 @@ interface AdminRouteChildren {
   AdminCommissionsRoute: typeof AdminCommissionsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
+  AdminEventsRoute: typeof AdminEventsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPostsRoute: typeof AdminPostsRoute
   AdminProductsRoute: typeof AdminProductsRoute
@@ -1375,6 +1464,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCommissionsRoute: AdminCommissionsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
+  AdminEventsRoute: AdminEventsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPostsRoute: AdminPostsRoute,
   AdminProductsRoute: AdminProductsRoute,
@@ -1386,6 +1476,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface AppEventsRouteChildren {
+  AppEventsIdRoute: typeof AppEventsIdRoute
+}
+
+const AppEventsRouteChildren: AppEventsRouteChildren = {
+  AppEventsIdRoute: AppEventsIdRoute,
+}
+
+const AppEventsRouteWithChildren = AppEventsRoute._addFileChildren(
+  AppEventsRouteChildren,
+)
 
 interface AppStoreRouteChildren {
   AppStoreProductIdRoute: typeof AppStoreProductIdRoute
@@ -1403,6 +1505,7 @@ const AppStoreRouteWithChildren = AppStoreRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
+  AppEventsRoute: typeof AppEventsRouteWithChildren
   AppNotificationsRoute: typeof AppNotificationsRoute
   AppScanRoute: typeof AppScanRoute
   AppStoreRoute: typeof AppStoreRouteWithChildren
@@ -1411,6 +1514,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
+  AppEventsRoute: AppEventsRouteWithChildren,
   AppNotificationsRoute: AppNotificationsRoute,
   AppScanRoute: AppScanRoute,
   AppStoreRoute: AppStoreRouteWithChildren,
