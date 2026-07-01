@@ -57,14 +57,18 @@ function ProductCard({ p }: { p: Product }) {
   const ctaLabel = p.cta_type === "contact" ? "Liên hệ tư vấn" : "Đặt mua ngay";
 
   return (
-    <article className="bg-brand-surface rounded-card border border-brand-border overflow-hidden transition-shadow hover:shadow-md flex flex-col">
+    <Link
+      to="/products/$id"
+      params={{ id: String(p.id) }}
+      className="group block bg-brand-surface rounded-card border border-brand-border overflow-hidden transition-shadow hover:shadow-md flex flex-col"
+    >
       <div className="relative aspect-[4/3] bg-brand-bg">
         {img ? (
           <img
             src={img}
             alt={p.name}
             loading="lazy"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-brand-muted">
@@ -81,7 +85,7 @@ function ProductCard({ p }: { p: Product }) {
       </div>
 
       <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-heading font-bold text-brand-text text-lg line-clamp-2">
+        <h3 className="font-heading font-bold text-brand-text text-lg line-clamp-2 group-hover:text-brand-primary transition-colors">
           {p.name}
         </h3>
         {desc ? (
@@ -109,14 +113,13 @@ function ProductCard({ p }: { p: Product }) {
           )}
         </div>
 
-        <button
-          type="button"
-          className="mt-5 w-full h-[44px] flex items-center justify-center rounded-[8px] bg-brand-primary text-white font-medium hover:bg-brand-primary-dark transition-colors"
+        <span
+          className="mt-5 w-full h-[44px] flex items-center justify-center rounded-[8px] bg-brand-primary text-white font-medium group-hover:bg-brand-primary-dark transition-colors"
         >
           {ctaLabel}
-        </button>
+        </span>
       </div>
-    </article>
+    </Link>
   );
 }
 
