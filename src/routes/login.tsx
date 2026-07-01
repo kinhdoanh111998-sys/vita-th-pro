@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ function LoginPage() {
   const { session, role, loading } = useAuth();
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -61,7 +63,13 @@ function LoginPage() {
     navigate({ to: destinationForRole(role), replace: true });
   }, [session, role, loading, navigate]);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      onSubmit(e);
+    }
+  };
+
+  const onSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -120,17 +128,30 @@ function LoginPage() {
               type="text"
               value={account}
               onChange={(e) => setAccount(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Nhập số điện thoại hoặc email"
             />
           </div>
           <div>
             <label className="block text-sm font-bold mb-1">Mật khẩu</label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="••••••••"
+                className="pr-10"
+              />
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-brand-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           {error && (
@@ -140,7 +161,14 @@ function LoginPage() {
           )}
 
           <Button type="submit" disabled={submitting} className="w-full">
-            {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+            {submitting ? (
+              <>
+                <Loader2 className="animate-spin" size={18} />
+                Đang xác thực...
+              </>
+            ) : (
+              "Đăng nhập"
+            )}
           </Button>
         </form>
 
