@@ -45,7 +45,9 @@ import { Route as AdminPageRouteImport } from './routes/admin.$page'
 import { Route as PublicProductsRouteImport } from './routes/_public.products'
 import { Route as PublicNewsRouteImport } from './routes/_public.news'
 import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
+import { Route as PublicEventsRouteImport } from './routes/_public.events'
 import { Route as PublicContactRouteImport } from './routes/_public.contact'
+import { Route as PublicCommunityRouteImport } from './routes/_public.community'
 import { Route as PublicBookingRouteImport } from './routes/_public.booking'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
@@ -245,9 +247,19 @@ const PublicLookupRoute = PublicLookupRouteImport.update({
   path: '/lookup',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicEventsRoute = PublicEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicContactRoute = PublicContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => PublicRoute,
+} as any)
+const PublicCommunityRoute = PublicCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
   getParentRoute: () => PublicRoute,
 } as any)
 const PublicBookingRoute = PublicBookingRouteImport.update({
@@ -359,7 +371,9 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRouteWithChildren
   '/about': typeof PublicAboutRouteWithChildren
   '/booking': typeof PublicBookingRoute
+  '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
+  '/events': typeof PublicEventsRoute
   '/lookup': typeof PublicLookupRoute
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
@@ -412,7 +426,9 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/booking': typeof PublicBookingRoute
+  '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
+  '/events': typeof PublicEventsRoute
   '/lookup': typeof PublicLookupRoute
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -469,7 +485,9 @@ export interface FileRoutesById {
   '/portal': typeof PortalRouteWithChildren
   '/_public/about': typeof PublicAboutRouteWithChildren
   '/_public/booking': typeof PublicBookingRoute
+  '/_public/community': typeof PublicCommunityRoute
   '/_public/contact': typeof PublicContactRoute
+  '/_public/events': typeof PublicEventsRoute
   '/_public/lookup': typeof PublicLookupRoute
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
@@ -529,7 +547,9 @@ export interface FileRouteTypes {
     | '/portal'
     | '/about'
     | '/booking'
+    | '/community'
     | '/contact'
+    | '/events'
     | '/lookup'
     | '/news'
     | '/products'
@@ -582,7 +602,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/booking'
+    | '/community'
     | '/contact'
+    | '/events'
     | '/lookup'
     | '/admin/$page'
     | '/admin/banners'
@@ -638,7 +660,9 @@ export interface FileRouteTypes {
     | '/portal'
     | '/_public/about'
     | '/_public/booking'
+    | '/_public/community'
     | '/_public/contact'
+    | '/_public/events'
     | '/_public/lookup'
     | '/_public/news'
     | '/_public/products'
@@ -951,11 +975,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicLookupRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/events': {
+      id: '/_public/events'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof PublicEventsRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/contact': {
       id: '/_public/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof PublicContactRouteImport
+      parentRoute: typeof PublicRoute
+    }
+    '/_public/community': {
+      id: '/_public/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof PublicCommunityRouteImport
       parentRoute: typeof PublicRoute
     }
     '/_public/booking': {
@@ -1157,7 +1195,9 @@ const PublicProductsRouteWithChildren = PublicProductsRoute._addFileChildren(
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRouteWithChildren
   PublicBookingRoute: typeof PublicBookingRoute
+  PublicCommunityRoute: typeof PublicCommunityRoute
   PublicContactRoute: typeof PublicContactRoute
+  PublicEventsRoute: typeof PublicEventsRoute
   PublicLookupRoute: typeof PublicLookupRoute
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
@@ -1167,7 +1207,9 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicAboutRoute: PublicAboutRouteWithChildren,
   PublicBookingRoute: PublicBookingRoute,
+  PublicCommunityRoute: PublicCommunityRoute,
   PublicContactRoute: PublicContactRoute,
+  PublicEventsRoute: PublicEventsRoute,
   PublicLookupRoute: PublicLookupRoute,
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
