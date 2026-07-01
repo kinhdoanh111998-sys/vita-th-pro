@@ -17,24 +17,45 @@ export type Database = {
       customers: {
         Row: {
           created_at: string
+          dob: string | null
           email: string | null
+          full_name: string | null
+          gender: string | null
           id: string
           name: string
+          note: string | null
+          notes: string | null
           phone: string | null
+          source: string | null
+          status: string | null
         }
         Insert: {
           created_at?: string
+          dob?: string | null
           email?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
           name: string
+          note?: string | null
+          notes?: string | null
           phone?: string | null
+          source?: string | null
+          status?: string | null
         }
         Update: {
           created_at?: string
+          dob?: string | null
           email?: string | null
+          full_name?: string | null
+          gender?: string | null
           id?: string
           name?: string
+          note?: string | null
+          notes?: string | null
           phone?: string | null
+          source?: string | null
+          status?: string | null
         }
         Relationships: []
       }
