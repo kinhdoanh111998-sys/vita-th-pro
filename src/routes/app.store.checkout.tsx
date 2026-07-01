@@ -209,9 +209,17 @@ function CheckoutPage() {
             {formatVnd(total)}
           </p>
         </div>
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-xl text-sm">
-          <CheckCircle2 className="w-4 h-4" />
-          Xác nhận đặt hàng
+        <button
+          onClick={handleSubmit}
+          disabled={submitting}
+          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-5 py-3 rounded-xl text-sm"
+        >
+          {submitting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4" />
+          )}
+          {submitting ? "Đang xử lý..." : "Xác nhận đặt hàng"}
         </button>
       </div>
     </div>
