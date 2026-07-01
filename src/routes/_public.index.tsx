@@ -61,20 +61,6 @@ const SHORTCUTS = [
   { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600" },
 ];
 
-const EVENTS = [
-  {
-    title: "VITA Marathon Mùa Hè 2025",
-    tag: "Sự kiện sắp tới",
-    desc: "+500 điểm khi tham dự",
-    color: "from-emerald-400 to-teal-500",
-  },
-  {
-    title: "Workshop Chăm sóc da chuyên sâu",
-    tag: "Đăng ký ngay",
-    desc: "Miễn phí cho thành viên",
-    color: "from-pink-400 to-rose-500",
-  },
-];
 
 const ACTIVITIES = [
   { title: "Cộng đồng làm đẹp VITA", desc: "12.5k thành viên đang hoạt động" },
