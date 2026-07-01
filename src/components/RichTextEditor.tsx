@@ -2,6 +2,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
+import Image from "@tiptap/extension-image";
 import {
   Bold,
   Italic,
@@ -16,14 +17,35 @@ import {
   Redo2,
   Strikethrough,
   Quote,
+  ImagePlus,
+  Loader2,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 
 interface Props {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   minHeight?: number;
+}
+
+const BUCKET = "product-images";
+const MAX_MB = 5;
+
+async function uploadEditorImage(file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) throw new Error("Chỉ hỗ trợ file ảnh");
+  if (file.size > MAX_MB * 1024 * 1024)
+    throw new Error(`Ảnh vượt quá ${MAX_MB}MB`);
+  const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+  const path = `editor/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, { cacheControl: "3600", upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function Btn({
@@ -56,7 +78,15 @@ function Btn({
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({
+  editor,
+  onPickImage,
+  uploading,
+}: {
+  editor: Editor;
+  onPickImage: () => void;
+  uploading: boolean;
+}) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-hairline bg-brand-bg/40 p-1.5 rounded-t-md">
       <Btn
@@ -145,6 +175,18 @@ function Toolbar({ editor }: { editor: Editor }) {
       </Btn>
       <span className="w-px h-5 bg-hairline mx-1" />
       <Btn
+        title="Chèn ảnh (hoặc dán/kéo thả trực tiếp)"
+        disabled={uploading}
+        onClick={onPickImage}
+      >
+        {uploading ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : (
+          <ImagePlus size={14} />
+        )}
+      </Btn>
+      <span className="w-px h-5 bg-hairline mx-1" />
+      <Btn
         title="Hoàn tác"
         disabled={!editor.can().undo()}
         onClick={() => editor.chain().focus().undo().run()}
@@ -168,11 +210,38 @@ export function RichTextEditor({
   placeholder = "Nhập mô tả chi tiết...",
   minHeight = 200,
 }: Props) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const insertImage = useCallback(
+    async (file: File, editor: Editor) => {
+      try {
+        setUploading(true);
+        const url = await uploadEditorImage(file);
+        editor.chain().focus().setImage({ src: url, alt: file.name }).run();
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : "Không tải được ảnh lên",
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [],
+  );
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Placeholder.configure({ placeholder }),
+      Image.configure({
+        inline: false,
+        allowBase64: false,
+        HTMLAttributes: {
+          class: "rounded-lg my-3 max-w-full h-auto",
+        },
+      }),
     ],
     content: value || "",
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -181,9 +250,35 @@ export function RichTextEditor({
         class:
           "prose prose-sm max-w-none focus:outline-none px-3 py-3 min-h-[200px]",
       },
+      handlePaste(view, event) {
+        const files = Array.from(event.clipboardData?.files || []).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        if (files.length === 0) return false;
+        event.preventDefault();
+        files.forEach((f) => insertImage(f, editorRef.current!));
+        return true;
+      },
+      handleDrop(view, event) {
+        const dt = event.dataTransfer;
+        if (!dt) return false;
+        const files = Array.from(dt.files || []).filter((f) =>
+          f.type.startsWith("image/"),
+        );
+        if (files.length === 0) return false;
+        event.preventDefault();
+        files.forEach((f) => insertImage(f, editorRef.current!));
+        return true;
+      },
     },
     immediatelyRender: false,
   });
+
+  // Keep a ref so handlePaste/handleDrop can access the editor after mount
+  const editorRef = useRef<Editor | null>(null);
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
 
   // Sync external value updates (e.g., when opening edit dialog)
   useEffect(() => {
@@ -207,9 +302,22 @@ export function RichTextEditor({
     );
   }
 
+  const onPickImage = () => fileInputRef.current?.click();
+
   return (
     <div className="border border-hairline rounded-md bg-white overflow-hidden">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} onPickImage={onPickImage} uploading={uploading} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) insertImage(file, editor);
+          e.target.value = "";
+        }}
+      />
       <div style={{ minHeight }}>
         <EditorContent editor={editor} />
       </div>
