@@ -1,4 +1,5 @@
 import { MapPin, Phone, Globe, QrCode, Tag, Navigation, PhoneCall, Share2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export interface StoreProduct {
   id: number;
@@ -36,7 +37,11 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
       {/* Image */}
-      <div className="relative aspect-square bg-gray-100">
+      <Link
+        to="/app/store/$productId"
+        params={{ productId: String(product.id) }}
+        className="relative aspect-square bg-gray-100 block"
+      >
         <img src={image} alt={name} className="w-full h-full object-cover" />
         {pinned && (
           <span className="absolute top-2 left-2 bg-orange-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
@@ -51,7 +56,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             {category}
           </span>
         </div>
-      </div>
+      </Link>
 
       {/* Content */}
       <div className="p-2.5 flex flex-col gap-1.5 flex-1">
