@@ -157,9 +157,27 @@ function CommunityHome() {
         </div>
       </section>
 
+      {/* Affiliate Stores */}
+      <section className="pt-6">
+        <div className="flex items-center justify-between mb-3 px-4">
+          <h2 className="text-base font-heading font-bold text-gray-900">
+            Cửa hàng liên kết
+          </h2>
+          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 pb-2">
+          {MOCK_STORES.map((s) => (
+            <AffiliateStoreCard key={s.id} store={s} />
+          ))}
+        </div>
+      </section>
+
       {/* Featured Events */}
       <section className="px-4 pt-6">
         <div className="flex items-center justify-between mb-3">
+
           <h2 className="text-base font-heading font-bold text-gray-900">
             Sự kiện nổi bật
           </h2>
