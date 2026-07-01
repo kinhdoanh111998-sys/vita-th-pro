@@ -44,6 +44,7 @@ import { Route as AdminCatalogRouteImport } from './routes/admin.catalog'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminPageRouteImport } from './routes/admin.$page'
+import { Route as PublicWalletRouteImport } from './routes/_public.wallet'
 import { Route as PublicServicesRouteImport } from './routes/_public.services'
 import { Route as PublicProductsRouteImport } from './routes/_public.products'
 import { Route as PublicNewsRouteImport } from './routes/_public.news'
@@ -247,6 +248,11 @@ const AdminPageRoute = AdminPageRouteImport.update({
   path: '/$page',
   getParentRoute: () => AdminRoute,
 } as any)
+const PublicWalletRoute = PublicWalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicServicesRoute = PublicServicesRouteImport.update({
   id: '/services',
   path: '/services',
@@ -408,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
   '/services': typeof PublicServicesRouteWithChildren
+  '/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -465,6 +472,7 @@ export interface FileRoutesByTo {
   '/contact': typeof PublicContactRoute
   '/events': typeof PublicEventsRoute
   '/lookup': typeof PublicLookupRoute
+  '/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -531,6 +539,7 @@ export interface FileRoutesById {
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
   '/_public/services': typeof PublicServicesRouteWithChildren
+  '/_public/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
   '/admin/bookings': typeof AdminBookingsRoute
@@ -598,6 +607,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/products'
     | '/services'
+    | '/wallet'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/events'
     | '/lookup'
+    | '/wallet'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -720,6 +731,7 @@ export interface FileRouteTypes {
     | '/_public/news'
     | '/_public/products'
     | '/_public/services'
+    | '/_public/wallet'
     | '/admin/$page'
     | '/admin/banners'
     | '/admin/bookings'
@@ -1026,6 +1038,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPageRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_public/wallet': {
+      id: '/_public/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof PublicWalletRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/services': {
       id: '/_public/services'
       path: '/services'
@@ -1309,6 +1328,7 @@ interface PublicRouteChildren {
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
   PublicServicesRoute: typeof PublicServicesRouteWithChildren
+  PublicWalletRoute: typeof PublicWalletRoute
   PublicIndexRoute: typeof PublicIndexRoute
 }
 
@@ -1322,6 +1342,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
   PublicServicesRoute: PublicServicesRouteWithChildren,
+  PublicWalletRoute: PublicWalletRoute,
   PublicIndexRoute: PublicIndexRoute,
 }
 

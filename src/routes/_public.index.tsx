@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   LogIn,
@@ -14,20 +15,28 @@ import {
   ChevronRight,
   Menu,
   X,
+  Star,
+  Quote,
 } from "lucide-react";
-import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { FeaturedEventCard } from "@/components/FeaturedEventCard";
 import { NewsCard } from "@/components/NewsCard";
 import { mockEvents, mockNews } from "@/lib/mockPosts";
 import { useSettings } from "@/lib/useSettings";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/vita-th-pro-logo.png";
 
-const MOCK_BANNERS = [
-  { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
-  { id: 2, image: "https://placehold.co/800x400/png?text=Khuyen+Mai+Thang+10" },
-  { id: 3, image: "https://placehold.co/800x400/png?text=Ra+Mat+San+Pham+Moi" },
-];
+type Banner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  cta: string | null;
+  image: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 const MOCK_STORES = [
   { id: 1, name: "VITA Clinic Quận 1", address: "123 Nguyễn Huệ, Bến Nghé, Q.1", image: "https://placehold.co/400x250/png", rating: "4.9", distance: "1.2 km" },
@@ -41,40 +50,67 @@ export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
 });
 
-const SHORTCUTS = [
-  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600" },
-  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600" },
-  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600" },
-  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600" },
-  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600" },
-  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600" },
+type Shortcut = {
+  icon: typeof Sparkles;
+  label: string;
+  color: string;
+  to?: string;
+  action?: "soi-da-ai";
+};
+
+const SHORTCUTS: Shortcut[] = [
+  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600", action: "soi-da-ai" },
+  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600", to: "/products" },
+  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600", to: "/booking" },
+  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600", to: "/app/scan" },
+  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600", to: "/wallet" },
+  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600", to: "/wallet" },
 ];
 
 
-const MOCK_POSTS = [
+type Testimonial = {
+  id: number;
+  name: string;
+  meta: string;
+  rating: number;
+  content: string;
+  initial: string;
+  ring: string;
+};
+
+const TESTIMONIALS: Testimonial[] = [
   {
     id: 1,
-    author: "Hương Tràm",
-    avatar: "https://placehold.co/100x100/png",
-    time: "2 giờ trước",
+    name: "Chị Minh Anh",
+    meta: "34 tuổi · Hà Nội",
+    rating: 5,
     content:
-      "Hôm nay trải nghiệm máy VITA M04 tại cơ sở Q1 cực kỳ ưng ý. Da căng bóng và sáng lên hẳn luôn mọi người ạ!",
-    images: ["https://placehold.co/600x400/png"],
-    likes: 24,
-    comments: 5,
+      "Vừa kết thúc liệu trình 5 buổi trị nám bằng công nghệ Laser Pico tại VITA. Vết tàn nhang và chân nám sâu mờ đến 85%, nền da căng bóng và khoẻ hơn rõ rệt. Hệ thống máy móc ở đây cực kỳ hiện đại, lúc đi tia laser nhẹ nhàng không hề đau rát hay bong tróc như các bên khác!",
+    initial: "MA",
+    ring: "from-rose-200 to-pink-300",
   },
   {
     id: 2,
-    author: "Admin VITA",
-    avatar: "https://placehold.co/100x100/png",
-    time: "5 giờ trước",
+    name: "Anh Hoàng Long",
+    meta: "29 tuổi · TP.HCM",
+    rating: 5,
     content:
-      "🎉 Chúc mừng cơ sở liên kết mới tại Đà Nẵng chính thức đi vào hoạt động. Đang có ưu đãi đặc biệt cho các liệu trình chăm sóc da.",
-    images: ["https://placehold.co/600x400/png"],
-    likes: 156,
-    comments: 32,
+      "Rất ấn tượng với công nghệ soi da AI tại VITA, phân tích chuẩn xác từng phân vùng sắc tố ẩn sâu dưới da. Mình được bác sĩ lên phác đồ nâng cơ trẻ hoá bằng Ultherapy cá nhân hoá, chuyên viên thao tác rất chuẩn tay, không hề có tình trạng chèo kéo mua thêm combo.",
+    initial: "HL",
+    ring: "from-sky-200 to-emerald-300",
+  },
+  {
+    id: 3,
+    name: "Chị Thảo Nguyễn",
+    meta: "41 tuổi · Đà Nẵng",
+    rating: 5,
+    content:
+      "Tham gia buổi hội thảo trải nghiệm công nghệ căng chỉ Meso mới của viện tuần trước, mình được soi da và tư vấn chuyên sâu miễn phí. Không gian spa chuẩn 5 sao, tinh dầu thư giãn. Mình đã đăng ký luôn một gói chăm sóc chuyên sâu cho cả hai mẹ con vào tháng tới.",
+    initial: "TN",
+    ring: "from-amber-200 to-orange-300",
   },
 ];
+
 
 
 function CommunityHome() {
