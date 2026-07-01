@@ -15,6 +15,7 @@ const tabs: Tab[] = [
   { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin"] },
   { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin"] },
   { to: "/admin/posts", label: "Tin tức/Hoạt động/Đào tạo", roles: ["admin", "manager"] },
+  { to: "/admin/events", label: "Sự kiện", roles: ["admin", "manager"] },
   { to: "/admin/customers", label: "Khách hàng", roles: ["admin", "manager"] },
   { to: "/admin/bookings", label: "Lịch hẹn", roles: ["admin"] },
   { to: "/admin/treatments", label: "Liệu trình", roles: ["admin", "manager"] },
