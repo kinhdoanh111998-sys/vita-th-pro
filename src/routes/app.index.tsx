@@ -15,7 +15,15 @@ export const Route = createFileRoute("/app/")({
   component: AppHome,
 });
 
-const TABS = ["Tất cả", "Sự kiện", "Cộng đồng", "Ưu đãi", "Đào tạo", "Tin mới"];
+const TABS = [
+  "Tất cả",
+  "Sự kiện",
+  "Cộng đồng",
+  "Ưu đãi",
+  "Đào tạo",
+  "Tra cứu liệu trình",
+  "Đặt lịch",
+];
 
 const STORES = [
   {

@@ -117,8 +117,10 @@ function CommunityHome() {
   const navLinks: Array<{ label: string; to: string }> = [
     { label: "Trang chủ", to: "/" },
     { label: "Giới thiệu", to: "/about" },
+    { label: "Sản phẩm & Dịch vụ", to: "/products" },
+    { label: "Sự kiện", to: "/events" },
+    { label: "Cộng đồng", to: "/community" },
     { label: "Tin tức", to: "/news" },
-    { label: "Sản phẩm", to: "/products" },
     { label: "Liên hệ", to: "/contact" },
   ];
 
@@ -154,12 +156,12 @@ function CommunityHome() {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1 ml-6">
+          <nav className="hidden lg:flex items-center gap-0.5 ml-4 xl:ml-6">
             {navLinks.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
-                className="px-3 py-2 rounded-lg text-[14px] font-semibold transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
+                className="px-2.5 py-2 rounded-lg text-[13.5px] font-semibold whitespace-nowrap transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
                 style={{ color: "#484848" }}
                 activeProps={{
                   style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
@@ -176,14 +178,14 @@ function CommunityHome() {
             {/* Desktop-only action buttons */}
             <Link
               to="/lookup"
-              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
+              className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
               style={{ borderColor: "#E3E3E3", color: "#484848" }}
             >
               Tra cứu liệu trình
             </Link>
             <Link
               to="/booking"
-              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
+              className="hidden md:inline-flex items-center h-10 px-3 lg:px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
               style={{ backgroundColor: "#1B9606" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.backgroundColor = "#147805")
@@ -196,7 +198,7 @@ function CommunityHome() {
             </Link>
             <Link
               to="/dang-ky"
-              className="hidden md:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
+              className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
               style={{ color: "#484848" }}
             >
               Đăng ký
@@ -216,7 +218,7 @@ function CommunityHome() {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
+              className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
               style={{ borderColor: "#E3E3E3", color: "#484848" }}
               aria-label="Mở menu"
             >
@@ -228,7 +230,7 @@ function CommunityHome() {
 
       {/* Mobile Drawer */}
       {drawerOpen && (
-        <div className="md:hidden fixed inset-0 z-[60]">
+        <div className="lg:hidden fixed inset-0 z-[60]">
           <div
             className="absolute inset-0 bg-black/40"
             onClick={() => setDrawerOpen(false)}

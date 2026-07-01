@@ -1,202 +1,122 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ImageIcon } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
-
-type Product = {
-  id: string | number;
-  name: string;
-  short_description?: string | null;
-  summary?: string | null;
-  price?: number | null;
-  sale_price?: number | null;
-  gallery?: string[] | null;
-  badge?: string | null;
-  cta_type?: string | null;
-};
+import { ServiceCard } from "@/components/ServiceCard";
+import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/_public/products/")({
   component: ProductsPage,
 });
 
-const formatVND = (n: number) =>
-  new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " đ";
-
-function badgeClass(badge: string) {
-  const b = badge.toLowerCase();
-  if (b.includes("sale") || b.includes("giảm"))
-    return "bg-status-warning text-white";
-  if (b.includes("new") || b.includes("mới"))
-    return "bg-status-success text-white";
-  if (b.includes("hot")) return "bg-status-error text-white";
-  return "bg-status-info text-white";
-}
+const TABS = [
+  { key: "all", label: "Tất cả" },
+  { key: "product", label: "Sản phẩm" },
+  { key: "service", label: "Dịch vụ / Liệu trình" },
+] as const;
 
 function SkeletonCard() {
   return (
-    <div className="bg-brand-surface rounded-card border border-brand-border overflow-hidden animate-pulse">
-      <div className="aspect-[4/3] bg-brand-border/40" />
-      <div className="p-5 space-y-3">
-        <div className="h-5 bg-brand-border/60 rounded w-3/4" />
-        <div className="h-4 bg-brand-border/40 rounded w-full" />
-        <div className="h-4 bg-brand-border/40 rounded w-1/2" />
-        <div className="h-11 bg-brand-border/40 rounded mt-4" />
+    <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden animate-pulse">
+      <div className="aspect-square bg-gray-100" />
+      <div className="p-4 space-y-2">
+        <div className="h-4 bg-gray-100 rounded w-3/4" />
+        <div className="h-3 bg-gray-100 rounded w-full" />
+        <div className="h-6 bg-gray-100 rounded w-1/2 mt-2" />
+        <div className="h-10 bg-gray-100 rounded mt-3" />
       </div>
     </div>
   );
 }
 
-function ProductCard({ p }: { p: Product }) {
-  const img = p.gallery && p.gallery.length > 0 ? p.gallery[0] : null;
-  const desc = p.short_description ?? p.summary ?? "";
-  const hasSale =
-    typeof p.sale_price === "number" &&
-    p.sale_price > 0 &&
-    typeof p.price === "number" &&
-    p.price > p.sale_price;
-  const ctaLabel = p.cta_type === "contact" ? "Liên hệ tư vấn" : "Đặt mua ngay";
+function ProductsPage() {
+  const { data = [], isLoading, error } = useServiceCatalog();
+  const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("all");
+  const [q, setQ] = useState("");
+
+  const items = useMemo(() => {
+    return data.filter((it) => {
+      const okTab = tab === "all" ? true : it.type === tab;
+      const okQ = q
+        ? it.name.toLowerCase().includes(q.toLowerCase()) ||
+          (it.description ?? "").toLowerCase().includes(q.toLowerCase())
+        : true;
+      return okTab && okQ;
+    });
+  }, [data, tab, q]);
 
   return (
-    <Link
-      to="/products/$id"
-      params={{ id: String(p.id) }}
-      className="group block bg-brand-surface rounded-card border border-brand-border overflow-hidden transition-shadow hover:shadow-md flex flex-col"
-    >
-      <div className="relative aspect-[4/3] bg-brand-bg">
-        {img ? (
-          <img
-            src={img}
-            alt={p.name}
-            loading="lazy"
-            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-brand-muted">
-            <ImageIcon className="w-10 h-10" aria-hidden />
-          </div>
-        )}
-        {p.badge ? (
-          <span
-            className={`absolute top-3 left-3 text-xs font-medium px-2.5 py-1 rounded-md ${badgeClass(p.badge)}`}
-          >
-            {p.badge}
+    <section className="bg-[#FAFAFA] min-h-screen">
+      <div className="mx-auto max-w-[1240px] px-4 md:px-8 py-8 md:py-14">
+        {/* Header */}
+        <div className="text-center max-w-2xl mx-auto mb-8 md:mb-10">
+          <span className="inline-block rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold px-3 py-1 mb-3">
+            VITA TH Pro · Catalog
           </span>
-        ) : null}
-      </div>
-
-      <div className="p-5 flex flex-col flex-1">
-        <h3 className="font-heading font-bold text-brand-text text-lg line-clamp-2 group-hover:text-brand-primary transition-colors">
-          {p.name}
-        </h3>
-        {desc ? (
-          <p className="font-body text-brand-muted text-sm mt-2 line-clamp-2">
-            {desc}
+          <h1 className="font-heading text-3xl md:text-5xl font-black text-gray-900 tracking-tight">
+            Sản phẩm & Dịch vụ
+          </h1>
+          <p className="mt-3 text-gray-500 text-sm md:text-base">
+            Giải pháp chăm sóc sức khỏe & sắc đẹp toàn diện — từ thiết bị công
+            nghệ cao đến liệu trình chuyên sâu.
           </p>
-        ) : null}
-
-        <div className="mt-4 flex items-baseline gap-2 flex-wrap">
-          {hasSale ? (
-            <>
-              <span className="text-brand-primary font-bold text-xl">
-                {formatVND(p.sale_price as number)}
-              </span>
-              <span className="text-brand-muted text-sm line-through">
-                {formatVND(p.price as number)}
-              </span>
-            </>
-          ) : typeof p.price === "number" && p.price > 0 ? (
-            <span className="text-brand-primary font-bold text-xl">
-              {formatVND(p.price)}
-            </span>
-          ) : (
-            <span className="text-brand-muted text-sm">Liên hệ báo giá</span>
-          )}
         </div>
 
-        <span
-          className="mt-5 w-full h-[44px] flex items-center justify-center rounded-[8px] bg-brand-primary text-white font-medium group-hover:bg-brand-primary-dark transition-colors"
-        >
-          {ctaLabel}
-        </span>
-      </div>
-    </Link>
-  );
-}
-
-function ProductsPage() {
-  const [items, setItems] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data, error } = await supabase
-        .from("services_public")
-        .select("*")
-        .eq("is_hidden", false)
-        .order("created_at", { ascending: false });
-      if (cancelled) return;
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
-      const rows: Product[] = (data ?? []).map((r: Record<string, unknown>) => {
-        const arr = Array.isArray(r.image_urls)
-          ? (r.image_urls as unknown[]).filter((x) => typeof x === "string") as string[]
-          : [];
-        const single = typeof r.image_url === "string" && r.image_url ? [r.image_url as string] : [];
-        const gallery = arr.length > 0 ? arr : single.length > 0 ? single : null;
-        const type = (r.type as string) ?? "service";
-        return {
-          id: (r.id as string | number) ?? "",
-          name: (r.name as string) ?? "Chưa đặt tên",
-          short_description: (r.description as string) ?? null,
-          summary: null,
-          price: r.price != null ? Number(r.price) : null,
-          sale_price: r.sale_price != null ? Number(r.sale_price) : null,
-          gallery,
-          badge: type === "product" ? "Sản phẩm" : "Dịch vụ",
-          cta_type: type === "service" ? "contact" : "buy",
-        };
-      });
-      setItems(rows);
-      setLoading(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return (
-    <section className="bg-brand-bg min-h-screen">
-      <div className="mx-auto max-w-[1200px] px-4 py-8 md:py-16">
-        <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold text-center mb-12">
-          Sản phẩm & Dịch vụ
-        </h1>
-
-        {error ? (
-          <div className="text-center text-status-error">
-            Không tải được dữ liệu: {error}
+        {/* Filter bar */}
+        <div className="sticky top-[64px] z-20 -mx-4 md:mx-0 mb-6 bg-[#FAFAFA]/90 backdrop-blur px-4 md:px-0 py-3">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex-1 flex items-center gap-2 bg-white rounded-full border border-gray-200 px-4 h-11 shadow-sm">
+              <Search className="w-4 h-4 text-gray-400" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Tìm sản phẩm, liệu trình..."
+                className="flex-1 bg-transparent outline-none text-sm placeholder:text-gray-400"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar">
+              {TABS.map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={
+                    "whitespace-nowrap h-11 px-4 rounded-full text-sm font-semibold border transition-colors " +
+                    (tab === t.key
+                      ? "bg-emerald-600 text-white border-emerald-600"
+                      : "bg-white text-gray-700 border-gray-200 hover:border-emerald-300")
+                  }
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
-        ) : loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+        </div>
+
+        {/* Content */}
+        {error ? (
+          <div className="text-center text-rose-600 py-16">
+            Không tải được dữ liệu.
+          </div>
+        ) : isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-center text-brand-muted">
-            Chưa có sản phẩm nào.{" "}
-            <Link to="/" className="text-brand-primary hover:underline">
-              Về trang chủ
+          <div className="text-center py-16">
+            <p className="text-gray-500">Chưa có sản phẩm phù hợp.</p>
+            <Link
+              to="/"
+              className="text-emerald-700 hover:underline font-semibold text-sm mt-2 inline-block"
+            >
+              ← Về trang chủ
             </Link>
-          </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((p) => (
-              <ProductCard key={String(p.id)} p={p} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {items.map((it) => (
+              <ServiceCard key={it.id} item={it} variant="web" linkTo="web" />
             ))}
           </div>
         )}
