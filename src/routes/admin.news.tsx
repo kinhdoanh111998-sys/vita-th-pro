@@ -119,8 +119,8 @@ function AdminNewsPage() {
         content_rich: f.content_rich || null,
         category: f.category,
         is_featured: f.is_featured,
-        published_at: f.published_at ? new Date(f.published_at).toISOString() : new Date().toISOString(),
       };
+
       if (f.id) {
         const { error } = await supabase.from("news").update(payload).eq("id", f.id);
         if (error) throw error;
