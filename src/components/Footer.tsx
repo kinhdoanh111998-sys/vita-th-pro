@@ -38,8 +38,15 @@ export function Footer() {
           />
           <div>
             <h4 className="font-bold mb-2">Liên hệ</h4>
-            <p className="text-sm text-[#d7f4d8]">Hotline: {hotline}</p>
-            <p className="text-sm text-[#d7f4d8]">Zalo: {zalo}</p>
+            <p className="text-sm text-[#d7f4d8]">
+              Hotline: <a href={`tel:${hotline}`} className="hover:underline">{hotline}</a>
+            </p>
+            <p className="text-sm text-[#d7f4d8]">
+              Zalo: <a href={zaloLink} target="_blank" rel="noreferrer" className="hover:underline">Chat qua Zalo</a>
+            </p>
+            <p className="text-sm text-[#d7f4d8]">
+              Facebook: <a href={facebookLink} target="_blank" rel="noreferrer" className="hover:underline">Fanpage</a>
+            </p>
             <p className="text-sm text-[#d7f4d8]">Email: {email}</p>
             <p className="text-sm text-[#d7f4d8] mt-1">{address}</p>
           </div>
