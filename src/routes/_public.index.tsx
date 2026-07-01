@@ -344,23 +344,43 @@ function CommunityHome() {
       {/* Shortcuts */}
       <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-          {SHORTCUTS.map((s) => (
-            <button
-              key={s.label}
-              className="flex flex-col items-center gap-1.5 md:gap-2 group"
-            >
-              <div
-                className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+          {SHORTCUTS.map((s) => {
+            const inner = (
+              <>
+                <div
+                  className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+                >
+                  <s.icon className="w-6 h-6 md:w-7 md:h-7" />
+                </div>
+                <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
+                  {s.label}
+                </span>
+              </>
+            );
+            if (s.action === "soi-da-ai") {
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => setSkinAIOpen(true)}
+                  className="flex flex-col items-center gap-1.5 md:gap-2 group"
+                >
+                  {inner}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={s.label}
+                to={s.to!}
+                className="flex flex-col items-center gap-1.5 md:gap-2 group"
               >
-                <s.icon className="w-6 h-6 md:w-7 md:h-7" />
-              </div>
-              <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
-                {s.label}
-              </span>
-            </button>
-          ))}
+                {inner}
+              </Link>
+            );
+          })}
         </div>
       </section>
+
 
 
       {/* Affiliate Stores */}
@@ -446,11 +466,12 @@ function CommunityHome() {
           </button>
         </div>
         <div className="md:grid md:grid-cols-12 md:gap-6">
-          <div className="md:col-span-8 space-y-4">
-            {MOCK_POSTS.map((post) => (
-              <CommunityPost key={post.id} {...post} />
+          <div className="md:col-span-8 grid gap-5 md:grid-cols-1">
+            {TESTIMONIALS.map((t) => (
+              <TestimonialCard key={t.id} t={t} />
             ))}
           </div>
+
           <aside className="hidden md:block md:col-span-4 space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <h3 className="text-sm font-heading font-bold text-gray-900 mb-2">
