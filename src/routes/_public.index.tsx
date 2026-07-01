@@ -12,6 +12,41 @@ import {
   User,
   ChevronRight,
 } from "lucide-react";
+import { EventCard, type EventStatus } from "@/components/app/EventCard";
+
+const MOCK_EVENTS: Array<{
+  id: number;
+  title: string;
+  status: EventStatus;
+  date: string;
+  location: string;
+  image: string;
+}> = [
+  {
+    id: 1,
+    title: "Hội thảo Da liễu Chuyên sâu",
+    status: "Sắp tổ chức",
+    date: "20/10/2026 - 08:00",
+    location: "Khách sạn JW Marriott",
+    image: "https://placehold.co/400x200/png",
+  },
+  {
+    id: 2,
+    title: "Lễ ra mắt Máy VITA M04",
+    status: "Đang diễn ra",
+    date: "Hôm nay",
+    location: "VITA Center HN",
+    image: "https://placehold.co/400x200/png",
+  },
+  {
+    id: 3,
+    title: "Workshop Chăm sóc da mùa đông",
+    status: "Đã diễn ra",
+    date: "01/10/2026",
+    location: "Online Zoom",
+    image: "https://placehold.co/400x200/png",
+  },
+];
 
 export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
@@ -26,20 +61,6 @@ const SHORTCUTS = [
   { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600" },
 ];
 
-const EVENTS = [
-  {
-    title: "VITA Marathon Mùa Hè 2025",
-    tag: "Sự kiện sắp tới",
-    desc: "+500 điểm khi tham dự",
-    color: "from-emerald-400 to-teal-500",
-  },
-  {
-    title: "Workshop Chăm sóc da chuyên sâu",
-    tag: "Đăng ký ngay",
-    desc: "Miễn phí cho thành viên",
-    color: "from-pink-400 to-rose-500",
-  },
-];
 
 const ACTIVITIES = [
   { title: "Cộng đồng làm đẹp VITA", desc: "12.5k thành viên đang hoạt động" },
@@ -127,23 +148,16 @@ function CommunityHome() {
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
-          {EVENTS.map((e) => (
-            <div
-              key={e.title}
-              className="shrink-0 w-64 rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100"
-            >
-              <div className={`h-28 bg-gradient-to-br ${e.color}`} />
-              <div className="p-3">
-                <span className="text-[10px] text-emerald-600 font-semibold uppercase">
-                  {e.tag}
-                </span>
-                <p className="text-sm font-semibold text-gray-900 mt-1 line-clamp-2">
-                  {e.title}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">{e.desc}</p>
-              </div>
-            </div>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
+          {MOCK_EVENTS.map((e) => (
+            <EventCard
+              key={e.id}
+              title={e.title}
+              status={e.status}
+              date={e.date}
+              location={e.location}
+              image={e.image}
+            />
           ))}
         </div>
       </section>
