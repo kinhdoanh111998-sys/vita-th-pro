@@ -36,6 +36,5 @@ export const supabase = createClient(url, key, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    storageKey: "vitath-admin-auth",
   },
 }) as SupabaseClient<any, "public", any>;

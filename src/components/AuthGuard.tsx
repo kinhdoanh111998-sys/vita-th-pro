@@ -42,10 +42,6 @@ export function AuthGuard({
   const { pathname } = useLocation();
   const { session, role, loading, isLoadingRole } = useAuth();
 
-  console.log("--- AUTH GUARD DEBUG ---");
-  console.log("Session:", session);
-  console.log("Fetched Role:", role);
-
   // Session/profile state is asynchronous. Never redirect while role is loading,
   // otherwise /login ↔ /portal can loop before the DB query resolves.
   if (loading || isLoadingRole) {
