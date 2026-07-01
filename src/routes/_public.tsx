@@ -22,9 +22,13 @@ function PublicLayout() {
     }
   }, []);
 
+  const { pathname } = useLocation();
+  // Trang chủ (/) tự render Header cộng đồng riêng, ẩn Header mặc định để tránh trùng lặp.
+  const hideDefaultHeader = pathname === "/";
+
   return (
     <div className="min-h-screen flex flex-col bg-surface">
-      <Header />
+      {!hideDefaultHeader && <Header />}
       <main className="flex-1">
         <Outlet />
       </main>
@@ -32,3 +36,4 @@ function PublicLayout() {
     </div>
   );
 }
+
