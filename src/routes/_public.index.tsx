@@ -188,17 +188,16 @@ function CommunityHome() {
       </section>
 
       {/* Featured Events */}
-      <section className="px-4 pt-6">
-        <div className="flex items-center justify-between mb-3">
-
-          <h2 className="text-base font-heading font-bold text-gray-900">
+      <section id="events" className="pt-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Sự kiện nổi bật
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-2">
+        <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
           {MOCK_EVENTS.map((e) => (
             <EventCard
               key={e.id}
@@ -212,22 +211,58 @@ function CommunityHome() {
         </div>
       </section>
 
-      {/* Community Feed */}
-      <section className="px-4 pt-6">
+      {/* Community Feed + Sidebar */}
+      <section id="feed" className="pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-heading font-bold text-gray-900">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Hoạt động cộng đồng
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="space-y-4">
-          {MOCK_POSTS.map((post) => (
-            <CommunityPost key={post.id} {...post} />
-          ))}
+        <div className="md:grid md:grid-cols-12 md:gap-6">
+          <div className="md:col-span-8 space-y-4">
+            {MOCK_POSTS.map((post) => (
+              <CommunityPost key={post.id} {...post} />
+            ))}
+          </div>
+          <aside className="hidden md:block md:col-span-4 space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-sm font-heading font-bold text-gray-900 mb-2">
+                Về VITA THPro
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Cộng đồng sống khỏe, gắn kết và phát triển bền vững. Hơn 48.500 thành viên tích cực trên cả nước.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-sm font-heading font-bold text-gray-900 mb-3">
+                Con số nổi bật
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-lg font-bold text-emerald-600">48.5K+</p>
+                  <p className="text-[11px] text-gray-500">Thành viên</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-amber-500">1.200+</p>
+                  <p className="text-[11px] text-gray-500">Cửa hàng</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-sky-500">380+</p>
+                  <p className="text-[11px] text-gray-500">Sự kiện</p>
+                </div>
+                <div>
+                  <p className="text-lg font-bold text-rose-500">95%</p>
+                  <p className="text-[11px] text-gray-500">Hài lòng</p>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
+
 
 
       {/* Public Bottom Navigation */}
