@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Search,
   LogIn,
@@ -14,20 +15,28 @@ import {
   ChevronRight,
   Menu,
   X,
+  Star,
+  Quote,
 } from "lucide-react";
-import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { FeaturedEventCard } from "@/components/FeaturedEventCard";
 import { NewsCard } from "@/components/NewsCard";
 import { mockEvents, mockNews } from "@/lib/mockPosts";
 import { useSettings } from "@/lib/useSettings";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/vita-th-pro-logo.png";
 
-const MOCK_BANNERS = [
-  { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
-  { id: 2, image: "https://placehold.co/800x400/png?text=Khuyen+Mai+Thang+10" },
-  { id: 3, image: "https://placehold.co/800x400/png?text=Ra+Mat+San+Pham+Moi" },
-];
+type Banner = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  cta: string | null;
+  image: string | null;
+  image_url: string | null;
+  link_url: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 const MOCK_STORES = [
   { id: 1, name: "VITA Clinic Quận 1", address: "123 Nguyễn Huệ, Bến Nghé, Q.1", image: "https://placehold.co/400x250/png", rating: "4.9", distance: "1.2 km" },
@@ -41,40 +50,67 @@ export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
 });
 
-const SHORTCUTS = [
-  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600" },
-  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600" },
-  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600" },
-  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600" },
-  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600" },
-  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600" },
+type Shortcut = {
+  icon: typeof Sparkles;
+  label: string;
+  color: string;
+  to?: string;
+  action?: "soi-da-ai";
+};
+
+const SHORTCUTS: Shortcut[] = [
+  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600", action: "soi-da-ai" },
+  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600", to: "/products" },
+  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600", to: "/booking" },
+  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600", to: "/app/scan" },
+  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600", to: "/wallet" },
+  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600", to: "/wallet" },
 ];
 
 
-const MOCK_POSTS = [
+type Testimonial = {
+  id: number;
+  name: string;
+  meta: string;
+  rating: number;
+  content: string;
+  initial: string;
+  ring: string;
+};
+
+const TESTIMONIALS: Testimonial[] = [
   {
     id: 1,
-    author: "Hương Tràm",
-    avatar: "https://placehold.co/100x100/png",
-    time: "2 giờ trước",
+    name: "Chị Minh Anh",
+    meta: "34 tuổi · Hà Nội",
+    rating: 5,
     content:
-      "Hôm nay trải nghiệm máy VITA M04 tại cơ sở Q1 cực kỳ ưng ý. Da căng bóng và sáng lên hẳn luôn mọi người ạ!",
-    images: ["https://placehold.co/600x400/png"],
-    likes: 24,
-    comments: 5,
+      "Vừa kết thúc liệu trình 5 buổi trị nám bằng công nghệ Laser Pico tại VITA. Vết tàn nhang và chân nám sâu mờ đến 85%, nền da căng bóng và khoẻ hơn rõ rệt. Hệ thống máy móc ở đây cực kỳ hiện đại, lúc đi tia laser nhẹ nhàng không hề đau rát hay bong tróc như các bên khác!",
+    initial: "MA",
+    ring: "from-rose-200 to-pink-300",
   },
   {
     id: 2,
-    author: "Admin VITA",
-    avatar: "https://placehold.co/100x100/png",
-    time: "5 giờ trước",
+    name: "Anh Hoàng Long",
+    meta: "29 tuổi · TP.HCM",
+    rating: 5,
     content:
-      "🎉 Chúc mừng cơ sở liên kết mới tại Đà Nẵng chính thức đi vào hoạt động. Đang có ưu đãi đặc biệt cho các liệu trình chăm sóc da.",
-    images: ["https://placehold.co/600x400/png"],
-    likes: 156,
-    comments: 32,
+      "Rất ấn tượng với công nghệ soi da AI tại VITA, phân tích chuẩn xác từng phân vùng sắc tố ẩn sâu dưới da. Mình được bác sĩ lên phác đồ nâng cơ trẻ hoá bằng Ultherapy cá nhân hoá, chuyên viên thao tác rất chuẩn tay, không hề có tình trạng chèo kéo mua thêm combo.",
+    initial: "HL",
+    ring: "from-sky-200 to-emerald-300",
+  },
+  {
+    id: 3,
+    name: "Chị Thảo Nguyễn",
+    meta: "41 tuổi · Đà Nẵng",
+    rating: 5,
+    content:
+      "Tham gia buổi hội thảo trải nghiệm công nghệ căng chỉ Meso mới của viện tuần trước, mình được soi da và tư vấn chuyên sâu miễn phí. Không gian spa chuẩn 5 sao, tinh dầu thư giãn. Mình đã đăng ký luôn một gói chăm sóc chuyên sâu cho cả hai mẹ con vào tháng tới.",
+    initial: "TN",
+    ring: "from-amber-200 to-orange-300",
   },
 ];
+
 
 
 function CommunityHome() {
@@ -82,6 +118,7 @@ function CommunityHome() {
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [skinAIOpen, setSkinAIOpen] = useState(false);
 
   const navLinks: Array<{ label: string; to: string }> = [
     { label: "Trang chủ", to: "/" },
@@ -308,23 +345,43 @@ function CommunityHome() {
       {/* Shortcuts */}
       <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-          {SHORTCUTS.map((s) => (
-            <button
-              key={s.label}
-              className="flex flex-col items-center gap-1.5 md:gap-2 group"
-            >
-              <div
-                className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+          {SHORTCUTS.map((s) => {
+            const inner = (
+              <>
+                <div
+                  className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+                >
+                  <s.icon className="w-6 h-6 md:w-7 md:h-7" />
+                </div>
+                <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
+                  {s.label}
+                </span>
+              </>
+            );
+            if (s.action === "soi-da-ai") {
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => setSkinAIOpen(true)}
+                  className="flex flex-col items-center gap-1.5 md:gap-2 group"
+                >
+                  {inner}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={s.label}
+                to={s.to!}
+                className="flex flex-col items-center gap-1.5 md:gap-2 group"
               >
-                <s.icon className="w-6 h-6 md:w-7 md:h-7" />
-              </div>
-              <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
-                {s.label}
-              </span>
-            </button>
-          ))}
+                {inner}
+              </Link>
+            );
+          })}
         </div>
       </section>
+
 
 
       {/* Affiliate Stores */}
@@ -410,11 +467,12 @@ function CommunityHome() {
           </button>
         </div>
         <div className="md:grid md:grid-cols-12 md:gap-6">
-          <div className="md:col-span-8 space-y-4">
-            {MOCK_POSTS.map((post) => (
-              <CommunityPost key={post.id} {...post} />
+          <div className="md:col-span-8 grid gap-5 md:grid-cols-1">
+            {TESTIMONIALS.map((t) => (
+              <TestimonialCard key={t.id} t={t} />
             ))}
           </div>
+
           <aside className="hidden md:block md:col-span-4 space-y-4">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
               <h3 className="text-sm font-heading font-bold text-gray-900 mb-2">
@@ -479,28 +537,108 @@ function CommunityHome() {
           </Link>
         </div>
       </nav>
+
+      {/* Soi da AI Modal */}
+      {skinAIOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-end md:items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
+            <div className="relative bg-gradient-to-br from-pink-500 to-rose-500 text-white p-6">
+              <button
+                onClick={() => setSkinAIOpen(false)}
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <Sparkles className="w-10 h-10 mb-3" />
+              <h3 className="text-xl font-black">Soi Da AI cá nhân hoá</h3>
+              <p className="text-sm text-white/90 mt-1">
+                Phân tích chi tiết 8 chỉ số da bằng công nghệ AI. Nhận phác đồ điều trị chuyên sâu miễn phí từ bác sĩ VITA.
+              </p>
+            </div>
+            <div className="p-6 space-y-3">
+              <ul className="space-y-2 text-sm text-gray-700">
+                {[
+                  "Phát hiện nám – tàn nhang – sắc tố ẩn dưới da",
+                  "Đo độ ẩm, độ đàn hồi, dầu và lỗ chân lông",
+                  "Bác sĩ tư vấn liệu trình cá nhân hoá",
+                ].map((it) => (
+                  <li key={it} className="flex items-start gap-2">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    {it}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                to="/booking"
+                search={{ service: "soi-da-ai" } as never}
+                onClick={() => setSkinAIOpen(false)}
+                className="mt-2 flex items-center justify-center h-12 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
+              >
+                Đặt lịch Soi Da AI ngay
+              </Link>
+              <button
+                onClick={() => setSkinAIOpen(false)}
+                className="w-full h-11 rounded-xl border border-gray-200 font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                Để sau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function HeroCarousel() {
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-advance
+  const { data: banners = [] } = useQuery({
+    queryKey: ["public", "banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Banner[];
+    },
+    staleTime: 60_000,
+  });
+
+  const list = banners.length > 0
+    ? banners
+    : [
+        {
+          id: "placeholder",
+          title: "VITA TH Pro",
+          subtitle: null,
+          cta: null,
+          image: null,
+          image_url: "https://placehold.co/1600x720/1B9606/ffffff?text=VITA+TH+Pro",
+          link_url: null,
+          sort_order: 0,
+          is_active: true,
+        } as Banner,
+      ];
+
   useEffect(() => {
+    if (list.length <= 1) return;
     const id = setInterval(() => {
       setActive((prev) => {
-        const next = (prev + 1) % MOCK_BANNERS.length;
+        const next = (prev + 1) % list.length;
         const el = scrollerRef.current;
-        if (el) {
-          el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
-        }
+        if (el) el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
         return next;
       });
-    }, 4000);
+    }, 4500);
     return () => clearInterval(id);
-  }, []);
+  }, [list.length]);
 
   const handleScroll = () => {
     const el = scrollerRef.current;
@@ -522,37 +660,90 @@ function HeroCarousel() {
         onScroll={handleScroll}
         className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth"
       >
-        {MOCK_BANNERS.map((b) => (
-          <div
-            key={b.id}
-            className="shrink-0 w-full snap-center px-4"
-          >
-            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] shadow-md bg-gray-100">
-              <img
-                src={b.image}
-                alt={`Banner ${b.id}`}
-                className="w-full h-full object-cover"
-              />
+        {list.map((b) => {
+          const src = b.image_url ?? b.image ?? "";
+          const inner = (
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] shadow-md bg-gray-100">
+              <img src={src} alt={b.title} className="w-full h-full object-cover" />
+              {(b.title || b.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex flex-col justify-end p-5 md:p-8 text-white">
+                  <div className="text-lg md:text-3xl font-black tracking-tight max-w-[70%] drop-shadow-md">
+                    {b.title}
+                  </div>
+                  {b.subtitle && (
+                    <div className="text-xs md:text-base mt-1 opacity-90 max-w-[70%] line-clamp-2">
+                      {b.subtitle}
+                    </div>
+                  )}
+                  {b.cta && (
+                    <span className="mt-3 inline-flex w-fit items-center gap-1.5 px-4 h-9 rounded-lg bg-emerald-600 text-white text-sm font-semibold">
+                      {b.cta}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+          return (
+            <div key={b.id} className="shrink-0 w-full snap-center px-4">
+              {b.link_url ? (
+                b.link_url.startsWith("http") ? (
+                  <a href={b.link_url} target="_blank" rel="noreferrer">
+                    {inner}
+                  </a>
+                ) : (
+                  <Link to={b.link_url}>{inner}</Link>
+                )
+              ) : (
+                inner
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Slider Indicator */}
-      <div className="flex justify-center items-center gap-1.5 mt-3">
-        {MOCK_BANNERS.map((b, i) => (
-          <button
-            key={b.id}
-            onClick={() => goTo(i)}
-            aria-label={`Chuyển tới banner ${i + 1}`}
-            className={
-              i === active
-                ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
-                : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
-            }
-          />
-        ))}
-      </div>
+      {list.length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {list.map((b, i) => (
+            <button
+              key={b.id}
+              onClick={() => goTo(i)}
+              aria-label={`Chuyển tới banner ${i + 1}`}
+              className={
+                i === active
+                  ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
+                  : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
+              }
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
+
+function TestimonialCard({ t }: { t: Testimonial }) {
+  return (
+    <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 md:p-7">
+      <Quote className="absolute top-5 right-5 w-8 h-8 text-emerald-100" />
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.ring} flex items-center justify-center text-white font-black text-sm shadow-sm`}
+        >
+          {t.initial}
+        </div>
+        <div>
+          <div className="font-heading font-bold text-gray-900">{t.name}</div>
+          <div className="text-xs text-gray-500">{t.meta}</div>
+        </div>
+      </div>
+      <div className="flex gap-0.5 mb-3">
+        {Array.from({ length: t.rating }).map((_, i) => (
+          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+      <p className="text-[15px] leading-relaxed text-gray-700">{t.content}</p>
+    </article>
+  );
+}
+
