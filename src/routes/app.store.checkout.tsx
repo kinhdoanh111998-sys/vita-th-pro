@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, MapPin, CheckCircle2, Wallet, CreditCard, Smartphone } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ChevronLeft, MapPin, CheckCircle2, Wallet, CreditCard, Smartphone, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabaseClient";
 
 const MOCK_CART = [
   {
