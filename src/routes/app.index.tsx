@@ -6,12 +6,12 @@ import {
   SearchBar,
   FilterTabs,
   StoreCard,
-  ArticleCard,
+  
   HorizontalScrollList,
   HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
-import { mockNews } from "@/lib/mockPosts";
+import { CommunityFeedMobile } from "@/components/CommunityFeed";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, isUpcoming, type EventRow } from "@/lib/events";
 
@@ -48,32 +48,6 @@ const STORES = [
   },
 ];
 
-const ARTICLES = [
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-3.png",
-    category: "Sự kiện",
-    title: "Tuần lễ trải nghiệm công nghệ Vita TH Pro tháng 12",
-    meta: "12/12/2026 · Hà Nội",
-    metaIcon: "location" as const,
-  },
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/z5829969469916_2220fb23d74a91fdb-1726301636717.jpg",
-    category: "Đào tạo",
-    title: "Khoá đào tạo vận hành máy Cabin AI thải độc",
-    meta: "09:00 – 16:00, 18/12",
-    metaIcon: "time" as const,
-  },
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/71G4Y2zvSKL.jpg",
-    category: "Cộng đồng",
-    title: "Công nghệ Terahertz – Sứ mệnh bảo vệ sức khỏe",
-    meta: "5 phút đọc",
-    metaIcon: "time" as const,
-  },
-];
 
 function AppHome() {
   const [tab, setTab] = useState("Tất cả");
@@ -183,47 +157,9 @@ function AppHome() {
             </div>
           </section>
 
-          {/* Sự kiện nổi bật – horizontal */}
-          <SectionHeader
-            title="Sự kiện nổi bật"
-            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
-          />
-          <HorizontalScrollList>
-            {ARTICLES.map((a) => (
-              <HScrollItem key={a.title}>
-                <ArticleCard {...a} />
-              </HScrollItem>
-            ))}
-          </HorizontalScrollList>
+          {/* Community Feed – realtime */}
+          <CommunityFeedMobile />
 
-          {/* Bản tin sức khoẻ – horizontal thumbnails */}
-          <SectionHeader
-            title="Bản tin sức khoẻ"
-            action={<span className="text-xs text-brand-primary">Xem tất cả</span>}
-          />
-          <div className="px-4 pb-1 flex flex-row gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-            {mockNews.map((n) => (
-              <article
-                key={n.id}
-                className="shrink-0 w-40 snap-start bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:scale-[0.98] transition-transform"
-              >
-                <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
-                  <img
-                    src={n.image}
-                    alt={n.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-2.5">
-                  <h3 className="text-[12.5px] font-heading font-bold text-gray-900 line-clamp-2 leading-snug">
-                    {n.title}
-                  </h3>
-                  <p className="mt-1 text-[10.5px] text-gray-400">{n.date}</p>
-                </div>
-              </article>
-            ))}
-          </div>
 
           {/* Cửa hàng gần bạn */}
           <SectionHeader
@@ -236,13 +172,6 @@ function AppHome() {
             ))}
           </div>
 
-          {/* Bài viết cộng đồng – vertical */}
-          <SectionHeader title="Bài viết cộng đồng" />
-          <div className="px-4 grid grid-cols-1 gap-3">
-            {ARTICLES.map((a) => (
-              <ArticleCard key={"v-" + a.title} {...a} />
-            ))}
-          </div>
         </>
       )}
     </div>

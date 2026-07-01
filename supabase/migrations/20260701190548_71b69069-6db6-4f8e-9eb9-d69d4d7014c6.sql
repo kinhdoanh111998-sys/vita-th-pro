@@ -1,0 +1,1 @@
+ALTER VIEW public.community_feed SET (security_invoker = true);

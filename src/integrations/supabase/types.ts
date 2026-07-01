@@ -527,6 +527,17 @@ export type Database = {
       }
     }
     Views: {
+      community_feed: {
+        Row: {
+          category: string | null
+          cover_url: string | null
+          created_at: string | null
+          id: string | null
+          post_type: string | null
+          title: string | null
+        }
+        Relationships: []
+      }
       services_public: {
         Row: {
           category: string | null
