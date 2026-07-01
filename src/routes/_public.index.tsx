@@ -221,3 +221,77 @@ function CommunityHome() {
     </div>
   );
 }
+
+function HeroCarousel() {
+  const [active, setActive] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-advance
+  useEffect(() => {
+    const id = setInterval(() => {
+      setActive((prev) => {
+        const next = (prev + 1) % MOCK_BANNERS.length;
+        const el = scrollerRef.current;
+        if (el) {
+          el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+        }
+        return next;
+      });
+    }, 4000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    if (idx !== active) setActive(idx);
+  };
+
+  const goTo = (i: number) => {
+    const el = scrollerRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+    setActive(i);
+  };
+
+  return (
+    <section className="pt-4">
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth"
+      >
+        {MOCK_BANNERS.map((b) => (
+          <div
+            key={b.id}
+            className="shrink-0 w-full snap-center px-4"
+          >
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] shadow-md bg-gray-100">
+              <img
+                src={b.image}
+                alt={`Banner ${b.id}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Slider Indicator */}
+      <div className="flex justify-center items-center gap-1.5 mt-3">
+        {MOCK_BANNERS.map((b, i) => (
+          <button
+            key={b.id}
+            onClick={() => goTo(i)}
+            aria-label={`Chuyển tới banner ${i + 1}`}
+            className={
+              i === active
+                ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
+                : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
+            }
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
