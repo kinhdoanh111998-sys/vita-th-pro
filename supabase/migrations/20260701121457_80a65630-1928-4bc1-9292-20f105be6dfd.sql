@@ -1,0 +1,1 @@
+GRANT SELECT ON public.services_public TO anon, authenticated;

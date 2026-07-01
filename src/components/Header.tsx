@@ -1,203 +1,228 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Button } from "./Button";
+import { LogIn, Menu, Search, X } from "lucide-react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
 import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 
-type NavItem = {
-  label: string;
-  to: string;
-  search?: Record<string, string>;
-};
-type NavGroup = { label: string; to: string; children?: NavItem[] };
-
-const navGroups: NavGroup[] = [
+const navLinks = [
   { label: "Trang chủ", to: "/" },
-  {
-    label: "Giới thiệu",
-    to: "/about",
-    children: [
-      { label: "Về chúng tôi", to: "/about" },
-      { label: "Lịch sử phát triển", to: "/about/history" },
-      { label: "Đội ngũ", to: "/about/team" },
-      { label: "Khách hàng nói về chúng tôi", to: "/about/testimonials" },
-      { label: "Chứng nhận - chứng chỉ", to: "/about/certifications" },
-    ],
-  },
-  {
-    label: "Tin tức",
-    to: "/news",
-    children: [
-      { label: "Tất cả", to: "/news" },
-      { label: "Hoạt động", to: "/news", search: { category: "Hoạt động" } },
-      { label: "Sự kiện", to: "/news", search: { category: "Sự kiện" } },
-      { label: "Lịch đào tạo", to: "/news", search: { category: "Lịch đào tạo" } },
-    ],
-  },
-  {
-    label: "Sản phẩm",
-    to: "/products",
-    children: [
-      { label: "Tất cả", to: "/products" },
-      { label: "Máy công nghệ", to: "/products", search: { category: "Máy công nghệ" } },
-      { label: "Phụ kiện", to: "/products", search: { category: "Phụ kiện" } },
-      { label: "Dịch vụ", to: "/products", search: { category: "Dịch vụ" } },
-      { label: "Chuyển giao công nghệ", to: "/products", search: { category: "Chuyển giao công nghệ" } },
-    ],
-  },
+  { label: "Giới thiệu", to: "/about" },
+  { label: "Tin tức", to: "/news" },
+  { label: "Sản phẩm", to: "/products" },
   { label: "Liên hệ", to: "/contact" },
 ];
 
 export function Header() {
-  const [open, setOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { data: settings } = useSettings();
   const { data: sys } = useSystemSettings();
   const { session, role } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
-  const hotline = sys?.hotline ?? settings?.hotline;
+  const hotline = sys?.hotline ?? settings?.hotline ?? "0988 000 888";
 
   const accountTo =
     role === "admin"
       ? "/admin"
       : role === "manager" || role === "staff" || role === "employee"
-      ? "/portal/timesheet"
-      : role === "customer"
-      ? "/portal/my-treatments"
-      : "/";
+        ? "/portal/timesheet"
+        : role === "customer"
+          ? "/portal/my-treatments"
+          : "/login";
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-hairline">
-      <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-4 px-5 py-3">
-        <Link to="/" className="flex items-center gap-2 min-w-[210px]">
-          <img src={logo} alt={brand} className="h-[52px] w-auto object-contain" />
-          <div className="hidden md:flex flex-col leading-tight">
-            <span className="font-black text-brand-dark text-sm">{brand}</span>
-            {hotline && (
-              <span className="text-[11px] font-bold text-ink-muted">
+    <>
+      <header
+        className="sticky top-0 z-40 bg-white border-b"
+        style={{ borderColor: "#E3E3E3" }}
+      >
+        <div className="w-full flex items-center gap-3 px-4 md:px-12 py-2.5 md:py-3">
+          <Link to="/" className="flex items-center gap-3 shrink-0">
+            <img
+              src={logo}
+              alt={brand}
+              className="h-11 md:h-12 w-auto object-contain"
+            />
+            <div className="hidden md:flex flex-col leading-tight">
+              <span
+                className="font-heading font-black text-[15px]"
+                style={{ color: "#147805" }}
+              >
+                {brand}
+              </span>
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: "#929292" }}
+              >
                 Hotline: {hotline}
               </span>
-            )}
-          </div>
-        </Link>
-
-        <nav className="hidden lg:flex items-center gap-0.5">
-          {navGroups.map((g) => (
-            <div key={g.label} className="relative group">
-              <Link
-                to={g.to}
-                className="flex items-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-extrabold text-[#2e3a32] hover:bg-brand-soft hover:text-brand-dark"
-                activeProps={{ className: "bg-brand-soft text-brand-dark" }}
-                activeOptions={{ exact: g.to === "/" }}
-              >
-                {g.label}
-                {g.children && <span className="text-[10px]">▾</span>}
-              </Link>
-              {g.children && (
-                <div className="absolute left-0 top-11 min-w-[240px] bg-white border border-hairline rounded-[18px] p-2 shadow-[0_18px_46px_rgba(21,89,42,0.12)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-150 z-50">
-                  {g.children.map((c) => (
-                    <Link
-                      key={c.label}
-                      to={c.to}
-                      search={c.search as never}
-                      className="block rounded-xl px-3 py-2.5 text-sm font-bold text-[#26352a] hover:bg-brand-soft hover:text-brand-dark"
-                    >
-                      {c.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
             </div>
-          ))}
-        </nav>
+          </Link>
 
-        <div className="hidden lg:flex items-center gap-2">
-          <Link to="/lookup">
-            <Button variant="secondary" size="sm">Tra cứu liệu trình</Button>
-          </Link>
-          <Link to="/booking">
-            <Button size="sm">Đặt lịch</Button>
-          </Link>
-          {session ? (
+          <nav className="hidden md:flex items-center gap-1 ml-6">
+            {navLinks.map((n) => (
+              <Link
+                key={n.to}
+                to={n.to}
+                className="px-3 py-2 rounded-lg text-[14px] font-semibold transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
+                style={{ color: "#484848" }}
+                activeProps={{
+                  style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
+                }}
+                activeOptions={{ exact: n.to === "/" }}
+              >
+                {n.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="ml-auto flex items-center gap-2">
             <Link
-              to={accountTo}
-              className="rounded-full px-3 py-2 text-[13px] font-extrabold text-brand-dark hover:bg-brand-soft"
+              to="/lookup"
+              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:text-[#147805] hover:border-[#1B9606]"
+              style={{ borderColor: "#E3E3E3", color: "#484848" }}
             >
-              Khu vực của tôi
+              Tra cứu liệu trình
             </Link>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button variant="secondary" size="sm">Đăng nhập</Button>
+            <Link
+              to="/booking"
+              className="hidden md:inline-flex items-center h-10 px-4 rounded-lg text-[13px] font-semibold text-white transition-colors"
+              style={{ backgroundColor: "#1B9606" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = "#147805")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = "#1B9606")
+              }
+            >
+              Đặt lịch
+            </Link>
+
+            {session ? (
+              <Link
+                to={accountTo}
+                className="inline-flex items-center h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                style={{ borderColor: "#1B9606", color: "#1B9606" }}
+              >
+                Khu vực của tôi
               </Link>
-              <Link to="/dang-ky">
-                <Button
-                  size="sm"
-                  className="bg-transparent text-brand-dark border border-brand hover:bg-brand-soft shadow-none"
-                >
-                  Đăng ký
-                </Button>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                style={{ borderColor: "#1B9606", color: "#1B9606" }}
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Đăng nhập</span>
               </Link>
-            </>
-          )}
+            )}
+
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border"
+              style={{ borderColor: "#E3E3E3", color: "#484848" }}
+              aria-label="Mở menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+      </header>
 
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="lg:hidden border border-hairline bg-white rounded-xl px-3 py-2"
-          aria-label="Menu"
-        >
-          ☰
-        </button>
-      </div>
+      {drawerOpen && (
+        <div className="md:hidden fixed inset-0 z-[60]">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside className="absolute right-0 top-0 h-full w-[82%] max-w-[320px] bg-white shadow-xl flex flex-col">
+            <div
+              className="flex items-center justify-between px-4 py-3 border-b"
+              style={{ borderColor: "#E3E3E3" }}
+            >
+              <img src={logo} alt={brand} className="h-9 w-auto" />
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="h-9 w-9 rounded-lg inline-flex items-center justify-center"
+                style={{ color: "#484848" }}
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-      {open && (
-        <div className="lg:hidden border-t border-hairline bg-white">
-          {navGroups.flatMap((g) => [{ label: g.label, to: g.to, search: undefined as Record<string, string> | undefined }, ...((g.children ?? []) as NavItem[])]).map((item, i) => (
-            <Link
-              key={`${item.label}-${i}`}
-              to={item.to}
-              search={item.search as never}
-              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
-              onClick={() => setOpen(false)}
+            <div className="px-4 py-3">
+              <div
+                className="flex items-center gap-2 bg-[#FAFAFA] rounded-lg px-3 py-2 border"
+                style={{ borderColor: "#E3E3E3" }}
+              >
+                <Search className="w-4 h-4" style={{ color: "#929292" }} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm..."
+                  className="flex-1 bg-transparent text-sm outline-none"
+                  style={{ color: "#484848" }}
+                />
+              </div>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto px-2">
+              {navLinks.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#484848" }}
+                  activeProps={{
+                    style: { color: "#1B9606", backgroundColor: "#D9F0D6" },
+                  }}
+                  activeOptions={{ exact: n.to === "/" }}
+                >
+                  {n.label}
+                </Link>
+              ))}
+              <div
+                className="h-px my-2"
+                style={{ backgroundColor: "#E3E3E3" }}
+              />
+              <Link
+                to="/lookup"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Tra cứu liệu trình
+              </Link>
+              <Link
+                to="/booking"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Đặt lịch
+              </Link>
+            </nav>
+
+            <div
+              className="px-4 py-3 border-t"
+              style={{ borderColor: "#E3E3E3" }}
             >
-              {item.label}
-            </Link>
-          ))}
-          <Link
-            to="/booking"
-            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
-            onClick={() => setOpen(false)}
-          >
-            Đặt lịch
-          </Link>
-          <Link
-            to="/lookup"
-            className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed]"
-            onClick={() => setOpen(false)}
-          >
-            Tra cứu liệu trình
-          </Link>
-          {session ? (
-            <Link
-              to={accountTo}
-              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
-              onClick={() => setOpen(false)}
-            >
-              Khu vực của tôi
-            </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="block px-5 py-3 text-sm font-extrabold border-b border-[#edf3ed] text-brand-dark"
-              onClick={() => setOpen(false)}
-            >
-              Đăng nhập
-            </Link>
-          )}
+              <Link
+                to="/booking"
+                onClick={() => setDrawerOpen(false)}
+                className="flex items-center justify-center h-11 rounded-lg text-white text-[14px] font-semibold"
+                style={{ backgroundColor: "#1B9606" }}
+              >
+                Đặt lịch ngay
+              </Link>
+            </div>
+          </aside>
         </div>
       )}
-    </header>
+    </>
   );
 }
