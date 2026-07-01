@@ -156,3 +156,9 @@
   h1 { letter-spacing: -0.03em; font-weight: 700; }
   h2 { letter-spacing: -0.025em; font-weight: 700; }
 }
+
+@utility no-scrollbar {
+  &::-webkit-scrollbar { display: none; }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
