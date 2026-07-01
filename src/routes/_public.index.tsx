@@ -118,6 +118,7 @@ function CommunityHome() {
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [skinAIOpen, setSkinAIOpen] = useState(false);
 
   const navLinks: Array<{ label: string; to: string }> = [
     { label: "Trang chủ", to: "/" },
@@ -544,20 +545,49 @@ function HeroCarousel() {
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-advance
+  const { data: banners = [] } = useQuery({
+    queryKey: ["public", "banners"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("banners")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Banner[];
+    },
+    staleTime: 60_000,
+  });
+
+  const list = banners.length > 0
+    ? banners
+    : [
+        {
+          id: "placeholder",
+          title: "VITA TH Pro",
+          subtitle: null,
+          cta: null,
+          image: null,
+          image_url: "https://placehold.co/1600x720/1B9606/ffffff?text=VITA+TH+Pro",
+          link_url: null,
+          sort_order: 0,
+          is_active: true,
+        } as Banner,
+      ];
+
   useEffect(() => {
+    if (list.length <= 1) return;
     const id = setInterval(() => {
       setActive((prev) => {
-        const next = (prev + 1) % MOCK_BANNERS.length;
+        const next = (prev + 1) % list.length;
         const el = scrollerRef.current;
-        if (el) {
-          el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
-        }
+        if (el) el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
         return next;
       });
-    }, 4000);
+    }, 4500);
     return () => clearInterval(id);
-  }, []);
+  }, [list.length]);
 
   const handleScroll = () => {
     const el = scrollerRef.current;
@@ -579,37 +609,90 @@ function HeroCarousel() {
         onScroll={handleScroll}
         className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth"
       >
-        {MOCK_BANNERS.map((b) => (
-          <div
-            key={b.id}
-            className="shrink-0 w-full snap-center px-4"
-          >
-            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] shadow-md bg-gray-100">
-              <img
-                src={b.image}
-                alt={`Banner ${b.id}`}
-                className="w-full h-full object-cover"
-              />
+        {list.map((b) => {
+          const src = b.image_url ?? b.image ?? "";
+          const inner = (
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] shadow-md bg-gray-100">
+              <img src={src} alt={b.title} className="w-full h-full object-cover" />
+              {(b.title || b.subtitle) && (
+                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex flex-col justify-end p-5 md:p-8 text-white">
+                  <div className="text-lg md:text-3xl font-black tracking-tight max-w-[70%] drop-shadow-md">
+                    {b.title}
+                  </div>
+                  {b.subtitle && (
+                    <div className="text-xs md:text-base mt-1 opacity-90 max-w-[70%] line-clamp-2">
+                      {b.subtitle}
+                    </div>
+                  )}
+                  {b.cta && (
+                    <span className="mt-3 inline-flex w-fit items-center gap-1.5 px-4 h-9 rounded-lg bg-emerald-600 text-white text-sm font-semibold">
+                      {b.cta}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+          return (
+            <div key={b.id} className="shrink-0 w-full snap-center px-4">
+              {b.link_url ? (
+                b.link_url.startsWith("http") ? (
+                  <a href={b.link_url} target="_blank" rel="noreferrer">
+                    {inner}
+                  </a>
+                ) : (
+                  <Link to={b.link_url}>{inner}</Link>
+                )
+              ) : (
+                inner
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Slider Indicator */}
-      <div className="flex justify-center items-center gap-1.5 mt-3">
-        {MOCK_BANNERS.map((b, i) => (
-          <button
-            key={b.id}
-            onClick={() => goTo(i)}
-            aria-label={`Chuyển tới banner ${i + 1}`}
-            className={
-              i === active
-                ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
-                : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
-            }
-          />
-        ))}
-      </div>
+      {list.length > 1 && (
+        <div className="flex justify-center items-center gap-1.5 mt-3">
+          {list.map((b, i) => (
+            <button
+              key={b.id}
+              onClick={() => goTo(i)}
+              aria-label={`Chuyển tới banner ${i + 1}`}
+              className={
+                i === active
+                  ? "h-1.5 w-6 rounded-full bg-amber-500 transition-all"
+                  : "h-1.5 w-1.5 rounded-full bg-gray-300 transition-all"
+              }
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
+
+function TestimonialCard({ t }: { t: Testimonial }) {
+  return (
+    <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 md:p-7">
+      <Quote className="absolute top-5 right-5 w-8 h-8 text-emerald-100" />
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className={`w-12 h-12 rounded-full bg-gradient-to-br ${t.ring} flex items-center justify-center text-white font-black text-sm shadow-sm`}
+        >
+          {t.initial}
+        </div>
+        <div>
+          <div className="font-heading font-bold text-gray-900">{t.name}</div>
+          <div className="text-xs text-gray-500">{t.meta}</div>
+        </div>
+      </div>
+      <div className="flex gap-0.5 mb-3">
+        {Array.from({ length: t.rating }).map((_, i) => (
+          <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
+        ))}
+      </div>
+      <p className="text-[15px] leading-relaxed text-gray-700">{t.content}</p>
+    </article>
+  );
+}
+
