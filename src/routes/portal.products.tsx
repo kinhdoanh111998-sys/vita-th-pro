@@ -66,6 +66,21 @@ const formatVND = (n: number | null | undefined) =>
     ? "—"
     : new Intl.NumberFormat("vi-VN").format(Math.round(n)) + " đ";
 
+function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "d")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+
 function firstImage(gallery: unknown): string | null {
   if (Array.isArray(gallery)) {
     const s = gallery.find((x) => typeof x === "string" && x);
@@ -147,7 +162,10 @@ function PortalProducts() {
           .eq("id", form.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("products").insert(payload);
+        const slug = `${slugify(form.name)}-${Date.now().toString(36)}`;
+        const { error } = await supabase
+          .from("products")
+          .insert({ ...payload, slug });
         if (error) throw error;
       }
     },
