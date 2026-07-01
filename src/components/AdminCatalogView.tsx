@@ -36,6 +36,7 @@ type Service = {
   id: string;
   name: string;
   description: string | null;
+  features: string | null;
   price: number;
   default_sessions: number;
   sku: string | null;
@@ -54,6 +55,7 @@ type FormState = {
   name: string;
   sku: string;
   description: string;
+  features: string;
   category: string;
   cost_price: string;
   price: string;
