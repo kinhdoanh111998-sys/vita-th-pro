@@ -34,10 +34,50 @@ function formatVnd(n: number) {
 }
 
 function CheckoutPage() {
+  const navigate = useNavigate();
   const [method, setMethod] = useState("vita");
+  const [submitting, setSubmitting] = useState(false);
+  const [customerName, setCustomerName] = useState("Lê Văn A");
+  const [customerPhone, setCustomerPhone] = useState("0900000111");
+  const [shippingAddress, setShippingAddress] = useState(
+    "123 Nguyễn Văn Cừ, Phường 4, Quận 5, TP. Hồ Chí Minh",
+  );
+  const [affCode, setAffCode] = useState("AFF-VITA-21012");
 
   const subtotal = MOCK_CART.reduce((s, i) => s + i.price * i.qty, 0);
   const total = subtotal + SHIPPING_FEE;
+
+  const handleSubmit = async () => {
+    if (submitting) return;
+    if (!customerName.trim() || !customerPhone.trim() || !shippingAddress.trim()) {
+      toast.error("Vui lòng nhập đầy đủ thông tin nhận hàng");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const paymentLabel =
+        PAYMENT_METHODS.find((p) => p.id === method)?.label ?? method;
+      const { error } = await supabase.from("orders").insert([
+        {
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          shipping_address: shippingAddress.trim(),
+          payment_method: paymentLabel,
+          total_amount: total,
+          status: "Thành công",
+          affiliate_ref: affCode.trim() || null,
+        },
+      ]);
+      if (error) throw error;
+      toast.success("Đặt hàng và kích hoạt liệu trình thành công!");
+      navigate({ to: "/app" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Đặt hàng thất bại: ${message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 pb-28">
