@@ -18,6 +18,7 @@ const CATEGORIES = ["Tất cả", "Máy móc", "Mỹ phẩm", "Sức khỏe"];
 function StorePage() {
   const [activeCategory, setActiveCategory] = useState("Tất cả");
   const [search, setSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const filtered = MOCK_PRODUCTS.filter((p) => {
     const matchCat = activeCategory === "Tất cả" || p.category === activeCategory;
