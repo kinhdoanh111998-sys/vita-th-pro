@@ -48,32 +48,6 @@ const STORES = [
   },
 ];
 
-const ARTICLES = [
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-3.png",
-    category: "Sự kiện",
-    title: "Tuần lễ trải nghiệm công nghệ Vita TH Pro tháng 12",
-    meta: "12/12/2026 · Hà Nội",
-    metaIcon: "location" as const,
-  },
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/z5829969469916_2220fb23d74a91fdb-1726301636717.jpg",
-    category: "Đào tạo",
-    title: "Khoá đào tạo vận hành máy Cabin AI thải độc",
-    meta: "09:00 – 16:00, 18/12",
-    metaIcon: "time" as const,
-  },
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/71G4Y2zvSKL.jpg",
-    category: "Cộng đồng",
-    title: "Công nghệ Terahertz – Sứ mệnh bảo vệ sức khỏe",
-    meta: "5 phút đọc",
-    metaIcon: "time" as const,
-  },
-];
 
 function AppHome() {
   const [tab, setTab] = useState("Tất cả");
@@ -198,13 +172,6 @@ function AppHome() {
             ))}
           </div>
 
-          {/* Bài viết cộng đồng – vertical */}
-          <SectionHeader title="Bài viết cộng đồng" />
-          <div className="px-4 grid grid-cols-1 gap-3">
-            {ARTICLES.map((a) => (
-              <ArticleCard key={"v-" + a.title} {...a} />
-            ))}
-          </div>
         </>
       )}
     </div>
