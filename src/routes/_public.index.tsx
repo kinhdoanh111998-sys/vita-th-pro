@@ -125,26 +125,9 @@ function CommunityHome() {
         </div>
       </header>
 
-      {/* Hero Banner */}
-      <section className="px-4 pt-4">
-        <div className="relative rounded-2xl overflow-hidden aspect-[16/9] bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 shadow-md">
-          <div className="absolute top-3 left-3 bg-white/95 rounded-lg px-3 py-1.5 shadow">
-            <p className="text-[10px] text-gray-500">Thành viên mới hôm nay</p>
-            <p className="text-sm font-bold text-emerald-600">+127</p>
-          </div>
-          <div className="absolute bottom-3 right-3 bg-white/95 rounded-lg px-3 py-2 shadow max-w-[70%]">
-            <p className="text-[10px] text-gray-500">Sự kiện sắp tới</p>
-            <p className="text-sm font-semibold text-gray-900">VITA Marathon Mùa Hè 2025</p>
-            <p className="text-[11px] text-emerald-600 mt-0.5">🏆 +500 điểm khi tham dự</p>
-          </div>
-        </div>
-        {/* Dots */}
-        <div className="flex justify-center gap-1.5 mt-3">
-          <span className="w-6 h-1.5 rounded-full bg-emerald-500" />
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
-        </div>
-      </section>
+      {/* Hero Banner Carousel */}
+      <HeroCarousel />
+
 
       {/* Shortcuts */}
       <section className="px-4 pt-5">
