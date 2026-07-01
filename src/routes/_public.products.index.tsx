@@ -131,7 +131,7 @@ function ProductsPage() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase.from("products").select("*");
+      const { data, error } = await supabase.from("products").select("*").neq("is_active", false);
       if (cancelled) return;
       if (error) {
         setError(error.message);
