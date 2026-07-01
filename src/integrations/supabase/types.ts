@@ -112,12 +112,14 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          image_urls: string[]
           is_hidden: boolean
           name: string
           price: number
           sale_price: number | null
           sku: string | null
           stock_quantity: number
+          type: string
         }
         Insert: {
           cost_price?: number
@@ -126,12 +128,14 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[]
           is_hidden?: boolean
           name: string
           price?: number
           sale_price?: number | null
           sku?: string | null
           stock_quantity?: number
+          type?: string
         }
         Update: {
           cost_price?: number
@@ -140,12 +144,14 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          image_urls?: string[]
           is_hidden?: boolean
           name?: string
           price?: number
           sale_price?: number | null
           sku?: string | null
           stock_quantity?: number
+          type?: string
         }
         Relationships: []
       }
