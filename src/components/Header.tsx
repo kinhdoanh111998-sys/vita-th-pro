@@ -7,11 +7,13 @@ import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 
 const navLinks = [
-  { label: "Trang chủ", to: "/" },
-  { label: "Giới thiệu", to: "/about" },
-  { label: "Tin tức", to: "/news" },
-  { label: "Sản phẩm", to: "/products" },
-  { label: "Liên hệ", to: "/contact" },
+  { label: "Trang chủ", to: "/" as const },
+  { label: "Giới thiệu", to: "/about" as const },
+  { label: "Sản phẩm & Dịch vụ", to: "/products" as const },
+  { label: "Sự kiện", to: "/events" as const },
+  { label: "Cộng đồng", to: "/community" as const },
+  { label: "Tin tức", to: "/news" as const },
+  { label: "Liên hệ", to: "/contact" as const },
 ];
 
 export function Header() {
