@@ -92,6 +92,8 @@
   --border: oklch(0.9 0.02 145);
   --input: oklch(0.9 0.02 145);
   --ring: oklch(0.66 0.16 142);
+  --popover: #ffffff;
+  --popover-foreground: oklch(0.22 0.03 145);
 
   /* Brand palette */
   --brand: #49a942;
