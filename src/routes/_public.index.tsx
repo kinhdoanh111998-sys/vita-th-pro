@@ -378,26 +378,57 @@ function CommunityHome() {
         </div>
       </section>
 
-      {/* Featured Events */}
-      <section id="events" className="pt-6 max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
-          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
-            Sự kiện nổi bật
-          </h2>
-          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
+      {/* Featured Events – upgraded */}
+      <section id="events" className="pt-8 md:pt-12 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-4 px-4 md:px-8">
+          <div>
+            <p className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-amber-600">
+              Đừng bỏ lỡ
+            </p>
+            <h2 className="text-lg md:text-2xl font-heading font-bold text-gray-900 mt-0.5">
+              Sự kiện nổi bật
+            </h2>
+          </div>
+          <Link
+            to="/events"
+            className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5 font-semibold"
+          >
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          </Link>
         </div>
-        <div className="flex md:grid md:grid-cols-3 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
-          {MOCK_EVENTS.map((e) => (
-            <EventCard
+        <div className="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
+          {mockEvents.map((e) => (
+            <div
               key={e.id}
-              title={e.title}
-              status={e.status}
-              date={e.date}
-              location={e.location}
-              image={e.image}
-            />
+              className="shrink-0 w-[85%] sm:w-[60%] md:w-auto snap-start"
+            >
+              <FeaturedEventCard post={e} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Kiến thức & Tin tức VITA */}
+      <section id="news" className="pt-10 md:pt-14 max-w-7xl mx-auto w-full">
+        <div className="flex items-end justify-between mb-5 px-4 md:px-8">
+          <div>
+            <p className="text-[11px] md:text-xs font-semibold uppercase tracking-wider text-emerald-600">
+              Blog VITA
+            </p>
+            <h2 className="text-lg md:text-2xl font-heading font-bold text-gray-900 mt-0.5">
+              Kiến thức & Tin tức VITA
+            </h2>
+          </div>
+          <Link
+            to="/news"
+            className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5 font-semibold"
+          >
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-4 md:px-8">
+          {mockNews.map((n) => (
+            <NewsCard key={n.id} post={n} />
           ))}
         </div>
       </section>
