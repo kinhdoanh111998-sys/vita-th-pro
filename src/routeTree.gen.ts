@@ -37,6 +37,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminPostsRouteImport } from './routes/admin.posts'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminCommissionsRouteImport } from './routes/admin.commissions'
@@ -211,6 +212,11 @@ const AdminPostsRoute = AdminPostsRouteImport.update({
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEmployeesRoute = AdminEmployeesRouteImport.update({
@@ -422,6 +428,7 @@ export interface FileRoutesByFullPath {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -480,6 +487,7 @@ export interface FileRoutesByTo {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -547,6 +555,7 @@ export interface FileRoutesById {
   '/admin/commissions': typeof AdminCommissionsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/posts': typeof AdminPostsRoute
   '/admin/products': typeof AdminProductsRoute
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -673,6 +683,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -739,6 +750,7 @@ export interface FileRouteTypes {
     | '/admin/commissions'
     | '/admin/customers'
     | '/admin/employees'
+    | '/admin/events'
     | '/admin/orders'
     | '/admin/posts'
     | '/admin/products'
@@ -987,6 +999,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/admin/orders'
       preLoaderRoute: typeof AdminOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/employees': {
@@ -1357,6 +1376,7 @@ interface AdminRouteChildren {
   AdminCommissionsRoute: typeof AdminCommissionsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
+  AdminEventsRoute: typeof AdminEventsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminPostsRoute: typeof AdminPostsRoute
   AdminProductsRoute: typeof AdminProductsRoute
@@ -1375,6 +1395,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCommissionsRoute: AdminCommissionsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
+  AdminEventsRoute: AdminEventsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminPostsRoute: AdminPostsRoute,
   AdminProductsRoute: AdminProductsRoute,
