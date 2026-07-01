@@ -59,6 +59,84 @@ export type Database = {
         }
         Relationships: []
       }
+      bookings: {
+        Row: {
+          affiliate_ref: string | null
+          booking_date: string | null
+          booking_time: string | null
+          created_at: string
+          customer_name: string
+          id: string
+          note: string | null
+          phone: string
+          referrer_phone: string | null
+          service: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_ref?: string | null
+          booking_date?: string | null
+          booking_time?: string | null
+          created_at?: string
+          customer_name: string
+          id?: string
+          note?: string | null
+          phone: string
+          referrer_phone?: string | null
+          service?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_ref?: string | null
+          booking_date?: string | null
+          booking_time?: string | null
+          created_at?: string
+          customer_name?: string
+          id?: string
+          note?: string | null
+          phone?: string
+          referrer_phone?: string | null
+          service?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          affiliate_ref: string | null
+          content: string | null
+          created_at: string
+          id: string
+          name: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_ref?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_ref?: string | null
+          content?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
