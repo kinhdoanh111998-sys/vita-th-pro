@@ -5,8 +5,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { CatalogDetailLayout } from "@/components/CatalogDetailLayout";
 import type { CatalogItem } from "@/lib/useServiceCatalog";
 
-export const Route = createFileRoute("/_public/products/$id")({
-  component: ProductDetailPage,
+export const Route = createFileRoute("/_public/services/$id")({
+  component: ServiceDetailPage,
 });
 
 async function fetchItem(id: string): Promise<CatalogItem | null> {
@@ -33,14 +33,14 @@ async function fetchItem(id: string): Promise<CatalogItem | null> {
         ) as string[])
       : null,
     sku: (r.sku as string) ?? null,
-    type: (r.type as string) === "service" ? "service" : "product",
+    type: (r.type as string) === "product" ? "product" : "service",
     category: (r.category as string) ?? null,
     stock_quantity:
       r.stock_quantity != null ? Number(r.stock_quantity) : null,
   };
 }
 
-function ProductDetailPage() {
+function ServiceDetailPage() {
   const { id } = Route.useParams();
   const { data, isLoading, error } = useQuery({
     queryKey: ["catalog", "detail", id],
@@ -66,16 +66,16 @@ function ProductDetailPage() {
     return (
       <div className="mx-auto max-w-[1200px] px-4 py-16 text-center">
         <h2 className="font-heading text-2xl font-bold mb-3">
-          Không tìm thấy sản phẩm
+          Không tìm thấy dịch vụ
         </h2>
         <p className="text-brand-muted mb-6">
-          {error ? (error as Error).message : "Sản phẩm không tồn tại hoặc đã bị gỡ."}
+          {error ? (error as Error).message : "Dịch vụ không tồn tại hoặc đã bị gỡ."}
         </p>
         <Link
-          to="/products"
+          to="/services"
           className="inline-flex items-center gap-2 text-brand-primary hover:underline"
         >
-          <ArrowLeft className="w-4 h-4" /> Về danh sách sản phẩm
+          <ArrowLeft className="w-4 h-4" /> Về danh sách dịch vụ
         </Link>
       </div>
     );
@@ -84,8 +84,8 @@ function ProductDetailPage() {
   return (
     <CatalogDetailLayout
       item={data}
-      crumbHref="/products"
-      crumbLabel="Sản phẩm"
+      crumbHref="/services"
+      crumbLabel="Dịch vụ"
     />
   );
 }
