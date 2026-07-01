@@ -13,6 +13,7 @@ export type CatalogItem = {
   sku: string | null;
   type: "product" | "service";
   category: string | null;
+  stock_quantity: number | null;
 };
 
 export function useServiceCatalog() {
@@ -44,6 +45,8 @@ export function useServiceCatalog() {
           | "product"
           | "service",
         category: (r.category as string) ?? null,
+        stock_quantity:
+          r.stock_quantity != null ? Number(r.stock_quantity) : null,
       }));
     },
     staleTime: 60_000,

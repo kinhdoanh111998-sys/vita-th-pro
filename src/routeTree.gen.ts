@@ -59,6 +59,7 @@ import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
 import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
+import { Route as PublicServicesIdRouteImport } from './routes/_public.services.$id'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
 import { Route as PublicProductsMachinesRouteImport } from './routes/_public.products.machines'
@@ -321,6 +322,11 @@ const AppStoreProductIdRoute = AppStoreProductIdRouteImport.update({
   path: '/$productId',
   getParentRoute: () => AppStoreRoute,
 } as any)
+const PublicServicesIdRoute = PublicServicesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PublicServicesRoute,
+} as any)
 const PublicProductsTechnologyTransferRoute =
   PublicProductsTechnologyTransferRouteImport.update({
     id: '/technology-transfer',
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/products/machines': typeof PublicProductsMachinesRoute
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/services/$id': typeof PublicServicesIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about/': typeof PublicAboutIndexRoute
@@ -498,6 +505,7 @@ export interface FileRoutesByTo {
   '/products/machines': typeof PublicProductsMachinesRoute
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/services/$id': typeof PublicServicesIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/about': typeof PublicAboutIndexRoute
@@ -563,6 +571,7 @@ export interface FileRoutesById {
   '/_public/products/machines': typeof PublicProductsMachinesRoute
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
+  '/_public/services/$id': typeof PublicServicesIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/_public/about/': typeof PublicAboutIndexRoute
@@ -628,6 +637,7 @@ export interface FileRouteTypes {
     | '/products/machines'
     | '/products/services'
     | '/products/technology-transfer'
+    | '/services/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about/'
@@ -685,6 +695,7 @@ export interface FileRouteTypes {
     | '/products/machines'
     | '/products/services'
     | '/products/technology-transfer'
+    | '/services/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/about'
@@ -749,6 +760,7 @@ export interface FileRouteTypes {
     | '/_public/products/machines'
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
+    | '/_public/services/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
     | '/_public/about/'
@@ -1119,6 +1131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStoreProductIdRouteImport
       parentRoute: typeof AppStoreRoute
     }
+    '/_public/services/$id': {
+      id: '/_public/services/$id'
+      path: '/$id'
+      fullPath: '/services/$id'
+      preLoaderRoute: typeof PublicServicesIdRouteImport
+      parentRoute: typeof PublicServicesRoute
+    }
     '/_public/products/technology-transfer': {
       id: '/_public/products/technology-transfer'
       path: '/technology-transfer'
@@ -1267,10 +1286,12 @@ const PublicProductsRouteWithChildren = PublicProductsRoute._addFileChildren(
 )
 
 interface PublicServicesRouteChildren {
+  PublicServicesIdRoute: typeof PublicServicesIdRoute
   PublicServicesIndexRoute: typeof PublicServicesIndexRoute
 }
 
 const PublicServicesRouteChildren: PublicServicesRouteChildren = {
+  PublicServicesIdRoute: PublicServicesIdRoute,
   PublicServicesIndexRoute: PublicServicesIndexRoute,
 }
 

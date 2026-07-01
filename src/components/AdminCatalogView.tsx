@@ -7,7 +7,7 @@ import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -181,15 +181,17 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     if (arr.length === 0) return;
     setUploading(true);
     try {
-      const urls: string[] = [];
-      for (const f of arr) {
-        const u = await uploadOne(f);
-        if (u) urls.push(u);
-      }
+      // Upload TẤT CẢ ảnh song song với Promise.all
+      const results = await Promise.all(arr.map((f) => uploadOne(f)));
+      const urls = results.filter((u): u is string => Boolean(u));
       if (urls.length > 0) {
         setForm((p) => ({ ...p, image_urls: [...p.image_urls, ...urls] }));
-        toast.success(`Đã tải lên ${urls.length} ảnh.`);
+        toast.success(`Đã tải lên ${urls.length}/${arr.length} ảnh.`);
+      } else {
+        toast.error("Không tải được ảnh nào. Vui lòng thử lại.");
       }
+    } catch (e) {
+      toast.error((e as Error).message ?? "Lỗi tải ảnh.");
     } finally {
       setUploading(false);
     }
@@ -666,13 +668,13 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Mô tả</Label>
-              <Textarea
-                rows={4}
+              <Label>Mô tả chi tiết</Label>
+              <RichTextEditor
                 value={form.description}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, description: e.target.value }))
+                onChange={(html) =>
+                  setForm((p) => ({ ...p, description: html }))
                 }
+                placeholder="Nhập mô tả chi tiết, hỗ trợ định dạng đậm/nghiêng, danh sách, tiêu đề..."
               />
             </div>
 
