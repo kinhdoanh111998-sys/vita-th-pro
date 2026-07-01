@@ -22,7 +22,7 @@ function useCommunityFeed(limit = 8) {
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw error;
-      return (data ?? []) as FeedItem[];
+      return (data ?? []) as unknown as FeedItem[];
     },
   });
 }
