@@ -104,6 +104,124 @@ export type Database = {
         }
         Relationships: []
       }
+      event_media: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          media_type: string
+          media_url: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          media_type?: string
+          media_url: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_media_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_registrations: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_id: string
+          full_name: string
+          id: string
+          phone: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_id: string
+          full_name: string
+          id?: string
+          phone: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_id?: string
+          full_name?: string
+          id?: string
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          category: string | null
+          content_rich: string | null
+          cover_url: string | null
+          created_at: string
+          end_at: string
+          format: string
+          id: string
+          is_free: boolean
+          location: string | null
+          max_attendees: number | null
+          price: number | null
+          start_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content_rich?: string | null
+          cover_url?: string | null
+          created_at?: string
+          end_at: string
+          format?: string
+          id?: string
+          is_free?: boolean
+          location?: string | null
+          max_attendees?: number | null
+          price?: number | null
+          start_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content_rich?: string | null
+          cover_url?: string | null
+          created_at?: string
+          end_at?: string
+          format?: string
+          id?: string
+          is_free?: boolean
+          location?: string | null
+          max_attendees?: number | null
+          price?: number | null
+          start_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
