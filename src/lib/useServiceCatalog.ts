@@ -5,6 +5,7 @@ export type CatalogItem = {
   id: string;
   name: string;
   description: string | null;
+  features: string | null;
   price: number | null;
   sale_price: number | null;
   default_sessions: number | null;
