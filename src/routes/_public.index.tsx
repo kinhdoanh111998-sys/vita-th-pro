@@ -171,16 +171,16 @@ function CommunityHome() {
 
 
       {/* Affiliate Stores */}
-      <section className="pt-6">
-        <div className="flex items-center justify-between mb-3 px-4">
-          <h2 className="text-base font-heading font-bold text-gray-900">
+      <section id="stores" className="pt-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
+          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
             Cửa hàng liên kết
           </h2>
-          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
             Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory px-4 pb-2">
+        <div className="flex md:grid md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
           {MOCK_STORES.map((s) => (
             <AffiliateStoreCard key={s.id} store={s} />
           ))}
