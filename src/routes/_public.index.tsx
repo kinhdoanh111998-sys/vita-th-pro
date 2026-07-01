@@ -1,126 +1,210 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  Search,
+  LogIn,
+  Sparkles,
+  Store,
+  CalendarDays,
+  QrCode,
+  Wallet,
+  Gift,
+  Home as HomeIcon,
+  User,
+  ChevronRight,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_public/")({
-  head: () => ({
-    meta: [
-      { title: "VITA – Hệ Sinh Thái Chăm Sóc Sức Khỏe & Làm Đẹp Toàn Diện" },
-      {
-        name: "description",
-        content:
-          "VITA tiên phong chuyển giao công nghệ trị liệu và quản lý chuỗi Spa thông minh. Khám phá thiết bị, đặt lịch dịch vụ và hợp tác mở chuỗi.",
-      },
-      { property: "og:title", content: "VITA – Hệ Sinh Thái Chăm Sóc Sức Khỏe & Làm Đẹp" },
-      {
-        property: "og:description",
-        content:
-          "Tiên phong chuyển giao công nghệ trị liệu và quản lý chuỗi Spa thông minh.",
-      },
-    ],
-  }),
-  component: Home,
+  component: CommunityHome,
 });
 
-function Home() {
+const SHORTCUTS = [
+  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600" },
+  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600" },
+  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600" },
+  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600" },
+  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600" },
+  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600" },
+];
+
+const EVENTS = [
+  {
+    title: "VITA Marathon Mùa Hè 2025",
+    tag: "Sự kiện sắp tới",
+    desc: "+500 điểm khi tham dự",
+    color: "from-emerald-400 to-teal-500",
+  },
+  {
+    title: "Workshop Chăm sóc da chuyên sâu",
+    tag: "Đăng ký ngay",
+    desc: "Miễn phí cho thành viên",
+    color: "from-pink-400 to-rose-500",
+  },
+];
+
+const ACTIVITIES = [
+  { title: "Cộng đồng làm đẹp VITA", desc: "12.5k thành viên đang hoạt động" },
+  { title: "Chia sẻ hành trình đẹp", desc: "245 bài viết mới tuần này" },
+  { title: "Livestream chuyên gia", desc: "Thứ 5 hàng tuần, 20:00" },
+];
+
+function CommunityHome() {
   return (
-    <>
-      {/* 1. Hero */}
-      <section className="bg-brand-bg">
-        <div className="mx-auto max-w-[1200px] px-5 py-20 lg:py-28 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-brand-primary-light text-brand-primary px-4 py-1.5 text-sm font-semibold">
-            Health &amp; Wellness Ecosystem
-          </span>
-          <h1 className="font-heading text-brand-text text-4xl md:text-5xl lg:text-6xl font-bold leading-tight tracking-tight mt-5 max-w-4xl mx-auto">
-            Hệ Sinh Thái Chăm Sóc Sức Khỏe &amp; Làm Đẹp Toàn Diện
-          </h1>
-          <p className="font-body text-brand-muted text-lg md:text-xl mt-6 max-w-2xl mx-auto leading-relaxed">
-            Tiên phong chuyển giao công nghệ trị liệu và quản lý chuỗi Spa thông minh.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 mt-8">
-            <Link
-              to="/products"
-              className="inline-flex items-center justify-center h-[44px] px-6 rounded-btn bg-brand-primary text-white font-semibold hover:opacity-90 transition"
-            >
-              Khám phá thiết bị
-            </Link>
-            <Link
-              to="/booking"
-              className="inline-flex items-center justify-center h-[44px] px-6 rounded-btn border border-brand-border bg-white text-brand-text font-semibold hover:bg-brand-surface transition"
-            >
-              Đặt lịch dịch vụ
-            </Link>
+    <div className="mx-auto w-full max-w-[480px] min-h-screen bg-gradient-to-b from-emerald-50/60 to-white pb-24">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="text-lg font-heading font-bold text-emerald-600">VITA</span>
+            <span className="text-xs font-semibold text-emerald-500">TH®Pro</span>
           </div>
+          <div className="flex-1 flex items-center gap-2 bg-gray-100 rounded-full px-3 py-2">
+            <Search className="w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm, dịch vụ..."
+              className="flex-1 bg-transparent text-sm outline-none placeholder:text-gray-400"
+            />
+          </div>
+          <Link
+            to="/login"
+            className="shrink-0 w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center"
+            aria-label="Đăng nhập"
+          >
+            <LogIn className="w-4 h-4" />
+          </Link>
+        </div>
+      </header>
+
+      {/* Hero Banner */}
+      <section className="px-4 pt-4">
+        <div className="relative rounded-2xl overflow-hidden aspect-[16/9] bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 shadow-md">
+          <div className="absolute top-3 left-3 bg-white/95 rounded-lg px-3 py-1.5 shadow">
+            <p className="text-[10px] text-gray-500">Thành viên mới hôm nay</p>
+            <p className="text-sm font-bold text-emerald-600">+127</p>
+          </div>
+          <div className="absolute bottom-3 right-3 bg-white/95 rounded-lg px-3 py-2 shadow max-w-[70%]">
+            <p className="text-[10px] text-gray-500">Sự kiện sắp tới</p>
+            <p className="text-sm font-semibold text-gray-900">VITA Marathon Mùa Hè 2025</p>
+            <p className="text-[11px] text-emerald-600 mt-0.5">🏆 +500 điểm khi tham dự</p>
+          </div>
+        </div>
+        {/* Dots */}
+        <div className="flex justify-center gap-1.5 mt-3">
+          <span className="w-6 h-1.5 rounded-full bg-emerald-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-300" />
         </div>
       </section>
 
-      {/* 2. Core Values */}
-      <section className="bg-brand-surface py-20">
-        <div className="mx-auto max-w-[1200px] px-5">
-          <div className="text-center mb-12">
-            <h2 className="font-heading text-brand-primary text-3xl md:text-4xl font-bold">
-              Giá trị cốt lõi
-            </h2>
-            <p className="font-body text-brand-muted mt-3 max-w-2xl mx-auto">
-              Ba trụ cột tạo nên sự khác biệt của hệ sinh thái VITA.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                title: "Công nghệ tiên tiến",
-                desc: "Ứng dụng thiết bị trị liệu thế hệ mới, chuẩn hóa quy trình và mang lại hiệu quả rõ rệt sau từng liệu trình.",
-                icon: "⚡",
-              },
-              {
-                title: "Đội ngũ chuyên gia",
-                desc: "Chuyên viên được đào tạo bài bản, đồng hành cùng khách hàng và chủ cơ sở trong suốt quá trình vận hành.",
-                icon: "👩‍⚕️",
-              },
-              {
-                title: "Hỗ trợ 24/7",
-                desc: "Hệ thống chăm sóc, tư vấn kỹ thuật và vận hành luôn sẵn sàng phục vụ mọi thời điểm trong ngày.",
-                icon: "💬",
-              },
-            ].map((v) => (
+      {/* Shortcuts */}
+      <section className="px-4 pt-5">
+        <div className="grid grid-cols-4 gap-3">
+          {SHORTCUTS.map((s) => (
+            <button
+              key={s.label}
+              className="flex flex-col items-center gap-1.5 group"
+            >
               <div
-                key={v.title}
-                className="bg-white rounded-card border border-brand-border p-7 shadow-sm hover:shadow-md transition"
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
               >
-                <div className="w-12 h-12 rounded-full bg-brand-primary-light text-brand-primary grid place-items-center text-2xl mb-4">
-                  {v.icon}
-                </div>
-                <h3 className="font-heading text-brand-text text-xl font-semibold">
-                  {v.title}
-                </h3>
-                <p className="font-body text-brand-muted mt-2 leading-relaxed">
-                  {v.desc}
-                </p>
+                <s.icon className="w-6 h-6" />
               </div>
-            ))}
-          </div>
+              <span className="text-[11px] text-gray-700 text-center leading-tight">
+                {s.label}
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* 3. CTA cuối trang */}
-      <section className="bg-brand-primary-light">
-        <div className="mx-auto max-w-[1200px] px-5 py-20 text-center">
-          <h2 className="font-heading text-brand-primary text-3xl md:text-4xl font-bold max-w-3xl mx-auto leading-snug">
-            Sẵn sàng mở chuỗi Spa của riêng bạn cùng VITA?
+      {/* Featured Events */}
+      <section className="px-4 pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-heading font-bold text-gray-900">
+            Sự kiện nổi bật
           </h2>
-          <p className="font-body text-brand-text mt-4 max-w-2xl mx-auto text-lg">
-            Nhận tư vấn chuyển giao công nghệ, mô hình vận hành và giải pháp
-            thiết bị trọn gói – đồng hành cùng bạn từ ngày đầu tiên.
-          </p>
-          <div className="mt-8">
-            <Link
-              to="/contact"
-              className="inline-flex items-center justify-center h-[44px] px-8 rounded-btn bg-brand-primary text-white font-semibold hover:opacity-90 transition"
+          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
+          {EVENTS.map((e) => (
+            <div
+              key={e.title}
+              className="shrink-0 w-64 rounded-2xl overflow-hidden bg-white shadow-sm border border-gray-100"
             >
-              Liên hệ hợp tác
-            </Link>
-          </div>
+              <div className={`h-28 bg-gradient-to-br ${e.color}`} />
+              <div className="p-3">
+                <span className="text-[10px] text-emerald-600 font-semibold uppercase">
+                  {e.tag}
+                </span>
+                <p className="text-sm font-semibold text-gray-900 mt-1 line-clamp-2">
+                  {e.title}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{e.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
-    </>
+
+      {/* Community Activities */}
+      <section className="px-4 pt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-heading font-bold text-gray-900">
+            Hoạt động cộng đồng
+          </h2>
+          <button className="text-xs text-emerald-600 flex items-center gap-0.5">
+            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <div className="space-y-2.5">
+          {ACTIVITIES.map((a) => (
+            <div
+              key={a.title}
+              className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm"
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {a.title}
+                </p>
+                <p className="text-xs text-gray-500 truncate">{a.desc}</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Public Bottom Navigation */}
+      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
+        <div className="grid grid-cols-3 h-16">
+          <Link
+            to="/"
+            className="flex flex-col items-center justify-center gap-1 text-emerald-600"
+          >
+            <HomeIcon className="w-5 h-5" />
+            <span className="text-[11px] font-medium">Trang chủ</span>
+          </Link>
+          <Link
+            to="/products"
+            className="flex flex-col items-center justify-center gap-1 text-gray-500"
+          >
+            <Store className="w-5 h-5" />
+            <span className="text-[11px] font-medium">Cửa hàng</span>
+          </Link>
+          <Link
+            to="/login"
+            className="flex flex-col items-center justify-center gap-1 text-gray-500"
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[11px] font-medium">Đăng nhập</span>
+          </Link>
+        </div>
+      </nav>
+    </div>
   );
 }
