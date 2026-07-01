@@ -27,6 +27,10 @@ import { Route as PortalContentRouteImport } from './routes/portal.content'
 import { Route as PortalContactsRouteImport } from './routes/portal.contacts'
 import { Route as PortalBookingsRouteImport } from './routes/portal.bookings'
 import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
+import { Route as AppStoreRouteImport } from './routes/app.store'
+import { Route as AppScanRouteImport } from './routes/app.scan'
+import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
+import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -149,6 +153,26 @@ const PortalAffiliateRoute = PortalAffiliateRouteImport.update({
   id: '/affiliate',
   path: '/affiliate',
   getParentRoute: () => PortalRoute,
+} as any)
+const AppStoreRoute = AppStoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScanRoute = AppScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAccountRoute = AppAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AppRoute,
 } as any)
 const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
   id: '/treatments',
@@ -345,6 +369,10 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/app/account': typeof AppAccountRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/scan': typeof AppScanRoute
+  '/app/store': typeof AppStoreRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -391,6 +419,10 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/app/account': typeof AppAccountRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/scan': typeof AppScanRoute
+  '/app/store': typeof AppStoreRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -445,6 +477,10 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/app/account': typeof AppAccountRoute
+  '/app/notifications': typeof AppNotificationsRoute
+  '/app/scan': typeof AppScanRoute
+  '/app/store': typeof AppStoreRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -500,6 +536,10 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/app/account'
+    | '/app/notifications'
+    | '/app/scan'
+    | '/app/store'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -546,6 +586,10 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/app/account'
+    | '/app/notifications'
+    | '/app/scan'
+    | '/app/store'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -599,6 +643,10 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/app/account'
+    | '/app/notifications'
+    | '/app/scan'
+    | '/app/store'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -764,6 +812,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/affiliate'
       preLoaderRoute: typeof PortalAffiliateRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/app/store': {
+      id: '/app/store'
+      path: '/store'
+      fullPath: '/app/store'
+      preLoaderRoute: typeof AppStoreRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/scan': {
+      id: '/app/scan'
+      path: '/scan'
+      fullPath: '/app/scan'
+      preLoaderRoute: typeof AppScanRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/account': {
+      id: '/app/account'
+      path: '/account'
+      fullPath: '/app/account'
+      preLoaderRoute: typeof AppAccountRouteImport
+      parentRoute: typeof AppRoute
     }
     '/admin/treatments': {
       id: '/admin/treatments'
@@ -1117,10 +1193,18 @@ const AdminRouteChildren: AdminRouteChildren = {
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AppRouteChildren {
+  AppAccountRoute: typeof AppAccountRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
+  AppScanRoute: typeof AppScanRoute
+  AppStoreRoute: typeof AppStoreRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAccountRoute: AppAccountRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
+  AppScanRoute: AppScanRoute,
+  AppStoreRoute: AppStoreRoute,
   AppIndexRoute: AppIndexRoute,
 }
 

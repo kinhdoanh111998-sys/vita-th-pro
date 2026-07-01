@@ -3,7 +3,7 @@ import { Home, Store, QrCode, Bell, User } from "lucide-react";
 import type { ComponentType } from "react";
 
 type NavItem = {
-  to: string;
+  to: "/app" | "/app/store" | "/app/scan" | "/app/notifications" | "/app/account";
   label: string;
   icon: ComponentType<{ className?: string }>;
   center?: boolean;
@@ -27,7 +27,7 @@ export default function AppLayout() {
       </main>
 
       <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-50">
-        <div className="flex justify-between items-end px-4 pt-2 pb-3">
+        <div className="flex justify-between items-center px-4 pt-2 pb-3">
           {NAV.map((item) => {
             const active =
               item.to === "/app"
@@ -40,12 +40,12 @@ export default function AppLayout() {
                 <Link
                   key={item.to}
                   to={item.to}
-                  className="flex flex-col items-center gap-1 -mt-5"
+                  className="relative -top-5 flex flex-col items-center gap-1"
                 >
-                  <span className="bg-brand-primary text-white rounded-full p-3 shadow-lg ring-4 ring-white">
+                  <span className="bg-brand-primary text-white rounded-full p-4 shadow-lg ring-4 ring-white">
                     <Icon className="w-6 h-6" />
                   </span>
-                  <span className="text-[10px] font-medium text-gray-500">
+                  <span className="text-[10px] font-medium text-gray-500 mt-1">
                     {item.label}
                   </span>
                 </Link>
