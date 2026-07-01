@@ -231,6 +231,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
         description: form.description.trim() || null,
+        features: form.features.trim() || null,
         category: form.category.trim() || null,
         cost_price: form.cost_price ? Number(form.cost_price) : 0,
         price: Number(form.price),
