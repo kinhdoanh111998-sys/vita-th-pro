@@ -163,3 +163,46 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Rich text editor & prose table styling */
+.ProseMirror table,
+.prose table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+.ProseMirror table td,
+.ProseMirror table th,
+.prose table td,
+.prose table th {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  position: relative;
+  min-width: 1em;
+}
+.ProseMirror table th,
+.prose table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  text-align: left;
+}
+.ProseMirror .selectedCell:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(27, 150, 6, 0.12);
+  pointer-events: none;
+}
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #1B9606;
+  pointer-events: none;
+}
+.ProseMirror table p { margin: 0; }

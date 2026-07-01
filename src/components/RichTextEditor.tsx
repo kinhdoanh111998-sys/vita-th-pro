@@ -3,6 +3,10 @@ import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import Image from "@tiptap/extension-image";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
 import {
   Bold,
   Italic,
@@ -19,6 +23,10 @@ import {
   Quote,
   ImagePlus,
   Loader2,
+  Table as TableIcon,
+  Rows3,
+  Columns3,
+  Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
@@ -207,6 +215,40 @@ function Toolbar({
       >
         <Redo2 size={14} />
       </Btn>
+      <span className="w-px h-5 bg-hairline mx-1" />
+      <Btn
+        title="Chèn bảng 3x3"
+        onClick={() =>
+          editor
+            .chain()
+            .focus()
+            .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+            .run()
+        }
+      >
+        <TableIcon size={14} />
+      </Btn>
+      <Btn
+        title="Thêm hàng phía dưới"
+        disabled={!editor.can().addRowAfter()}
+        onClick={() => editor.chain().focus().addRowAfter().run()}
+      >
+        <Rows3 size={14} />
+      </Btn>
+      <Btn
+        title="Thêm cột bên phải"
+        disabled={!editor.can().addColumnAfter()}
+        onClick={() => editor.chain().focus().addColumnAfter().run()}
+      >
+        <Columns3 size={14} />
+      </Btn>
+      <Btn
+        title="Xóa bảng"
+        disabled={!editor.can().deleteTable()}
+        onClick={() => editor.chain().focus().deleteTable().run()}
+      >
+        <Trash2 size={14} />
+      </Btn>
     </div>
   );
 }
@@ -249,6 +291,15 @@ export function RichTextEditor({
           class: "rounded-lg my-3 max-w-full h-auto",
         },
       }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: "rte-table",
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: value || "",
     onUpdate: ({ editor }) => onChange(editor.getHTML()),
