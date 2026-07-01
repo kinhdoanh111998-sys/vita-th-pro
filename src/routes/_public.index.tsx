@@ -36,39 +36,6 @@ const MOCK_STORES = [
 ];
 
 
-const MOCK_EVENTS: Array<{
-  id: number;
-  title: string;
-  status: EventStatus;
-  date: string;
-  location: string;
-  image: string;
-}> = [
-  {
-    id: 1,
-    title: "Hội thảo Da liễu Chuyên sâu",
-    status: "Sắp tổ chức",
-    date: "20/10/2026 - 08:00",
-    location: "Khách sạn JW Marriott",
-    image: "https://placehold.co/400x200/png",
-  },
-  {
-    id: 2,
-    title: "Lễ ra mắt Máy VITA M04",
-    status: "Đang diễn ra",
-    date: "Hôm nay",
-    location: "VITA Center HN",
-    image: "https://placehold.co/400x200/png",
-  },
-  {
-    id: 3,
-    title: "Workshop Chăm sóc da mùa đông",
-    status: "Đã diễn ra",
-    date: "01/10/2026",
-    location: "Online Zoom",
-    image: "https://placehold.co/400x200/png",
-  },
-];
 
 export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
