@@ -176,21 +176,38 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
               )}
             </div>
 
-            {item.description && (
-              <div className="mt-6 text-brand-text/80 text-sm leading-relaxed line-clamp-3">
-                {/* Preview đoạn ngắn — chi tiết ở bố cục dưới */}
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: item.description
-                      .replace(/<[^>]+>/g, " ")
-                      .slice(0, 240),
-                  }}
-                />
-              </div>
-            )}
-
-            {/* CTA */}
+            {/* CTA + Quantity stepper */}
             <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              {!isService && (
+                <div className="inline-flex items-center rounded-xl border border-hairline bg-white shadow-sm overflow-hidden h-12">
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    aria-label="Giảm số lượng"
+                    className="h-full w-11 grid place-items-center text-brand-text hover:bg-brand-bg transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    value={qty}
+                    onChange={(e) => {
+                      const v = parseInt(e.target.value, 10);
+                      setQty(Number.isFinite(v) && v > 0 ? v : 1);
+                    }}
+                    className="h-full w-14 text-center font-bold text-brand-text bg-transparent outline-none border-x border-hairline [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQty((q) => q + 1)}
+                    aria-label="Tăng số lượng"
+                    className="h-full w-11 grid place-items-center text-brand-text hover:bg-brand-bg transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
               <Link
                 to={isService ? "/booking" : "/contact"}
                 className="h-12 px-6 flex-1 inline-flex items-center justify-center gap-2 rounded-xl text-white font-bold transition-colors bg-brand-primary hover:bg-brand-primary-dark shadow-md"
@@ -212,7 +229,15 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
                 <ArrowLeft className="w-4 h-4 mr-2" /> {crumbLabel}
               </Link>
             </div>
+
+            {/* Mô tả ngắn gọn — hiển thị ngay dưới CTA */}
+            {item.short_description && (
+              <div className="mt-6 rounded-xl border border-hairline bg-brand-bg/50 px-4 py-3 text-brand-text/90 text-[15px] leading-relaxed whitespace-pre-line">
+                {item.short_description}
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Tabs Ô cửa sổ: Mô tả chi tiết + Đặc trưng */}
