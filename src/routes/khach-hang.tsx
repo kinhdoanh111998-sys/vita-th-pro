@@ -161,12 +161,22 @@ function KhachHangPage() {
       <main className="mx-auto max-w-[1180px] px-5 py-8 space-y-10">
         {/* Treatments */}
         <section>
-          <div className="mb-6">
-            <h1 className="text-2xl font-black text-brand-dark">Liệu trình của tôi</h1>
-            <p className="text-sm text-ink-muted">
-              Xin chào {fullName}, đây là danh sách liệu trình bạn đang sử dụng.
-            </p>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-black text-brand-dark">Liệu trình của tôi</h1>
+              <p className="text-sm text-ink-muted">
+                Xin chào {fullName}, đây là danh sách liệu trình bạn đang sử dụng.
+              </p>
+            </div>
+            <Link
+              to="/khach-hang/qr"
+              className="inline-flex items-center gap-2 rounded-full bg-brand text-white px-4 py-2 text-sm font-semibold shadow hover:bg-brand-dark transition"
+            >
+              <Sparkles className="w-4 h-4" />
+              Mã QR check-in
+            </Link>
           </div>
+
 
           {customer.isLoading || treatments.isLoading ? (
             <div className="text-ink-muted">Đang tải dữ liệu...</div>

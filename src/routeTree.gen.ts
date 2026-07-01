@@ -26,6 +26,7 @@ import { Route as PortalContentRouteImport } from './routes/portal.content'
 import { Route as PortalContactsRouteImport } from './routes/portal.contacts'
 import { Route as PortalBookingsRouteImport } from './routes/portal.bookings'
 import { Route as PortalAffiliateRouteImport } from './routes/portal.affiliate'
+import { Route as KhachHangQrRouteImport } from './routes/khach-hang.qr'
 import { Route as AppStoreRouteImport } from './routes/app.store'
 import { Route as AppScanRouteImport } from './routes/app.scan'
 import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
@@ -164,6 +165,11 @@ const PortalAffiliateRoute = PortalAffiliateRouteImport.update({
   id: '/affiliate',
   path: '/affiliate',
   getParentRoute: () => PortalRoute,
+} as any)
+const KhachHangQrRoute = KhachHangQrRouteImport.update({
+  id: '/qr',
+  path: '/qr',
+  getParentRoute: () => KhachHangRoute,
 } as any)
 const AppStoreRoute = AppStoreRouteImport.update({
   id: '/store',
@@ -444,7 +450,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/dang-ky': typeof DangKyRoute
-  '/khach-hang': typeof KhachHangRoute
+  '/khach-hang': typeof KhachHangRouteWithChildren
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/about': typeof PublicAboutRouteWithChildren
@@ -478,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
+  '/khach-hang/qr': typeof KhachHangQrRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -513,7 +520,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/dang-ky': typeof DangKyRoute
-  '/khach-hang': typeof KhachHangRoute
+  '/khach-hang': typeof KhachHangRouteWithChildren
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/booking': typeof PublicBookingRoute
@@ -543,6 +550,7 @@ export interface FileRoutesByTo {
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
+  '/khach-hang/qr': typeof KhachHangQrRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -583,7 +591,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/dang-ky': typeof DangKyRoute
-  '/khach-hang': typeof KhachHangRoute
+  '/khach-hang': typeof KhachHangRouteWithChildren
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/_public/about': typeof PublicAboutRouteWithChildren
@@ -617,6 +625,7 @@ export interface FileRoutesById {
   '/app/notifications': typeof AppNotificationsRoute
   '/app/scan': typeof AppScanRoute
   '/app/store': typeof AppStoreRouteWithChildren
+  '/khach-hang/qr': typeof KhachHangQrRoute
   '/portal/affiliate': typeof PortalAffiliateRoute
   '/portal/bookings': typeof PortalBookingsRoute
   '/portal/contacts': typeof PortalContactsRoute
@@ -692,6 +701,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
+    | '/khach-hang/qr'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -757,6 +767,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
+    | '/khach-hang/qr'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -830,6 +841,7 @@ export interface FileRouteTypes {
     | '/app/notifications'
     | '/app/scan'
     | '/app/store'
+    | '/khach-hang/qr'
     | '/portal/affiliate'
     | '/portal/bookings'
     | '/portal/contacts'
@@ -870,7 +882,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   DangKyRoute: typeof DangKyRoute
-  KhachHangRoute: typeof KhachHangRoute
+  KhachHangRoute: typeof KhachHangRouteWithChildren
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
 }
@@ -995,6 +1007,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal/affiliate'
       preLoaderRoute: typeof PortalAffiliateRouteImport
       parentRoute: typeof PortalRoute
+    }
+    '/khach-hang/qr': {
+      id: '/khach-hang/qr'
+      path: '/qr'
+      fullPath: '/khach-hang/qr'
+      preLoaderRoute: typeof KhachHangQrRouteImport
+      parentRoute: typeof KhachHangRoute
     }
     '/app/store': {
       id: '/app/store'
@@ -1595,6 +1614,18 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface KhachHangRouteChildren {
+  KhachHangQrRoute: typeof KhachHangQrRoute
+}
+
+const KhachHangRouteChildren: KhachHangRouteChildren = {
+  KhachHangQrRoute: KhachHangQrRoute,
+}
+
+const KhachHangRouteWithChildren = KhachHangRoute._addFileChildren(
+  KhachHangRouteChildren,
+)
+
 interface PortalRouteChildren {
   PortalAffiliateRoute: typeof PortalAffiliateRoute
   PortalBookingsRoute: typeof PortalBookingsRoute
@@ -1623,7 +1654,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   DangKyRoute: DangKyRoute,
-  KhachHangRoute: KhachHangRoute,
+  KhachHangRoute: KhachHangRouteWithChildren,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
 }
