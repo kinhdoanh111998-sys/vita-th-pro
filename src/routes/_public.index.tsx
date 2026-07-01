@@ -149,25 +149,26 @@ function CommunityHome() {
 
 
       {/* Shortcuts */}
-      <section className="px-4 pt-5">
-        <div className="grid grid-cols-4 gap-3">
+      <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
+        <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
           {SHORTCUTS.map((s) => (
             <button
               key={s.label}
-              className="flex flex-col items-center gap-1.5 group"
+              className="flex flex-col items-center gap-1.5 md:gap-2 group"
             >
               <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+                className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
               >
-                <s.icon className="w-6 h-6" />
+                <s.icon className="w-6 h-6 md:w-7 md:h-7" />
               </div>
-              <span className="text-[11px] text-gray-700 text-center leading-tight">
+              <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
                 {s.label}
               </span>
             </button>
           ))}
         </div>
       </section>
+
 
       {/* Affiliate Stores */}
       <section className="pt-6">
