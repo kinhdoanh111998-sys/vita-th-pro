@@ -23,8 +23,11 @@ function landingForRole(role: Role): string {
     case "admin":
       return "/admin";
     case "manager":
+      return "/admin";
     case "staff":
     case "employee":
+    case "sale":
+    case "technician":
       return "/portal/dashboard";
     case "customer":
       return "/portal/my-treatments";

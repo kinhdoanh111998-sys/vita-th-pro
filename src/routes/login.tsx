@@ -33,8 +33,11 @@ function destinationForRole(role: string | null): string {
     case "admin":
       return "/admin";
     case "manager":
+      return "/admin";
     case "employee":
     case "staff":
+    case "sale":
+    case "technician":
       return "/portal/dashboard";
     case "customer":
       return "/khach-hang";

@@ -12,18 +12,17 @@ type Tab = {
 const tabs: Tab[] = [
   { to: "/admin", label: "Dashboard", exact: true, roles: ["admin", "manager"] },
   { to: "/admin/banners", label: "Banner", roles: ["admin"] },
-  { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin"] },
-  { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin"] },
-  
+  { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin", "manager"] },
+  { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin", "manager"] },
   { to: "/admin/news", label: "Tin tức & Kiểm duyệt", roles: ["admin", "manager"] },
   { to: "/admin/events", label: "Sự kiện", roles: ["admin", "manager"] },
   { to: "/admin/customers", label: "Khách hàng", roles: ["admin", "manager"] },
-  { to: "/admin/bookings", label: "Lịch hẹn", roles: ["admin"] },
+  { to: "/admin/bookings", label: "Lịch hẹn", roles: ["admin", "manager"] },
   { to: "/admin/treatments", label: "Liệu trình", roles: ["admin", "manager"] },
   { to: "/admin/orders", label: "Đơn hàng", roles: ["admin", "manager"] },
-  { to: "/admin/employees", label: "Nhân viên", roles: ["admin"] },
+  { to: "/admin/employees", label: "Nhân viên", roles: ["admin", "manager"] },
   { to: "/admin/tours", label: "Tour làm cho khách", roles: ["admin", "manager"] },
-  { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin"] },
+  { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin", "manager"] },
   { to: "/admin/settings", label: "Cài đặt/Xuất dữ liệu", roles: ["admin"] },
 ];
 
