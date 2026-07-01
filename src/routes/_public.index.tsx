@@ -12,10 +12,14 @@ import {
   Home as HomeIcon,
   User,
   ChevronRight,
+  ChevronDown,
+  Crown,
 } from "lucide-react";
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
+import { useAuth } from "@/lib/AuthContext";
+
 
 const MOCK_BANNERS = [
   { id: 1, image: "https://placehold.co/800x400/png?text=VITA+Banner+1" },
