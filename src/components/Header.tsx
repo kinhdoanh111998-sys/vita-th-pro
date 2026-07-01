@@ -53,9 +53,10 @@ const navGroups: NavGroup[] = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const { data: settings } = useSettings();
+  const { data: sys } = useSystemSettings();
   const { session, role } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
-  const hotline = settings?.hotline;
+  const hotline = sys?.hotline ?? settings?.hotline;
 
   const accountTo =
     role === "admin"
