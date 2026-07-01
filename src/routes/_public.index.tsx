@@ -18,6 +18,9 @@ import {
 import { EventCard, type EventStatus } from "@/components/app/EventCard";
 import { CommunityPost } from "@/components/app/CommunityPost";
 import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
+import { FeaturedEventCard } from "@/components/FeaturedEventCard";
+import { NewsCard } from "@/components/NewsCard";
+import { mockEvents, mockNews } from "@/lib/mockPosts";
 import { useSettings } from "@/lib/useSettings";
 import logo from "@/assets/vita-th-pro-logo.png";
 
