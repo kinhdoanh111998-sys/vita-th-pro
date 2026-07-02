@@ -181,7 +181,7 @@ export function OmniSearch({
                   : "h-8 border-0 shadow-none bg-transparent px-2 text-xs font-semibold text-[#7a5b1d] focus:ring-0 focus:ring-offset-0 gap-1 w-[105px]"
               }
             >
-              <SelectValue />
+              <SelectValue placeholder="Tất cả" />
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(TYPE_LABELS) as SearchType[]).map((k) => (
