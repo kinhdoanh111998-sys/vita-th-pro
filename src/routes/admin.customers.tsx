@@ -16,6 +16,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 import { supabase } from "@/lib/supabaseClient";
+import { useServerFn } from "@tanstack/react-start";
+import { createCustomerWithAuth } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/admin/customers")({
   component: CustomersAdmin,
@@ -92,35 +94,55 @@ function CustomersAdmin() {
     setForm(EMPTY);
   };
 
+  const createFn = useServerFn(createCustomerWithAuth);
+
   const save = useMutation({
     mutationFn: async () => {
       const fullName = form.full_name.trim();
-      const phone = form.phone.trim();
+      const phone = form.phone.trim().replace(/\s+/g, "");
       if (!fullName || !phone) throw new Error("Vui lòng nhập họ tên và SĐT");
 
-      const payload = {
-        full_name: fullName,
-        name: fullName,
-        phone,
-        email: form.email.trim() || null,
-        dob: form.dob || null,
-        gender: form.gender || null,
-        source: form.source.trim() || null,
-        status: form.status.trim() || "Đang chăm sóc",
-        notes: form.notes.trim() || null,
-        note: form.notes.trim() || null,
-      };
-
-      const result = editingCustomer
-        ? await supabase.from("customers").update(payload).eq("id", editingCustomer.id)
-        : await supabase.from("customers").insert(payload);
-
-      if (result.error) {
-        throw new Error(result.error.message || "Không thể lưu khách hàng");
+      if (editingCustomer) {
+        const payload = {
+          full_name: fullName,
+          name: fullName,
+          phone,
+          email: form.email.trim() || null,
+          dob: form.dob || null,
+          gender: form.gender || null,
+          source: form.source.trim() || null,
+          status: form.status.trim() || "Đang chăm sóc",
+          notes: form.notes.trim() || null,
+          note: form.notes.trim() || null,
+        };
+        const { error } = await supabase
+          .from("customers")
+          .update(payload)
+          .eq("id", editingCustomer.id);
+        if (error) throw new Error(error.message || "Không thể lưu khách hàng");
+      } else {
+        // Tạo mới: gọi server fn (service role) — tự sinh Auth account
+        // theo SĐT (email=<phone>@khach.vitath.pro, password=<phone>).
+        await createFn({
+          data: {
+            full_name: fullName,
+            phone,
+            email: form.email.trim() || null,
+            dob: form.dob || null,
+            gender: form.gender || null,
+            source: form.source.trim() || null,
+            status: form.status.trim() || "Đang chăm sóc",
+            notes: form.notes.trim() || null,
+          },
+        });
       }
     },
     onSuccess: () => {
-      toast.success(editingCustomer ? "Đã cập nhật khách hàng" : "Đã thêm khách hàng");
+      toast.success(
+        editingCustomer
+          ? "Đã cập nhật khách hàng"
+          : "Đã thêm khách hàng + tạo tài khoản đăng nhập (SĐT / SĐT)",
+      );
       qc.invalidateQueries({ queryKey: ["admin", "customers"] });
       closeForm();
     },
