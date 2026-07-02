@@ -39,7 +39,7 @@ function CertificationsPage() {
           <span className="inline-flex text-xs font-black uppercase tracking-[0.25em] bg-white/15 rounded-full px-3 py-1">
             Uy tín & Minh chứng
           </span>
-          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight">Chứng nhận & Chứng chỉ</h1>
+          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight text-white">Chứng nhận & Chứng chỉ</h1>
           <p className="mt-3 text-white/85 max-w-2xl mx-auto">
             Vita TH Pro tự hào sở hữu đầy đủ giấy phép hoạt động, chứng chỉ chuyên môn và chứng nhận chuyển giao công nghệ từ các đơn vị hàng đầu thế giới.
           </p>
