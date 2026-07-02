@@ -193,8 +193,6 @@ function ToursPage() {
   const pendingTreat = pending ? (treatmentsQ.data ?? []).find((t) => t.id === pending.treatmentId) : null;
   const pendingCust = pendingTreat ? customerMap.get(pendingTreat.customer_id) : null;
 
-  return (
-    <>
   const [staffQ, setStaffQ] = useState("");
   const filteredStaff = availableStaff.filter((s) =>
     !staffQ.trim()
@@ -204,6 +202,7 @@ function ToursPage() {
 
   return (
     <>
+
       <AdminTopbar
         title="Quản lý Ca làm (Tours)"
         subtitle="Kéo thẻ nhân viên khả dụng thả vào buổi liệu trình cần thực hiện."
