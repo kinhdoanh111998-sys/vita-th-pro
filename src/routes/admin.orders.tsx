@@ -662,15 +662,15 @@ function CreateOrderDrawer({
             </div>
           </section>
 
-          <SheetFooter className="sticky bottom-0 bg-white pt-3 border-t border-hairline">
+          <DialogFooter className="sticky bottom-0 bg-white pt-3 border-t border-hairline">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Huỷ</Button>
             <Button type="submit" disabled={isSubmitting || subtotal <= 0}>
               {isSubmitting ? "Đang lưu..." : "Lưu đơn hàng"}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
