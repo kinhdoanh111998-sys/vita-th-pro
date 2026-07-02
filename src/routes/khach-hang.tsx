@@ -170,54 +170,67 @@ function KhachHangPage() {
 
   /** Nhóm treatments theo order_id, chỉ giữ buổi PENDING tiếp theo (session_number nhỏ nhất). */
   const availableSessions = useMemo(() => {
-    const groups = new Map<string, Treatment[]>();
-    for (const t of treatmentsQ.data ?? []) {
-      if (t.status !== "pending") continue;
-      const list = groups.get(t.order_id) ?? [];
-      list.push(t);
-      groups.set(t.order_id, list);
+    try {
+      const groups = new Map<string, Treatment[]>();
+      for (const t of treatmentsQ.data ?? []) {
+        if (!t || t.status !== "pending") continue;
+        const list = groups.get(t.order_id) ?? [];
+        list.push(t);
+        groups.set(t.order_id, list);
+      }
+      const out: Array<{
+        treatment: Treatment;
+        serviceName: string;
+        totalSessions: number;
+        remaining: number;
+        packageIndex: number;
+      }> = [];
+      let idx = 0;
+      for (const [orderId, list] of groups.entries()) {
+        idx += 1;
+        list.sort((a, b) => (a.session_number ?? 0) - (b.session_number ?? 0));
+        const next = list[0];
+        if (!next) continue;
+        const order = orderMap.get(orderId);
+        const svc = next.service_id ? serviceMap.get(next.service_id) : null;
+        const totalSessions =
+          (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
+        out.push({
+          treatment: next,
+          serviceName: svc?.name ?? "Liệu trình",
+          totalSessions: Number.isFinite(totalSessions) ? totalSessions : 1,
+          remaining: list.length,
+          packageIndex: idx,
+        });
+      }
+      return out;
+    } catch (e) {
+      console.error("[khach-hang] availableSessions compute error:", e);
+      return [];
     }
-    const out: Array<{
-      treatment: Treatment;
-      serviceName: string;
-      totalSessions: number;
-      remaining: number;
-      packageIndex: number;
-    }> = [];
-    let idx = 0;
-    for (const [orderId, list] of groups.entries()) {
-      idx += 1;
-      list.sort((a, b) => a.session_number - b.session_number);
-      const next = list[0];
-      const order = orderMap.get(orderId);
-      const svc = next.service_id ? serviceMap.get(next.service_id) : null;
-      const totalSessions =
-        (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
-      out.push({
-        treatment: next,
-        serviceName: svc?.name ?? "Liệu trình",
-        totalSessions,
-        remaining: list.length,
-        packageIndex: idx,
-      });
-    }
-    return out;
   }, [treatmentsQ.data, orderMap, serviceMap]);
 
   /** Đã sử dụng — treatments hoàn thành. */
   const usedSessions = useMemo(() => {
-    return (treatmentsQ.data ?? [])
-      .filter((t) => t.status !== "pending")
-      .map((t) => {
-        const svc = t.service_id ? serviceMap.get(t.service_id) : null;
-        return {
-          id: t.id,
-          serviceName: svc?.name ?? "Liệu trình",
-          session_number: t.session_number,
-          status: t.status,
-        };
-      });
+    try {
+      return (treatmentsQ.data ?? [])
+        .filter((t) => t && t.status !== "pending")
+        .map((t) => {
+          const svc = t.service_id ? serviceMap.get(t.service_id) : null;
+          return {
+            id: t.id,
+            serviceName: svc?.name ?? "Liệu trình",
+            session_number: t.session_number,
+            status: t.status,
+          };
+        });
+    } catch (e) {
+      console.error("[khach-hang] usedSessions compute error:", e);
+      return [];
+    }
   }, [treatmentsQ.data, serviceMap]);
+
+  // qrPayload sẽ được build inline khi render (phụ thuộc vào `selected` khai báo phía dưới).
 
   /* -------- Dropdown state -------- */
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -443,14 +456,25 @@ function KhachHangPage() {
                   </div>
                   <div className="mt-3 grid place-items-center bg-white rounded-2xl p-4 border border-hairline">
                     <QRCodeCanvas
-                      value={selected.treatment.qr_code_id}
+                      value={(() => {
+                        try {
+                          return JSON.stringify({
+                            v: 1,
+                            treatment_id: selected.treatment.id,
+                            order_id: selected.treatment.order_id,
+                            session_number: selected.treatment.session_number,
+                            qr_code_id: selected.treatment.qr_code_id,
+                          });
+                        } catch {
+                          return selected.treatment.qr_code_id ?? "";
+                        }
+                      })()}
                       size={192}
                       level="H"
                       includeMargin={false}
                     />
                     <div className="mt-2 text-[10px] font-mono text-ink-muted">
-                      {selected.treatment.qr_code_id.slice(0, 8)}…
-                      {selected.treatment.qr_code_id.slice(-4)}
+                      #{selected.treatment.session_number} · {selected.treatment.qr_code_id.slice(0, 8)}…
                     </div>
                   </div>
                   <p className="mt-3 text-[11px] text-center text-ink-muted">
