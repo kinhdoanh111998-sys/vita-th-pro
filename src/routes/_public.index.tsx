@@ -17,8 +17,9 @@ import {
   X,
   Star,
   Quote,
+  MapPin,
+  Phone,
 } from "lucide-react";
-import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
