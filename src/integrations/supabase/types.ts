@@ -1027,6 +1027,36 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_shifts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          shift_type: string
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          shift_type: string
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          shift_type?: string
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           facebook_link: string | null
@@ -1059,6 +1089,7 @@ export type Database = {
           end_time: string | null
           id: string
           notes: string | null
+          staff_acceptance: string
           start_time: string | null
           status: string
           technician_id: string
@@ -1071,6 +1102,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           notes?: string | null
+          staff_acceptance?: string
           start_time?: string | null
           status?: string
           technician_id: string
@@ -1083,6 +1115,7 @@ export type Database = {
           end_time?: string | null
           id?: string
           notes?: string | null
+          staff_acceptance?: string
           start_time?: string | null
           status?: string
           technician_id?: string
