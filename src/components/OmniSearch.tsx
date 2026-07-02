@@ -15,6 +15,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 type SearchType = "all" | "service" | "product" | "news" | "event";
