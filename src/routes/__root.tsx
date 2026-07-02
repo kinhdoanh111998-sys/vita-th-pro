@@ -90,6 +90,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Pixel Perfect UI converts static HTML/CSS designs into interactive React components with Tailwind CSS." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b2de5a48-6e9a-42ae-83eb-55af30055da1/id-preview-cba1844a--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app-1782738997603.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b2de5a48-6e9a-42ae-83eb-55af30055da1/id-preview-cba1844a--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app-1782738997603.png" },
+      { name: "zalo-platform-site-verification", content: "QDsO2f7fF2TX_xCAjVyh54NJWpkffLPXCpGn" },
     ],
     links: [
       {
