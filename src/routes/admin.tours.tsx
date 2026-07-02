@@ -168,23 +168,26 @@ function ToursPage() {
     [usersQ.data],
   );
 
+  const busySet = useMemo(
+    () => new Set((activeToursQ.data ?? []).map((t) => t.technician_id)),
+    [activeToursQ.data],
+  );
   const availableStaff: StaffMember[] = useMemo(() => {
-    const busy = new Set((activeToursQ.data ?? []).map((t) => t.technician_id));
     const attMap = new Map((attQ.data ?? []).map((a) => [a.employee_id, a]));
     return (usersQ.data ?? [])
       .filter((u) => u.role && STAFF_ROLES.includes(u.role))
+      .filter((u) => !busySet.has(u.id)) // Ẩn NV đang thực hiện ca khác
       .map((u) => {
         const a = attMap.get(u.id);
         const checkedIn = !!a?.check_in_approved && !a?.check_out_time;
-        const isBusy = busy.has(u.id);
         return {
           id: u.id,
           full_name: u.full_name ?? "—",
           role: u.role ?? "staff",
-          meta: isBusy ? "Đang thực hiện" : checkedIn ? "Sẵn sàng" : "Chưa check-in",
+          meta: checkedIn ? "Sẵn sàng" : "Chưa check-in",
         };
       });
-  }, [usersQ.data, attQ.data, activeToursQ.data]);
+  }, [usersQ.data, attQ.data, busySet]);
 
   /* -------- Form state -------- */
   const [customerId, setCustomerId] = useState("");
@@ -234,6 +237,18 @@ function ToursPage() {
       if (!customerId || !treatmentId || !technicianId) {
         throw new Error("Chọn đủ khách, buổi và nhân viên.");
       }
+      if (busySet.has(technicianId)) {
+        throw new Error("Nhân viên đang thực hiện ca khác — chưa thể xếp thêm.");
+      }
+      // Chặn xếp trùng cho cùng 1 buổi đang chạy
+      const { data: dup } = await supabase
+        .from("tours")
+        .select("id")
+        .eq("treatment_id", treatmentId)
+        .eq("status", "in_progress")
+        .maybeSingle();
+      if (dup) throw new Error("Buổi này đang có ca đang chạy.");
+
       const commission = Number(commissionAmount || 0);
       const now = new Date().toISOString();
       const { data: tour, error: tErr } = await supabase.from("tours").insert({
@@ -242,40 +257,27 @@ function ToursPage() {
         technician_id: technicianId,
         notes: notes.trim() || null,
         commission_amount: commission,
-        status: "completed",
+        status: "in_progress",
         start_time: now,
-        end_time: now,
+        end_time: null,
       }).select().single();
       if (tErr) throw tErr;
 
-      const { error: uErr } = await supabase
-        .from("treatments")
-        .update({ status: "completed" })
-        .eq("id", treatmentId);
-      if (uErr) throw uErr;
-
-      if (commission > 0) {
-        await supabase.from("commissions").insert({
-          staff_id: technicianId,
-          commission_type: "tour_service",
-          reference_id: tour.id,
-          amount: commission,
-          status: "pending",
-        });
-      }
+      // Đánh dấu buổi đang thực hiện (giữ 'pending' cho luồng QR — chỉ cập nhật ghi chú qua tour)
+      // KHÔNG update treatment ở đây — chờ khách xác nhận qua QR
 
       // Ghi log thông báo cho NV
       await supabase.from("notifications").insert({
         recipient_id: technicianId,
-        type: "tour_completed",
-        title: "Bạn vừa hoàn thành 1 ca làm",
-        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}`,
+        type: "tour_started",
+        title: "Bạn được xếp 1 ca làm mới",
+        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}. Quét QR khách khi hoàn tất.`,
         ref_type: "tour",
         ref_id: tour.id,
       });
     },
     onSuccess: () => {
-      toast.success("Đã hoàn thành ca làm & ghi nhận hoa hồng.");
+      toast.success("Đã bắt đầu ca — Nhân viên sẽ khả dụng lại sau khi quét QR kết thúc.");
       resetForm();
       qc.invalidateQueries({ queryKey: ["tours2"] });
     },
@@ -418,7 +420,7 @@ function ToursPage() {
                     Làm mới
                   </button>
                   <Button type="submit" disabled={complete.isPending}>
-                    {complete.isPending ? "Đang xử lý…" : "✓ Hoàn thành Ca làm"}
+                    {complete.isPending ? "Đang xử lý…" : "▶ Bắt đầu Ca làm"}
                   </Button>
                 </div>
               </form>
@@ -446,9 +448,9 @@ function ToursPage() {
                 </Row>
               </dl>
               <p className="mt-3 text-[11px] text-ink-muted leading-relaxed">
-                Bấm <b>Hoàn thành</b>: tạo Tour, chuyển buổi liệu trình sang{" "}
-                <i>completed</i>, ghi nhận hoa hồng nhân viên (trạng thái{" "}
-                <i>pending</i>) và gửi thông báo cho NV.
+                Bấm <b>Bắt đầu</b>: tạo Tour trạng thái <i>in_progress</i>, NV
+                bị khoá khỏi danh sách khả dụng. Khi NV quét QR khách ở{" "}
+                <i>/app/scan</i> → Tour đóng, hoa hồng ghi nhận, NV khả dụng lại.
               </p>
             </div>
 

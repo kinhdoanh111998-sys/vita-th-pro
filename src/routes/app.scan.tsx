@@ -1,16 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, RotateCcw, Camera, UserCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -31,9 +26,13 @@ type Treatment = {
   qr_code_id: string;
 };
 type Customer = { id: string; name: string | null; phone: string | null };
-type Order = { id: string; service_id: string; quantity: number };
-type Service = { id: string; name: string; default_sessions: number | null };
-type Staff = { id: string; full_name: string | null; role: string };
+type Service = { id: string; name: string };
+type ActiveTour = {
+  id: string;
+  technician_id: string;
+  commission_amount: number | null;
+  start_time: string | null;
+};
 
 type ScanState =
   | { kind: "idle" }
@@ -45,32 +44,17 @@ type ScanState =
       treatment: Treatment;
       customer: Customer | null;
       service: Service | null;
-      order: Order | null;
-      totalSessions: number | null;
+      tour: ActiveTour;
+      technicianName: string;
     };
 
 function ScanPage() {
   const [state, setState] = useState<ScanState>({ kind: "idle" });
-  const [technicianId, setTechnicianId] = useState<string>("");
-  const [commissionAmount, setCommissionAmount] = useState<string>("0");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const scannerRef = useRef<any>(null);
   const stateRef = useRef<ScanState>(state);
   stateRef.current = state;
-
-  const staffQ = useQuery({
-    queryKey: ["scan-staff"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id,full_name,role")
-        .in("role", ["admin", "staff", "manager"])
-        .order("full_name");
-      if (error) throw error;
-      return (data ?? []) as Staff[];
-    },
-  });
 
   const handleCode = async (raw: string) => {
     const code = raw.trim();
@@ -93,48 +77,60 @@ function ScanPage() {
         return;
       }
       const treatment = t as Treatment;
-      if (treatment.status !== "pending") {
+      if (treatment.status === "completed") {
         setState({
           kind: "error",
-          message: `Buổi #${treatment.session_number} đã được sử dụng trước đó.`,
+          message: `Buổi #${treatment.session_number} đã hoàn tất trước đó.`,
         });
         return;
       }
 
-      const [{ data: cust }, { data: ord }] = await Promise.all([
+      // Tìm tour đang chạy (in_progress) cho buổi này — do QL đã xếp
+      const { data: tourRow, error: tourErr } = await supabase
+        .from("tours")
+        .select("id,technician_id,commission_amount,start_time")
+        .eq("treatment_id", treatment.id)
+        .eq("status", "in_progress")
+        .maybeSingle();
+      if (tourErr) throw tourErr;
+      if (!tourRow) {
+        setState({
+          kind: "error",
+          message: "Chưa có ca đang thực hiện cho buổi này. Yêu cầu Quản lý xếp ca trước.",
+        });
+        return;
+      }
+      const tour = tourRow as ActiveTour;
+
+      const [{ data: cust }, { data: ord }, { data: staff }] = await Promise.all([
         supabase.from("customers").select("id,name,phone").eq("id", treatment.customer_id).maybeSingle(),
-        supabase.from("orders").select("id,service_id,quantity").eq("id", treatment.order_id).maybeSingle(),
+        supabase.from("orders").select("service_id").eq("id", treatment.order_id).maybeSingle(),
+        supabase.from("users").select("full_name").eq("id", tour.technician_id).maybeSingle(),
       ]);
 
       let service: Service | null = null;
       if (ord?.service_id) {
         const { data: svc } = await supabase
           .from("services")
-          .select("id,name,default_sessions")
+          .select("id,name")
           .eq("id", ord.service_id)
           .maybeSingle();
         service = (svc as Service) ?? null;
       }
 
-      const totalSessions =
-        ord && service
-          ? Math.max((ord as Order).quantity, 1) * Math.max(service.default_sessions ?? 1, 1)
-          : null;
-
       setState({
         kind: "match",
         treatment,
         customer: (cust as Customer) ?? null,
-        order: (ord as Order) ?? null,
         service,
-        totalSessions,
+        tour,
+        technicianName: (staff as any)?.full_name ?? "—",
       });
     } catch (e: any) {
       setState({ kind: "error", message: e?.message ?? "Không thể tra cứu mã QR." });
     }
   };
 
-  // Start camera scanner
   const startScanner = async () => {
     setState({ kind: "scanning" });
     try {
@@ -145,12 +141,8 @@ function ScanPage() {
       await scanner.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 260, height: 260 } },
-        (decoded) => {
-          handleCode(decoded);
-        },
-        () => {
-          /* per-frame decode misses, ignore */
-        },
+        (decoded) => { handleCode(decoded); },
+        () => { /* miss */ },
       );
     } catch (e: any) {
       setState({ kind: "error", message: e?.message ?? "Không thể mở camera. Cấp quyền và thử lại." });
@@ -163,81 +155,73 @@ function ScanPage() {
     try {
       if (s.isScanning) await s.stop();
       await s.clear();
-    } catch {
-      /* noop */
-    }
+    } catch { /* noop */ }
     scannerRef.current = null;
   };
 
+  useEffect(() => () => { stopScanner(); }, []);
   useEffect(() => {
-    return () => {
-      stopScanner();
-    };
-  }, []);
-
-  // Stop the camera as soon as we have a match to avoid re-triggering.
-  useEffect(() => {
-    if (state.kind === "match" || state.kind === "error") {
-      stopScanner();
-    }
+    if (state.kind === "match" || state.kind === "error") stopScanner();
   }, [state.kind]);
 
   const resetAndScan = async () => {
     await stopScanner();
-    setTechnicianId("");
-    setCommissionAmount("0");
     setNotes("");
     startScanner();
   };
 
-  const confirmCheckin = async () => {
+  const confirmFinish = async () => {
     if (state.kind !== "match") return;
-    if (!technicianId) {
-      toast.error("Vui lòng chọn kỹ thuật viên phụ trách.");
-      return;
-    }
     setSubmitting(true);
-    const amount = Number(commissionAmount) || 0;
     const tr = state.treatment;
+    const tour = state.tour;
     try {
-      // 1. Đánh dấu buổi hoàn thành
+      // 1. Đóng Tour
+      const { error: tourErr } = await supabase
+        .from("tours")
+        .update({
+          status: "completed",
+          end_time: new Date().toISOString(),
+          notes: notes.trim() || null,
+        })
+        .eq("id", tour.id)
+        .eq("status", "in_progress"); // guard chống double-scan
+      if (tourErr) throw tourErr;
+
+      // 2. Đánh dấu buổi hoàn thành
       const { error: upErr } = await supabase
         .from("treatments")
         .update({ status: "completed" })
-        .eq("id", tr.id)
-        .eq("status", "pending"); // guard chống double-scan
+        .eq("id", tr.id);
       if (upErr) throw upErr;
 
-      // 2. Ghi nhận Ca làm (Tour)
-      const { error: tourErr } = await supabase.from("tours").insert({
-        treatment_id: tr.id,
-        customer_id: tr.customer_id,
-        technician_id: technicianId,
-        commission_amount: amount,
-        notes: notes.trim() || null,
-        status: "completed",
-      });
-      if (tourErr) throw tourErr;
-
-      // 3. Ghi nhận Hoa hồng (nếu > 0)
+      // 3. Ghi nhận hoa hồng (nếu > 0)
+      const amount = Number(tour.commission_amount) || 0;
       if (amount > 0) {
-        const { error: cErr } = await supabase.from("commissions").insert({
-          staff_id: technicianId,
-          commission_type: "service",
-          reference_id: tr.id,
+        await supabase.from("commissions").insert({
+          staff_id: tour.technician_id,
+          commission_type: "tour_service",
+          reference_id: tour.id,
           amount,
           status: "pending",
         });
-        if (cErr) throw cErr;
       }
 
-      toast.success(`Check-in thành công buổi #${tr.session_number}!`);
+      // 4. Thông báo NV — nay đã khả dụng lại
+      await supabase.from("notifications").insert({
+        recipient_id: tour.technician_id,
+        type: "tour_completed",
+        title: "Đã kết thúc ca — Bạn đã khả dụng",
+        body: `Buổi #${tr.session_number} · ${state.customer?.name ?? "Khách"}`,
+        ref_type: "tour",
+        ref_id: tour.id,
+      });
+
+      toast.success(`Đã xác nhận kết thúc buổi #${tr.session_number}!`);
       setState({ kind: "idle" });
-      setTechnicianId("");
-      setCommissionAmount("0");
       setNotes("");
     } catch (e: any) {
-      toast.error(e?.message ?? "Không thể hoàn tất check-in.");
+      toast.error(e?.message ?? "Không thể xác nhận kết thúc.");
     } finally {
       setSubmitting(false);
     }
@@ -248,17 +232,17 @@ function ScanPage() {
       <div className="absolute inset-0 bg-gradient-to-b from-gray-950 via-black to-gray-950" />
 
       <div className="relative z-10 flex flex-col items-center pt-8 pb-4">
-        <h1 className="font-heading text-2xl font-bold text-white">Quét mã QR check-in</h1>
-        <p className="text-xs text-gray-400 mt-1">Kỹ thuật viên quét mã của khách để trừ buổi</p>
+        <h1 className="font-heading text-2xl font-bold text-white">Quét QR kết thúc ca</h1>
+        <p className="text-xs text-gray-400 mt-1">
+          NV quét mã QR khách để xác nhận buổi đã hoàn tất
+        </p>
       </div>
 
-      {/* Camera region */}
       <div className="relative z-10 mx-auto max-w-[360px] px-4">
         <div
           id={REGION_ID}
           className="relative aspect-square w-full overflow-hidden rounded-2xl bg-gray-900 ring-1 ring-white/10"
         />
-        {/* Corner brackets overlay */}
         {state.kind === "scanning" && (
           <div className="pointer-events-none absolute inset-x-4 top-0 aspect-square">
             <span className="absolute top-0 left-0 h-10 w-10 rounded-tl-2xl border-l-4 border-t-4 border-brand" />
@@ -269,7 +253,6 @@ function ScanPage() {
         )}
       </div>
 
-      {/* Action panel */}
       <div className="relative z-10 mx-auto max-w-[360px] px-4 mt-4 pb-8">
         {state.kind === "idle" && (
           <Button onClick={startScanner} size="lg" className="w-full bg-brand hover:bg-brand-dark">
@@ -298,7 +281,6 @@ function ScanPage() {
         )}
       </div>
 
-      {/* Confirmation dialog */}
       <Dialog
         open={state.kind === "match"}
         onOpenChange={(open) => {
@@ -310,10 +292,10 @@ function ScanPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2 text-emerald-700">
-                  <CheckCircle2 className="w-5 h-5" /> Xác nhận check-in
+                  <CheckCircle2 className="w-5 h-5" /> Xác nhận kết thúc ca
                 </DialogTitle>
                 <DialogDescription>
-                  Kiểm tra thông tin buổi trước khi trừ khỏi liệu trình.
+                  Kiểm tra lại thông tin trước khi đóng ca &amp; ghi nhận hoa hồng.
                 </DialogDescription>
               </DialogHeader>
 
@@ -333,45 +315,28 @@ function ScanPage() {
                   <span className="text-ink-muted">Buổi</span>
                   <span className="font-semibold text-brand-dark">
                     #{state.treatment.session_number}
-                    {state.totalSessions ? ` / ${state.totalSessions}` : ""}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-muted">Kỹ thuật viên</span>
+                  <span className="font-semibold text-ink">{state.technicianName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-muted">Hoa hồng</span>
+                  <span className="font-semibold text-ink">
+                    {(Number(state.tour.commission_amount) || 0).toLocaleString("vi-VN")} ₫
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-3 mt-2">
-                <div>
-                  <Label>Kỹ thuật viên phụ trách *</Label>
-                  <Select value={technicianId} onValueChange={setTechnicianId}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Chọn nhân viên" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(staffQ.data ?? []).map((s) => (
-                        <SelectItem key={s.id} value={s.id}>
-                          {s.full_name ?? "(chưa đặt tên)"} — {s.role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Hoa hồng (VND)</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={commissionAmount}
-                    onChange={(e) => setCommissionAmount(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Ghi chú buổi</Label>
-                  <Textarea
-                    rows={2}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Tình trạng da, phản hồi khách…"
-                  />
-                </div>
+              <div className="space-y-2 mt-2">
+                <Label>Ghi chú buổi</Label>
+                <Textarea
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Tình trạng da, phản hồi khách…"
+                />
               </div>
 
               <DialogFooter className="gap-2">
@@ -383,12 +348,12 @@ function ScanPage() {
                   Huỷ
                 </Button>
                 <Button
-                  onClick={confirmCheckin}
+                  onClick={confirmFinish}
                   disabled={submitting}
                   className="bg-brand hover:bg-brand-dark"
                 >
                   <UserCheck className="w-4 h-4 mr-2" />
-                  {submitting ? "Đang lưu…" : "Xác nhận & Trừ buổi"}
+                  {submitting ? "Đang lưu…" : "Xác nhận kết thúc"}
                 </Button>
               </DialogFooter>
             </>
@@ -398,3 +363,4 @@ function ScanPage() {
     </div>
   );
 }
+
