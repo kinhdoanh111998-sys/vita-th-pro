@@ -37,11 +37,33 @@ type Banner = {
   is_active: boolean;
 };
 
-const MOCK_STORES = [
-  { id: 1, name: "VITA Clinic Quận 1", address: "123 Nguyễn Huệ, Bến Nghé, Q.1", image: "https://placehold.co/400x250/png", rating: "4.9", distance: "1.2 km" },
-  { id: 2, name: "VITA Spa Center HN", address: "456 Thái Hà, Đống Đa, Hà Nội", image: "https://placehold.co/400x250/png", rating: "4.8", distance: "3.5 km" },
-  { id: 3, name: "VITA Wellness Đà Nẵng", address: "789 Nguyễn Văn Linh, Đà Nẵng", image: "https://placehold.co/400x250/png", rating: "5.0", distance: "5.0 km" },
+const BRANCHES = [
+  {
+    id: 1,
+    name: "VITA Premium Hà Nội",
+    address: "Tầng 3, 456 Thái Hà, Đống Đa, Hà Nội",
+    hotline: "1900 6868",
+    gradient: "from-rose-500 via-pink-500 to-amber-400",
+    mapUrl: "#",
+  },
+  {
+    id: 2,
+    name: "VITA Signature Đà Nẵng",
+    address: "789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
+    hotline: "0236 7788 999",
+    gradient: "from-sky-500 via-indigo-500 to-violet-500",
+    mapUrl: "#",
+  },
+  {
+    id: 3,
+    name: "VITA Flagship TP.HCM",
+    address: "123 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM",
+    hotline: "028 3822 5566",
+    gradient: "from-emerald-500 via-teal-500 to-cyan-500",
+    mapUrl: "#",
+  },
 ];
+
 
 
 
