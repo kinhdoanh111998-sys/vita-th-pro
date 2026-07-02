@@ -13,9 +13,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
@@ -232,13 +229,14 @@ function BookingsAdmin() {
         onCancel={(id) => cancel.mutate(id)}
       />
 
-      <CreateBookingSheet
+      <CreateBookingDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         customers={customersQ.data ?? []}
         services={servicesQ.data ?? []}
         onCreated={() => qc.invalidateQueries({ queryKey: ["bookings2"] })}
       />
+
 
       <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <DialogContent>
@@ -262,12 +260,13 @@ function BookingsAdmin() {
 
 /* ------------------ Create Booking Sheet ------------------ */
 
-function CreateBookingSheet({
+function CreateBookingDialog({
   open, onOpenChange, customers, services, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   customers: Customer[]; services: Service[]; onCreated: () => void;
 }) {
+
   const [customerId, setCustomerId] = useState<string>("__new");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
