@@ -518,16 +518,32 @@ function KhachHangPage() {
                 <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2">
                   Đơn hàng ({ordersQ.data?.length ?? 0})
                 </div>
-                {(ordersQ.data ?? []).length === 0 ? (
+                {ordersQ.isLoading ? (
                   <div className="rounded-xl border border-hairline bg-[#fafcf7] p-4 text-xs text-ink-muted italic text-center">
-                    Chưa có đơn hàng.
+                    Đang tải đơn hàng…
+                  </div>
+                ) : ordersQ.error ? (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 text-center">
+                    Không tải được đơn hàng: {(ordersQ.error as Error).message}
+                  </div>
+                ) : (ordersQ.data ?? []).length === 0 ? (
+                  <div className="rounded-xl border border-hairline bg-[#fafcf7] p-4 text-xs text-ink-muted italic text-center">
+                    Bạn chưa có đơn hàng nào.
                   </div>
                 ) : (
-                  <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
                     {(ordersQ.data ?? []).map((o) => {
-                      const svc = o.service_id
-                        ? serviceMap.get(o.service_id)
-                        : null;
+                      const items = (orderItemsQ.data ?? []).filter((it) => it.order_id === o.id);
+                      const displayName =
+                        items.length > 0
+                          ? items.map((it) => it.name ?? "—").join(", ")
+                          : o.service_id
+                          ? serviceMap.get(o.service_id)?.name ?? "Đơn hàng"
+                          : "Đơn hàng";
+                      const totalQty = items.length > 0
+                        ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
+                        : (o.quantity ?? 1);
+                      const isPaid = o.status === "paid";
                       return (
                         <li
                           key={o.id}
@@ -535,23 +551,30 @@ function KhachHangPage() {
                         >
                           <div className="min-w-0">
                             <div className="text-sm font-semibold text-ink truncate">
-                              {svc?.name ?? "Đơn hàng"}
+                              {displayName}
                             </div>
                             <div className="text-[10px] text-ink-muted">
-                              {o.order_code ?? o.id.slice(0, 6)} ·{" "}
+                              #{o.order_code ?? o.id.slice(0, 6)} ·{" "}
                               {o.created_at
                                 ? new Date(o.created_at).toLocaleDateString("vi-VN")
                                 : ""}{" "}
-                              · SL {o.quantity ?? 1}
+                              · SL {totalQty}
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm font-black text-brand-dark">
-                              {money(Number(o.total_price ?? 0))}
+                              {money(Number(o.total_amount ?? 0))}
                             </div>
-                            <div className="text-[10px] text-ink-muted uppercase">
-                              {o.status ?? "—"}
-                            </div>
+                            <span
+                              className={
+                                "text-[10px] px-2 py-0.5 rounded-full font-bold " +
+                                (isPaid
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800")
+                              }
+                            >
+                              {isPaid ? "Đã thanh toán" : (o.status ?? "—")}
+                            </span>
                           </div>
                         </li>
                       );
