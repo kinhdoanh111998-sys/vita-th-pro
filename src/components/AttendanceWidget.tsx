@@ -81,7 +81,7 @@ export function AttendanceWidget() {
     queryKey: ["portal-my-att-today", uid, day],
     queryFn: async (): Promise<Attendance | null> => {
       const { data, error } = await supabase.from("attendances")
-        .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes")
+        .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason")
         .eq("employee_id", uid!).eq("date", day).maybeSingle();
       if (error) throw error;
       return (data ?? null) as Attendance | null;
