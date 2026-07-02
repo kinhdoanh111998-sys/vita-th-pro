@@ -643,13 +643,13 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Mã (SKU)</Label>
+                <Label>Mã (SKU){isService && !form.id ? " — tự sinh nếu để trống" : ""}</Label>
                 <Input
                   value={form.sku}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, sku: e.target.value }))
                   }
-                  placeholder={isService ? "VD: DV-001" : "VD: MAY-001"}
+                  placeholder={isService ? "Tự sinh SRV-001, SRV-002..." : "VD: MAY-001"}
                 />
               </div>
               {isService ? (
