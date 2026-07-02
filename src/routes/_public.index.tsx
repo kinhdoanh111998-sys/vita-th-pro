@@ -21,12 +21,14 @@ import {
   Phone,
 } from "lucide-react";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
+import { OmniSearch } from "@/components/OmniSearch";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+
 
 
 type Banner = {
