@@ -1,9 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { FilterSidebar, type AppStoreFilters } from "@/components/app/FilterSidebar";
 import { ServiceCard } from "@/components/ServiceCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from "@/components/ui/select";
+
+const BRANCHES = [
+  { id: "hn", label: "Cơ sở 1 - Hà Nội" },
+  { id: "dn", label: "Cơ sở 2 - Đà Nẵng" },
+  { id: "hcm", label: "Cơ sở 3 - TP.HCM" },
+];
+
 
 const CATEGORIES = [
   { key: "all", label: "Tất cả" },
@@ -22,6 +32,7 @@ const DEFAULT_FILTERS: AppStoreFilters = {
 function StorePage() {
   const [tab, setTab] = useState<(typeof CATEGORIES)[number]["key"]>("all");
   const [search, setSearch] = useState("");
+  const [branch, setBranch] = useState<string>(BRANCHES[0].id);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<AppStoreFilters>(DEFAULT_FILTERS);
   const { data = [], isLoading, error } = useServiceCatalog();
@@ -82,6 +93,24 @@ function StorePage() {
       {/* Search + Filter */}
       <div className="sticky top-0 md:top-16 z-10 bg-gray-50/95 backdrop-blur px-4 md:px-8 pt-3 pb-2">
         <div className="max-w-6xl mx-auto">
+          {/* Branch selector (UI only) */}
+          <div className="mb-2 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-emerald-600" />
+            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+              Chọn cơ sở dịch vụ:
+            </label>
+            <Select value={branch} onValueChange={setBranch}>
+              <SelectTrigger className="h-9 rounded-full bg-white border-gray-200 text-sm max-w-[220px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BRANCHES.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center bg-white rounded-full px-4 py-2.5 shadow-sm border border-gray-100">
               <Search className="w-4 h-4 text-gray-400 mr-2" />

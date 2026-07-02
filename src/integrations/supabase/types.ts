@@ -53,6 +53,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_reason: string | null
+          early_checkout_requested: boolean
+          early_checkout_requested_at: string | null
           employee_id: string
           id: string
           notes: string | null
@@ -71,6 +74,9 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date: string
+          early_checkout_reason?: string | null
+          early_checkout_requested?: boolean
+          early_checkout_requested_at?: string | null
           employee_id: string
           id?: string
           notes?: string | null
@@ -89,6 +95,9 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date?: string
+          early_checkout_reason?: string | null
+          early_checkout_requested?: boolean
+          early_checkout_requested_at?: string | null
           employee_id?: string
           id?: string
           notes?: string | null
@@ -1503,6 +1512,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_reason: string | null
+          early_checkout_requested: boolean
+          early_checkout_requested_at: string | null
           employee_id: string
           id: string
           notes: string | null
@@ -1530,6 +1542,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_reason: string | null
+          early_checkout_requested: boolean
+          early_checkout_requested_at: string | null
           employee_id: string
           id: string
           notes: string | null

@@ -17,8 +17,9 @@ import {
   X,
   Star,
   Quote,
+  MapPin,
+  Phone,
 } from "lucide-react";
-import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,11 +38,33 @@ type Banner = {
   is_active: boolean;
 };
 
-const MOCK_STORES = [
-  { id: 1, name: "VITA Clinic Quận 1", address: "123 Nguyễn Huệ, Bến Nghé, Q.1", image: "https://placehold.co/400x250/png", rating: "4.9", distance: "1.2 km" },
-  { id: 2, name: "VITA Spa Center HN", address: "456 Thái Hà, Đống Đa, Hà Nội", image: "https://placehold.co/400x250/png", rating: "4.8", distance: "3.5 km" },
-  { id: 3, name: "VITA Wellness Đà Nẵng", address: "789 Nguyễn Văn Linh, Đà Nẵng", image: "https://placehold.co/400x250/png", rating: "5.0", distance: "5.0 km" },
+const BRANCHES = [
+  {
+    id: 1,
+    name: "VITA Premium Hà Nội",
+    address: "Tầng 3, 456 Thái Hà, Đống Đa, Hà Nội",
+    hotline: "1900 6868",
+    gradient: "from-rose-500 via-pink-500 to-amber-400",
+    mapUrl: "#",
+  },
+  {
+    id: 2,
+    name: "VITA Signature Đà Nẵng",
+    address: "789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
+    hotline: "0236 7788 999",
+    gradient: "from-sky-500 via-indigo-500 to-violet-500",
+    mapUrl: "#",
+  },
+  {
+    id: 3,
+    name: "VITA Flagship TP.HCM",
+    address: "123 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM",
+    hotline: "028 3822 5566",
+    gradient: "from-emerald-500 via-teal-500 to-cyan-500",
+    mapUrl: "#",
+  },
 ];
+
 
 
 
@@ -408,22 +431,58 @@ function CommunityHome() {
 
 
 
-      {/* Affiliate Stores */}
-      <section id="stores" className="pt-6 max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between mb-3 px-4 md:px-8">
-          <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
-            Cửa hàng liên kết
+      {/* Hệ thống cơ sở VITA */}
+      <section id="stores" className="pt-10 max-w-7xl mx-auto w-full px-4 md:px-8">
+        <div className="text-center mb-6 md:mb-8">
+          <div className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 mb-2">
+            Hệ thống trực thuộc
+          </div>
+          <h2 className="text-2xl md:text-4xl font-heading font-black text-gray-900">
+            HỆ THỐNG CƠ SỞ SPA & CLINIC VITA TH PRO
           </h2>
-          <button className="text-xs md:text-sm text-emerald-600 flex items-center gap-0.5">
-            Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="mx-auto mt-3 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
         </div>
-        <div className="flex md:grid md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 overflow-x-auto md:overflow-visible no-scrollbar snap-x md:snap-none snap-mandatory px-4 md:px-8 pb-2">
-          {MOCK_STORES.map((s) => (
-            <AffiliateStoreCard key={s.id} store={s} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+          {BRANCHES.map((b) => (
+            <article
+              key={b.id}
+              className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className={`relative h-40 md:h-48 bg-gradient-to-br ${b.gradient} overflow-hidden`}>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.25),transparent_60%)]" />
+                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white uppercase tracking-wider">
+                  <Store className="w-3.5 h-3.5" /> VITA TH PRO
+                </div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md leading-tight">
+                    {b.name}
+                  </h3>
+                </div>
+              </div>
+              <div className="p-5 space-y-3">
+                <div className="flex items-start gap-2 text-sm text-gray-700">
+                  <MapPin className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
+                  <span className="leading-relaxed">{b.address}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <a href={`tel:${b.hotline.replace(/\s/g, "")}`} className="font-bold text-gray-900 hover:text-emerald-600">
+                    {b.hotline}
+                  </a>
+                </div>
+                <a
+                  href={b.mapUrl}
+                  className="mt-2 flex items-center justify-center gap-2 w-full rounded-full border-2 border-emerald-600 text-emerald-700 font-bold text-sm py-2.5 hover:bg-emerald-600 hover:text-white transition-colors"
+                >
+                  <MapPin className="w-4 h-4" /> Xem bản đồ
+                </a>
+              </div>
+            </article>
           ))}
         </div>
       </section>
+
 
       {/* Community Feed – realtime từ Sự kiện + Tin tức */}
       <CommunityFeedPC />
