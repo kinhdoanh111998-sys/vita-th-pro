@@ -321,14 +321,25 @@ function CommunityHome() {
               >
                 Đặt lịch
               </Link>
-              <Link
-                to="/dang-ky"
-                onClick={() => setDrawerOpen(false)}
-                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
-                style={{ color: "#484848" }}
-              >
-                Đăng ký
-              </Link>
+              {session ? (
+                <Link
+                  to="/app/account"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#1B9606" }}
+                >
+                  Khu vực của tôi
+                </Link>
+              ) : (
+                <Link
+                  to="/dang-ky"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#484848" }}
+                >
+                  Đăng ký
+                </Link>
+              )}
             </nav>
 
             <div
