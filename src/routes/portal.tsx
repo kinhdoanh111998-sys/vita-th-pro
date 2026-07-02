@@ -47,13 +47,79 @@ const CUSTOMER_NAV = [
 ] as const;
 
 function PortalShell() {
-  const { fullName, email, role, signOut } = useAuth();
+  const { session, fullName, email, role, signOut } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const uid = session?.user?.id ?? null;
 
   const handleSignOut = async () => {
     await signOut();
     navigate({ to: "/login", replace: true });
   };
+
+  // Realtime: listen for INSERT on notifications where recipient_id = uid
+  useEffect(() => {
+    if (!uid) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    try {
+      channel = supabase
+        .channel(`notif-${uid}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `recipient_id=eq.${uid}`,
+          },
+          (payload) => {
+            const n = payload.new as NotificationRow;
+            const title = n.title ?? "Thông báo mới";
+            const desc = n.body ?? "";
+            const isTour = n.type === "tour_assignment" && n.ref_id;
+
+            qc.invalidateQueries({ queryKey: ["portal", "my-tours", uid] });
+
+            if (isTour) {
+              toast(title, {
+                description: desc,
+                duration: 12000,
+                action: {
+                  label: "Xác nhận",
+                  onClick: async () => {
+                    try {
+                      const { error } = await supabase
+                        .from("tours")
+                        .update({ staff_acceptance: "accepted" })
+                        .eq("id", n.ref_id!);
+                      if (error) throw error;
+                      toast.success("Đã nhận ca ✓");
+                      qc.invalidateQueries({ queryKey: ["portal", "my-tours", uid] });
+                    } catch (err) {
+                      const msg = err instanceof Error ? err.message : "Lỗi cập nhật";
+                      toast.error(msg);
+                    }
+                  },
+                },
+                cancel: {
+                  label: "Xem",
+                  onClick: () => navigate({ to: "/portal/bookings" }),
+                },
+              });
+            } else {
+              toast(title, { description: desc });
+            }
+          },
+        )
+        .subscribe();
+    } catch (err) {
+      console.error("[portal] realtime subscribe failed:", err);
+    }
+    return () => {
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [uid, qc, navigate]);
+
 
   const NAV = role === "customer" ? CUSTOMER_NAV : STAFF_NAV;
   const homeTo = role === "customer" ? "/portal/my-treatments" : "/portal/dashboard";
