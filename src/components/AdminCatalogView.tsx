@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type DragEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
-import { ImageIcon, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
+import { ImageIcon, Loader2, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
