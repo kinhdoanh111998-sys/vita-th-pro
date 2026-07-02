@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, Plus, ShieldPlus, UserPlus } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { DataTable } from "@/components/DataTable";
@@ -13,38 +13,43 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/lib/AuthContext";
-import { createEmployee, type EmployeeRole } from "@/lib/employees.functions";
+import { createEmployee } from "@/lib/employees.functions";
 
 export const Route = createFileRoute("/admin/employees")({
   component: EmployeesAdmin,
 });
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: "Admin",
-  manager: "Quản lý",
-  sale: "Sale",
-  technician: "Kỹ thuật viên",
-  staff: "Nhân viên",
-  customer: "Khách hàng",
-};
+type RoleDef = { key: string; label: string; app_role: string; is_system: boolean };
 
 function EmployeesAdmin() {
   const { role: myRole } = useAuth();
   const isAdmin = myRole === "admin";
   const canCreate = isAdmin || myRole === "manager";
 
-  const [rows, setRows] = useState<Record<string, unknown>[]>([]);
+  const [users, setUsers] = useState<Record<string, unknown>[]>([]);
+  const [roleDefs, setRoleDefs] = useState<RoleDef[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
+  const roleLabel = useMemo(() => {
+    const m: Record<string, string> = {
+      admin: "Admin", manager: "Quản lý", sale: "Sale",
+      technician: "Kỹ thuật viên", staff: "Nhân viên", customer: "Khách hàng",
+    };
+    for (const r of roleDefs) m[r.key] = r.label;
+    return m;
+  }, [roleDefs]);
+
   const [form, setForm] = useState({
-    email: "",
-    password: "",
-    full_name: "",
-    role: (isAdmin ? "manager" : "sale") as EmployeeRole,
+    email: "", password: "", full_name: "",
+    role: isAdmin ? "manager" : "sale",
   });
   const [submitting, setSubmitting] = useState(false);
+
+  // Form thêm Role mới
+  const [newRole, setNewRole] = useState({ key: "", label: "", app_role: "staff" });
+  const [savingRole, setSavingRole] = useState(false);
 
   const createFn = useServerFn(createEmployee);
 
@@ -52,29 +57,30 @@ function EmployeesAdmin() {
     let active = true;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, full_name, email, role, created_at")
-        .order("created_at", { ascending: false });
+      const [usersRes, rolesRes] = await Promise.all([
+        supabase
+          .from("users")
+          .select("id, full_name, email, role, created_at")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("role_definitions")
+          .select("key, label, app_role, is_system")
+          .order("is_system", { ascending: false })
+          .order("label"),
+      ]);
       if (!active) return;
-      if (error) {
-        // Retry không có order (đề phòng thiếu cột)
-        const retry = await supabase.from("users").select("*");
-        if (retry.error) setError(retry.error.message);
-        else setRows(retry.data ?? []);
-      } else {
-        setRows(data ?? []);
-      }
+      if (usersRes.error) setError(usersRes.error.message);
+      else setUsers(usersRes.data ?? []);
+      if (!rolesRes.error) setRoleDefs((rolesRes.data ?? []) as RoleDef[]);
       setLoading(false);
     })();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [reloadKey]);
 
-  const roleOptions = useMemo<EmployeeRole[]>(
-    () => (isAdmin ? ["manager", "sale", "technician", "admin"] : ["sale", "technician"]),
-    [isAdmin],
+  // Danh sách vai trò cho dropdown tạo NV: manager chỉ được chọn role có app_role='staff'
+  const roleOptions = useMemo(
+    () => (isAdmin ? roleDefs : roleDefs.filter((r) => r.app_role === "staff")),
+    [isAdmin, roleDefs],
   );
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -84,26 +90,37 @@ function EmployeesAdmin() {
     try {
       await createFn({ data: form });
       toast.success(`Đã tạo tài khoản ${form.email}`);
-      setForm({
-        email: "",
-        password: "",
-        full_name: "",
-        role: isAdmin ? "manager" : "sale",
-      });
+      setForm({ email: "", password: "", full_name: "", role: isAdmin ? "manager" : "sale" });
       setReloadKey((k) => k + 1);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error(msg);
+      toast.error(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const onAddRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canCreate) return;
+    const key = newRole.key.trim().toLowerCase().replace(/\s+/g, "_");
+    const label = newRole.label.trim();
+    if (!key || !label) return toast.error("Nhập đủ mã và tên vai trò");
+    setSavingRole(true);
+    const { error } = await supabase.from("role_definitions").insert({
+      key, label, app_role: newRole.app_role, is_system: false,
+    });
+    setSavingRole(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Đã thêm vai trò "${label}"`);
+    setNewRole({ key: "", label: "", app_role: "staff" });
+    setReloadKey((k) => k + 1);
   };
 
   return (
     <>
       <AdminTopbar
         title="Nhân viên"
-        subtitle={loading ? "Đang tải..." : `${rows.length} bản ghi`}
+        subtitle={loading ? "Đang tải..." : `${users.length} tài khoản · ${roleDefs.length} vai trò`}
       />
 
       {error && (
@@ -113,77 +130,89 @@ function EmployeesAdmin() {
       )}
 
       {canCreate && (
-        <form
-          onSubmit={onSubmit}
-          className="mb-5 bg-white border border-hairline rounded-2xl p-4 grid gap-3 md:grid-cols-5"
-        >
-          <div className="md:col-span-5 flex items-center gap-2 text-sm font-black text-brand-dark">
-            <UserPlus size={18} /> Tạo tài khoản nhân viên
-            {!isAdmin && (
-              <span className="ml-2 text-[11px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
-                Quản lý chỉ được tạo Sale / Kỹ thuật viên
-              </span>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">Họ tên</Label>
-            <Input
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              placeholder="Nguyễn Văn A"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Email đăng nhập</Label>
-            <Input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="user@vitath.pro"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Mật khẩu</Label>
-            <Input
-              type="text"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="Tối thiểu 6 ký tự"
-              minLength={6}
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Vai trò</Label>
-            <Select
-              value={form.role}
-              onValueChange={(v) => setForm({ ...form, role: v as EmployeeRole })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {roleOptions.map((r) => (
-                  <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button type="submit" disabled={submitting} className="w-full">
-              {submitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={16} /> Đang tạo…
-                </>
-              ) : (
-                <>
-                  <UserPlus size={16} /> Tạo tài khoản
-                </>
+        <div className="grid gap-5 mb-5 lg:grid-cols-2">
+          <form onSubmit={onSubmit} className="bg-white border border-hairline rounded-2xl p-4 grid gap-3">
+            <div className="flex items-center gap-2 text-sm font-black text-brand-dark">
+              <UserPlus size={18} /> Tạo tài khoản nhân viên
+              {!isAdmin && (
+                <span className="ml-2 text-[11px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-800 px-2 py-0.5">
+                  Manager chỉ tạo được cấp Nhân viên
+                </span>
               )}
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Họ tên</Label>
+                <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Mật khẩu</Label>
+                <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Vai trò</Label>
+                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((r) => (
+                      <SelectItem key={r.key} value={r.key}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? <><Loader2 className="animate-spin" size={16} /> Đang tạo…</> : <><UserPlus size={16} /> Tạo tài khoản</>}
             </Button>
-          </div>
-        </form>
+          </form>
+
+          <form onSubmit={onAddRole} className="bg-white border border-hairline rounded-2xl p-4 grid gap-3">
+            <div className="flex items-center gap-2 text-sm font-black text-brand-dark">
+              <ShieldPlus size={18} /> Danh mục vai trò
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Mã (key)</Label>
+                <Input value={newRole.key} onChange={(e) => setNewRole({ ...newRole, key: e.target.value })} placeholder="vd: reception" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Tên hiển thị</Label>
+                <Input value={newRole.label} onChange={(e) => setNewRole({ ...newRole, label: e.target.value })} placeholder="Lễ tân" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Nhóm quyền</Label>
+                <Select value={newRole.app_role} onValueChange={(v) => setNewRole({ ...newRole, app_role: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="staff">Nhân viên (staff)</SelectItem>
+                    {isAdmin && <SelectItem value="manager">Quản lý (manager)</SelectItem>}
+                    {isAdmin && <SelectItem value="admin">Quản trị (admin)</SelectItem>}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <Button type="submit" disabled={savingRole} variant="outline">
+              <Plus size={16} /> {savingRole ? "Đang thêm…" : "Thêm vai trò mới"}
+            </Button>
+            <div className="flex flex-wrap gap-1.5 pt-2 border-t border-hairline">
+              {roleDefs.map((r) => (
+                <span
+                  key={r.key}
+                  className={`text-[11px] px-2 py-1 rounded-full font-semibold ${
+                    r.is_system ? "bg-brand-bg text-ink" : "bg-emerald-100 text-emerald-800"
+                  }`}
+                  title={`app_role: ${r.app_role}`}
+                >
+                  {r.label}
+                </span>
+              ))}
+            </div>
+          </form>
+        </div>
       )}
 
       <DataTable
@@ -193,7 +222,7 @@ function EmployeesAdmin() {
           {
             key: "role",
             label: "Vai trò",
-            render: (row) => ROLE_LABEL[String(row.role ?? "")] ?? String(row.role ?? "—"),
+            render: (row) => roleLabel[String(row.role ?? "")] ?? String(row.role ?? "—"),
           },
           {
             key: "created_at",
@@ -202,7 +231,7 @@ function EmployeesAdmin() {
               row.created_at ? new Date(String(row.created_at)).toLocaleDateString("vi-VN") : "—",
           },
         ]}
-        rows={rows}
+        rows={users}
       />
     </>
   );
