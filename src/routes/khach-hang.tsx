@@ -170,54 +170,83 @@ function KhachHangPage() {
 
   /** Nhóm treatments theo order_id, chỉ giữ buổi PENDING tiếp theo (session_number nhỏ nhất). */
   const availableSessions = useMemo(() => {
-    const groups = new Map<string, Treatment[]>();
-    for (const t of treatmentsQ.data ?? []) {
-      if (t.status !== "pending") continue;
-      const list = groups.get(t.order_id) ?? [];
-      list.push(t);
-      groups.set(t.order_id, list);
+    try {
+      const groups = new Map<string, Treatment[]>();
+      for (const t of treatmentsQ.data ?? []) {
+        if (!t || t.status !== "pending") continue;
+        const list = groups.get(t.order_id) ?? [];
+        list.push(t);
+        groups.set(t.order_id, list);
+      }
+      const out: Array<{
+        treatment: Treatment;
+        serviceName: string;
+        totalSessions: number;
+        remaining: number;
+        packageIndex: number;
+      }> = [];
+      let idx = 0;
+      for (const [orderId, list] of groups.entries()) {
+        idx += 1;
+        list.sort((a, b) => (a.session_number ?? 0) - (b.session_number ?? 0));
+        const next = list[0];
+        if (!next) continue;
+        const order = orderMap.get(orderId);
+        const svc = next.service_id ? serviceMap.get(next.service_id) : null;
+        const totalSessions =
+          (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
+        out.push({
+          treatment: next,
+          serviceName: svc?.name ?? "Liệu trình",
+          totalSessions: Number.isFinite(totalSessions) ? totalSessions : 1,
+          remaining: list.length,
+          packageIndex: idx,
+        });
+      }
+      return out;
+    } catch (e) {
+      console.error("[khach-hang] availableSessions compute error:", e);
+      return [];
     }
-    const out: Array<{
-      treatment: Treatment;
-      serviceName: string;
-      totalSessions: number;
-      remaining: number;
-      packageIndex: number;
-    }> = [];
-    let idx = 0;
-    for (const [orderId, list] of groups.entries()) {
-      idx += 1;
-      list.sort((a, b) => a.session_number - b.session_number);
-      const next = list[0];
-      const order = orderMap.get(orderId);
-      const svc = next.service_id ? serviceMap.get(next.service_id) : null;
-      const totalSessions =
-        (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
-      out.push({
-        treatment: next,
-        serviceName: svc?.name ?? "Liệu trình",
-        totalSessions,
-        remaining: list.length,
-        packageIndex: idx,
-      });
-    }
-    return out;
   }, [treatmentsQ.data, orderMap, serviceMap]);
 
   /** Đã sử dụng — treatments hoàn thành. */
   const usedSessions = useMemo(() => {
-    return (treatmentsQ.data ?? [])
-      .filter((t) => t.status !== "pending")
-      .map((t) => {
-        const svc = t.service_id ? serviceMap.get(t.service_id) : null;
-        return {
-          id: t.id,
-          serviceName: svc?.name ?? "Liệu trình",
-          session_number: t.session_number,
-          status: t.status,
-        };
-      });
+    try {
+      return (treatmentsQ.data ?? [])
+        .filter((t) => t && t.status !== "pending")
+        .map((t) => {
+          const svc = t.service_id ? serviceMap.get(t.service_id) : null;
+          return {
+            id: t.id,
+            serviceName: svc?.name ?? "Liệu trình",
+            session_number: t.session_number,
+            status: t.status,
+          };
+        });
+    } catch (e) {
+      console.error("[khach-hang] usedSessions compute error:", e);
+      return [];
+    }
   }, [treatmentsQ.data, serviceMap]);
+
+  /** Payload QR — JSON chứa treatment_id + order_id + session_number để KTV quét trừ buổi. */
+  const qrPayload = useMemo(() => {
+    const s = availableSessions.find((x) => x.treatment.id === (selectedTreatmentIdRef.current ?? ""));
+    if (!s) return "";
+    try {
+      return JSON.stringify({
+        v: 1,
+        treatment_id: s.treatment.id,
+        order_id: s.treatment.order_id,
+        session_number: s.treatment.session_number,
+        qr_code_id: s.treatment.qr_code_id,
+      });
+    } catch {
+      return s.treatment.qr_code_id ?? "";
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableSessions]);
 
   /* -------- Dropdown state -------- */
   const [pickerOpen, setPickerOpen] = useState(false);
