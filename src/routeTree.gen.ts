@@ -33,6 +33,7 @@ import { Route as AppNotificationsRouteImport } from './routes/app.notifications
 import { Route as AppNewsRouteImport } from './routes/app.news'
 import { Route as AppEventsRouteImport } from './routes/app.events'
 import { Route as AppAccountRouteImport } from './routes/app.account'
+import { Route as AdminVoucherRouteImport } from './routes/admin.voucher'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -203,6 +204,11 @@ const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
   getParentRoute: () => AppRoute,
+} as any)
+const AdminVoucherRoute = AdminVoucherRouteImport.update({
+  id: '/voucher',
+  path: '/voucher',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
   id: '/treatments',
@@ -499,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/admin/voucher': typeof AdminVoucherRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
   '/app/news': typeof AppNewsRouteWithChildren
@@ -568,6 +575,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/admin/voucher': typeof AdminVoucherRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
   '/app/news': typeof AppNewsRouteWithChildren
@@ -646,6 +654,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
+  '/admin/voucher': typeof AdminVoucherRoute
   '/app/account': typeof AppAccountRoute
   '/app/events': typeof AppEventsRouteWithChildren
   '/app/news': typeof AppNewsRouteWithChildren
@@ -725,6 +734,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/admin/voucher'
     | '/app/account'
     | '/app/events'
     | '/app/news'
@@ -794,6 +804,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/admin/voucher'
     | '/app/account'
     | '/app/events'
     | '/app/news'
@@ -871,6 +882,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/tours'
     | '/admin/treatments'
+    | '/admin/voucher'
     | '/app/account'
     | '/app/events'
     | '/app/news'
@@ -1098,6 +1110,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/account'
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/admin/voucher': {
+      id: '/admin/voucher'
+      path: '/voucher'
+      fullPath: '/admin/voucher'
+      preLoaderRoute: typeof AdminVoucherRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/treatments': {
       id: '/admin/treatments'
@@ -1594,6 +1613,7 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminToursRoute: typeof AdminToursRoute
   AdminTreatmentsRoute: typeof AdminTreatmentsRoute
+  AdminVoucherRoute: typeof AdminVoucherRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1613,6 +1633,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminToursRoute: AdminToursRoute,
   AdminTreatmentsRoute: AdminTreatmentsRoute,
+  AdminVoucherRoute: AdminVoucherRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
