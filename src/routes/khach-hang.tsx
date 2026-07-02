@@ -456,14 +456,25 @@ function KhachHangPage() {
                   </div>
                   <div className="mt-3 grid place-items-center bg-white rounded-2xl p-4 border border-hairline">
                     <QRCodeCanvas
-                      value={selected.treatment.qr_code_id}
+                      value={(() => {
+                        try {
+                          return JSON.stringify({
+                            v: 1,
+                            treatment_id: selected.treatment.id,
+                            order_id: selected.treatment.order_id,
+                            session_number: selected.treatment.session_number,
+                            qr_code_id: selected.treatment.qr_code_id,
+                          });
+                        } catch {
+                          return selected.treatment.qr_code_id ?? "";
+                        }
+                      })()}
                       size={192}
                       level="H"
                       includeMargin={false}
                     />
                     <div className="mt-2 text-[10px] font-mono text-ink-muted">
-                      {selected.treatment.qr_code_id.slice(0, 8)}…
-                      {selected.treatment.qr_code_id.slice(-4)}
+                      #{selected.treatment.session_number} · {selected.treatment.qr_code_id.slice(0, 8)}…
                     </div>
                   </div>
                   <p className="mt-3 text-[11px] text-center text-ink-muted">
