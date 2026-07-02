@@ -933,6 +933,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_approval_requests: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          staff_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          staff_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shift_registrations: {
         Row: {
           approved_at: string | null
@@ -1032,6 +1068,7 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          request_batch_id: string | null
           shift_type: string
           staff_id: string
           status: string
@@ -1041,6 +1078,7 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          request_batch_id?: string | null
           shift_type: string
           staff_id: string
           status?: string
@@ -1050,12 +1088,21 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          request_batch_id?: string | null
           shift_type?: string
           staff_id?: string
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_shifts_request_batch_id_fkey"
+            columns: ["request_batch_id"]
+            isOneToOne: false
+            referencedRelation: "shift_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       system_settings: {
         Row: {

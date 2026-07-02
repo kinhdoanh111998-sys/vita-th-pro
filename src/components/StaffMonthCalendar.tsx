@@ -75,7 +75,8 @@ export function StaffMonthCalendar() {
           .from("staff_shifts")
           .select("id,staff_id,date,shift_type,status")
           .gte("date", from)
-          .lte("date", to);
+          .lte("date", to)
+          .eq("status", "approved");
         if (error) throw error;
         const ids = Array.from(new Set((shifts ?? []).map((s) => s.staff_id)));
         let usersMap: Record<string, StaffInfo> = {};
@@ -110,7 +111,7 @@ export function StaffMonthCalendar() {
         <div>
           <h3 className="font-black text-lg">Lịch Tháng · Toàn nhân viên</h3>
           <p className="text-xs text-ink-muted">
-            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} lượt đăng ký`}
+            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} ca đã duyệt`}
           </p>
         </div>
         <div className="flex items-center gap-2">

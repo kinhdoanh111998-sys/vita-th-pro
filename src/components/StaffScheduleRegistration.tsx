@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addMonths, endOfMonth, format, getDay, startOfMonth,
 } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Save, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Save, X, RefreshCw, ShieldCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/Button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -16,6 +18,24 @@ type ShiftKey = "sang" | "chieu";
 type DaySlots = { sang: boolean; chieu: boolean };
 type MonthEntry = { date: string; sang: boolean; chieu: boolean };
 type DBShift = "sang" | "chieu" | "ca_ngay";
+type BatchStatus = "pending" | "approved" | "rejected";
+
+type ApprovalRequest = {
+  id: string;
+  staff_id: string;
+  month: string;
+  status: BatchStatus;
+  review_note: string | null;
+  reviewed_at: string | null;
+};
+
+type StaffShiftRow = {
+  id: string;
+  date: string;
+  shift_type: DBShift;
+  status: "pending" | "approved" | "rejected";
+  request_batch_id: string | null;
+};
 
 const DAYS = [
   { id: "T2", label: "Thứ 2" },
@@ -27,10 +47,8 @@ const DAYS = [
   { id: "CN", label: "Chủ Nhật" },
 ] as const;
 type DayId = typeof DAYS[number]["id"];
-
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
-// JS getDay: 0=CN..6=T7 → map to our ids
 function dayIdFromDate(d: Date): DayId {
   const map: DayId[] = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
   return map[d.getDay()];
@@ -44,11 +62,7 @@ function buildMonth(anchor: Date, weekly: Record<DayId, DaySlots>): MonthEntry[]
     const d = new Date(first.getFullYear(), first.getMonth(), day);
     const id = dayIdFromDate(d);
     const w = weekly[id];
-    out.push({
-      date: format(d, "yyyy-MM-dd"),
-      sang: w.sang,
-      chieu: w.chieu,
-    });
+    out.push({ date: format(d, "yyyy-MM-dd"), sang: w.sang, chieu: w.chieu });
   }
   return out;
 }
@@ -60,103 +74,234 @@ function toDBShift(sang: boolean, chieu: boolean): DBShift | null {
   return null;
 }
 
+function fromDBShift(t: DBShift): DaySlots {
+  if (t === "ca_ngay") return { sang: true, chieu: true };
+  if (t === "sang") return { sang: true, chieu: false };
+  return { sang: false, chieu: true };
+}
+
 const emptyWeek = (): Record<DayId, DaySlots> => ({
-  T2: { sang: false, chieu: false },
-  T3: { sang: false, chieu: false },
-  T4: { sang: false, chieu: false },
-  T5: { sang: false, chieu: false },
-  T6: { sang: false, chieu: false },
-  T7: { sang: false, chieu: false },
+  T2: { sang: false, chieu: false }, T3: { sang: false, chieu: false },
+  T4: { sang: false, chieu: false }, T5: { sang: false, chieu: false },
+  T6: { sang: false, chieu: false }, T7: { sang: false, chieu: false },
   CN: { sang: false, chieu: false },
 });
 
 export function StaffScheduleRegistration() {
-  const { session } = useAuth();
+  const { session, fullName } = useAuth();
+  const qc = useQueryClient();
+  const uid = session?.user.id ?? null;
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()));
+  const monthKey = format(anchor, "yyyy-MM");
+
   const [weekly, setWeekly] = useState<Record<DayId, DaySlots>>(emptyWeek());
-  const [month, setMonth] = useState<MonthEntry[] | null>(null);
-  const [editing, setEditing] = useState<MonthEntry | null>(null);
+  const [draftMonth, setDraftMonth] = useState<MonthEntry[] | null>(null);
+  const [editing, setEditing] = useState<{ date: string; sang: boolean; chieu: boolean; existingId?: string } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // Batch request cho tháng hiện tại
+  const reqQ = useQuery({
+    queryKey: ["shift-approval-request", uid, monthKey],
+    enabled: !!uid,
+    queryFn: async (): Promise<ApprovalRequest | null> => {
+      try {
+        const { data, error } = await supabase
+          .from("shift_approval_requests")
+          .select("id,staff_id,month,status,review_note,reviewed_at")
+          .eq("staff_id", uid!)
+          .eq("month", monthKey)
+          .maybeSingle();
+        if (error) throw error;
+        return (data as ApprovalRequest | null) ?? null;
+      } catch (e: any) {
+        console.error("[reqQ]", e);
+        return null;
+      }
+    },
+  });
+
+  // Lịch cá nhân trong tháng
+  const shiftsQ = useQuery({
+    queryKey: ["my-shifts-month", uid, monthKey],
+    enabled: !!uid,
+    queryFn: async (): Promise<StaffShiftRow[]> => {
+      try {
+        const from = format(startOfMonth(anchor), "yyyy-MM-dd");
+        const to = format(endOfMonth(anchor), "yyyy-MM-dd");
+        const { data, error } = await supabase
+          .from("staff_shifts")
+          .select("id,date,shift_type,status,request_batch_id")
+          .eq("staff_id", uid!)
+          .gte("date", from)
+          .lte("date", to)
+          .order("date");
+        if (error) throw error;
+        return (data ?? []) as StaffShiftRow[];
+      } catch (e: any) {
+        console.error("[shiftsQ]", e);
+        return [];
+      }
+    },
+  });
+
+  const request = reqQ.data ?? null;
+  const locked = !!request && (request.status === "pending" || request.status === "approved");
 
   const toggleWeek = (id: DayId, k: ShiftKey) => {
     setWeekly((p) => ({ ...p, [id]: { ...p[id], [k]: !p[id][k] } }));
   };
 
   const generate = () => {
-    setMonth(buildMonth(anchor, weekly));
-    toast.success("Đã tạo lịch tháng. Bạn có thể click vào ngày để tinh chỉnh.");
+    setDraftMonth(buildMonth(anchor, weekly));
+    toast.success("Đã tạo lịch tháng · click vào ngày để tinh chỉnh trước khi gửi.");
   };
 
-  const updateDay = (date: string, next: DaySlots) => {
-    setMonth((cur) => (cur ?? []).map((e) => (e.date === date ? { ...e, ...next } : e)));
+  const updateDraftDay = (date: string, next: DaySlots) => {
+    setDraftMonth((cur) => (cur ?? []).map((e) => (e.date === date ? { ...e, ...next } : e)));
   };
 
-  const submit = async () => {
-    if (!session?.user.id) { toast.error("Chưa đăng nhập"); return; }
-    if (!month?.length) { toast.error("Chưa có lịch để gửi"); return; }
+  const submitBatch = async () => {
+    if (!uid) { toast.error("Chưa đăng nhập"); return; }
+    if (!draftMonth?.length) { toast.error("Chưa có lịch để gửi"); return; }
     setSaving(true);
     try {
-      const rows = month
-        .map((e) => {
-          const t = toDBShift(e.sang, e.chieu);
-          return t ? { staff_id: session.user.id, date: e.date, shift_type: t, status: "pending" } : null;
-        })
-        .filter(Boolean) as Array<{ staff_id: string; date: string; shift_type: DBShift; status: string }>;
+      const from = draftMonth[0].date;
+      const to = draftMonth[draftMonth.length - 1].date;
 
-      // Xoá lịch cũ trong tháng để tránh trùng ngày (unique không có sẵn ở DB)
-      const from = month[0].date;
-      const to = month[month.length - 1].date;
-      const { error: delErr } = await supabase
+      // Xoá lịch cũ (pending/rejected) trong tháng để đăng ký lại — giữ các ngày đã approved (nếu có).
+      await supabase
         .from("staff_shifts")
         .delete()
-        .eq("staff_id", session.user.id)
-        .gte("date", from)
-        .lte("date", to);
-      if (delErr) throw delErr;
+        .eq("staff_id", uid)
+        .gte("date", from).lte("date", to)
+        .in("status", ["pending", "rejected"]);
+
+      // Nếu request cũ bị rejected → xoá để tạo bản mới sạch.
+      if (request?.status === "rejected") {
+        await supabase.from("shift_approval_requests").delete().eq("id", request.id);
+      }
+
+      // Tạo batch mới
+      const { data: newReq, error: reqErr } = await supabase
+        .from("shift_approval_requests")
+        .insert({ staff_id: uid, month: monthKey, status: "pending" })
+        .select("id")
+        .single();
+      if (reqErr) throw reqErr;
+      const batchId = newReq.id as string;
+
+      const rows = draftMonth
+        .map((e) => {
+          const t = toDBShift(e.sang, e.chieu);
+          return t ? {
+            staff_id: uid, date: e.date, shift_type: t,
+            status: "pending", request_batch_id: batchId,
+          } : null;
+        })
+        .filter(Boolean) as Array<{ staff_id: string; date: string; shift_type: DBShift; status: string; request_batch_id: string }>;
 
       if (rows.length) {
         const { error: insErr } = await supabase.from("staff_shifts").insert(rows);
         if (insErr) throw insErr;
       }
-      toast.success(`Đã gửi đăng ký ${rows.length} ca cho tháng ${format(anchor, "M/yyyy")}`);
+
+      // Thông báo Admin/Manager
+      try {
+        const { data: ops } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["admin", "manager"] as any);
+        const notifs = (ops ?? []).map((r: any) => ({
+          recipient_id: r.user_id,
+          actor_id: uid,
+          type: "shift_request_pending",
+          title: "Yêu cầu đăng ký lịch mới",
+          body: `Nhân viên ${fullName ?? "—"} đã gửi yêu cầu đăng ký lịch tháng ${format(anchor, "M/yyyy")}.`,
+          ref_type: "shift_approval_request",
+          ref_id: batchId,
+        }));
+        if (notifs.length) await supabase.from("notifications").insert(notifs);
+      } catch (nerr) {
+        console.warn("[notify ops]", nerr);
+      }
+
+      toast.success(`Đã gửi ${rows.length} ca cho tháng ${format(anchor, "M/yyyy")} · chờ quản lý duyệt.`);
+      setDraftMonth(null);
+      setWeekly(emptyWeek());
+      await qc.invalidateQueries({ queryKey: ["shift-approval-request", uid, monthKey] });
+      await qc.invalidateQueries({ queryKey: ["my-shifts-month", uid, monthKey] });
     } catch (e: any) {
-      console.error("[submit staff_shifts]", e);
+      console.error("[submitBatch]", e);
       toast.error(e?.message ?? "Không lưu được lịch");
     } finally {
       setSaving(false);
     }
   };
 
+  // Chỉnh sửa 1 ngày lẻ khi đã locked → lưu pending độc lập
+  const saveSingleDay = async () => {
+    if (!editing || !uid) return;
+    setSaving(true);
+    try {
+      // Xoá các bản ghi hiện có ở ngày đó (mọi ca) trước khi ghi mới
+      if (editing.existingId) {
+        await supabase.from("staff_shifts").delete()
+          .eq("staff_id", uid).eq("date", editing.date);
+      }
+      const t = toDBShift(editing.sang, editing.chieu);
+      if (t) {
+        const { error } = await supabase.from("staff_shifts").insert({
+          staff_id: uid, date: editing.date, shift_type: t, status: "pending",
+        });
+        if (error) throw error;
+      }
+      toast.success("Đã gửi thay đổi · chờ quản lý duyệt riêng.");
+      setEditing(null);
+      await qc.invalidateQueries({ queryKey: ["my-shifts-month", uid, monthKey] });
+    } catch (e: any) {
+      console.error("[saveSingleDay]", e);
+      toast.error(e?.message ?? "Không lưu được");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Khi chuyển tháng → reset draft & weekly
+  useEffect(() => { setDraftMonth(null); setWeekly(emptyWeek()); }, [monthKey]);
+
+  const monthShiftsByDate = useMemo(() => {
+    const m: Record<string, StaffShiftRow> = {};
+    (shiftsQ.data ?? []).forEach((s) => { m[s.date] = s; });
+    return m;
+  }, [shiftsQ.data]);
+
+  const monthEntries: MonthEntry[] = useMemo(() => {
+    const first = startOfMonth(anchor);
+    const last = endOfMonth(anchor);
+    const out: MonthEntry[] = [];
+    for (let day = 1; day <= last.getDate(); day++) {
+      const d = new Date(first.getFullYear(), first.getMonth(), day);
+      const iso = format(d, "yyyy-MM-dd");
+      const s = monthShiftsByDate[iso];
+      out.push({
+        date: iso,
+        sang: s ? (s.shift_type === "sang" || s.shift_type === "ca_ngay") : false,
+        chieu: s ? (s.shift_type === "chieu" || s.shift_type === "ca_ngay") : false,
+      });
+    }
+    return out;
+  }, [anchor, monthShiftsByDate]);
+
   return (
     <section className="bg-white border border-hairline rounded-2xl shadow-sm">
-      <div className="p-5 border-b border-hairline">
-        <h3 className="font-black text-lg">Đăng ký lịch tháng</h3>
-        <p className="text-xs text-ink-muted">
-          Chọn ca cố định trong tuần rồi áp dụng cho tháng. Có thể click vào từng ngày để tinh chỉnh.
-        </p>
-      </div>
-
-      {/* Bước 1: Tuần mẫu */}
-      <div className="p-5 border-b border-hairline">
-        <div className="text-sm font-black mb-3">1 · Tuần mẫu</div>
-        <div className="divide-y divide-hairline">
-          {DAYS.map((d) => {
-            const w = weekly[d.id];
-            return (
-              <div key={d.id} className="flex items-center gap-3 py-2">
-                <div className="w-24 font-bold text-sm">{d.label}</div>
-                <ToggleChip active={w.sang} label="Ca Sáng" onClick={() => toggleWeek(d.id, "sang")} tone="amber" />
-                <ToggleChip active={w.chieu} label="Ca Chiều" onClick={() => toggleWeek(d.id, "chieu")} tone="sky" />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Bước 2: Điều hướng tháng + tạo lịch */}
       <div className="p-5 border-b border-hairline flex flex-wrap items-center gap-3">
-        <div className="text-sm font-black">2 · Chọn tháng</div>
-        <div className="flex items-center gap-2">
+        <div>
+          <h3 className="font-black text-lg">Lịch làm việc & Đăng ký ca</h3>
+          <p className="text-xs text-ink-muted">
+            Đăng ký lịch theo tháng · click từng ngày để tinh chỉnh · quản lý sẽ duyệt tập trung.
+          </p>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
           <button onClick={() => setAnchor((d) => addMonths(d, -1))}
             className="p-1.5 rounded-md hover:bg-brand-soft border border-hairline">
             <ChevronLeft className="size-4" />
@@ -169,29 +314,92 @@ export function StaffScheduleRegistration() {
             <ChevronRight className="size-4" />
           </button>
         </div>
-        <div className="ml-auto flex gap-2">
-          <Button onClick={generate}>Áp dụng cho tháng này</Button>
-          <Button variant="ghost" onClick={() => { setMonth(null); setWeekly(emptyWeek()); }}>
-            <X className="size-4 mr-1 inline" /> Xoá
-          </Button>
-        </div>
       </div>
 
-      {/* Bước 3: Lịch tháng */}
-      {month && (
-        <div className="p-5">
-          <div className="text-sm font-black mb-3">3 · Lịch tháng · click ô ngày để tinh chỉnh</div>
-          <MonthGrid entries={month} anchor={anchor} onPick={(e) => setEditing(e)} />
-          <div className="mt-4 flex justify-end">
-            <Button onClick={submit} disabled={saving}>
-              <Save className="size-4 mr-1.5 inline" />
-              {saving ? "Đang lưu..." : "Lưu & Gửi Đăng Ký"}
-            </Button>
+      {/* Trạng thái batch */}
+      {request && (
+        <div className={`px-5 py-3 border-b border-hairline flex flex-wrap items-center gap-3 ${
+          request.status === "approved" ? "bg-emerald-50" :
+          request.status === "rejected" ? "bg-red-50" : "bg-amber-50"
+        }`}>
+          {request.status === "pending" && <Badge className="bg-amber-500 text-white">Đang chờ duyệt</Badge>}
+          {request.status === "approved" && <Badge className="bg-emerald-600 text-white"><ShieldCheck className="size-3 mr-1 inline" />Đã duyệt</Badge>}
+          {request.status === "rejected" && <Badge className="bg-red-600 text-white">Bị từ chối</Badge>}
+          <div className="text-xs text-ink-muted">
+            {request.reviewed_at && `Cập nhật: ${new Date(request.reviewed_at).toLocaleString("vi-VN")}`}
+            {request.review_note && ` · Ghi chú: ${request.review_note}`}
           </div>
+          {request.status === "rejected" && (
+            <span className="ml-auto text-xs font-bold text-red-700 flex items-center gap-1">
+              <RefreshCw className="size-3" /> Bạn có thể chọn tuần mẫu và gửi lại.
+            </span>
+          )}
         </div>
       )}
 
-      {/* Modal edit day */}
+      {/* Tuần mẫu — chỉ hiện khi chưa locked */}
+      {!locked && (
+        <>
+          <div className="p-5 border-b border-hairline">
+            <div className="text-sm font-black mb-3">1 · Tuần mẫu</div>
+            <div className="divide-y divide-hairline">
+              {DAYS.map((d) => {
+                const w = weekly[d.id];
+                return (
+                  <div key={d.id} className="flex flex-wrap items-center gap-3 py-2">
+                    <div className="w-24 font-bold text-sm">{d.label}</div>
+                    <ToggleChip active={w.sang} label="Ca Sáng" onClick={() => toggleWeek(d.id, "sang")} tone="amber" />
+                    <ToggleChip active={w.chieu} label="Ca Chiều" onClick={() => toggleWeek(d.id, "chieu")} tone="sky" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="p-5 border-b border-hairline flex flex-wrap items-center gap-3">
+            <div className="text-sm font-black">2 · Áp dụng cho tháng</div>
+            <div className="ml-auto flex gap-2">
+              <Button onClick={generate}>Áp dụng cho tháng này</Button>
+              <Button variant="ghost" onClick={() => { setDraftMonth(null); setWeekly(emptyWeek()); }}>
+                <X className="size-4 mr-1 inline" /> Xoá
+              </Button>
+            </div>
+          </div>
+
+          {draftMonth && (
+            <div className="p-5 border-b border-hairline">
+              <div className="text-sm font-black mb-3">3 · Xem lại · click ô ngày để tinh chỉnh</div>
+              <MonthGrid entries={draftMonth} anchor={anchor}
+                onPick={(e) => setEditing({ date: e.date, sang: e.sang, chieu: e.chieu })} />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={submitBatch} disabled={saving}>
+                  <Save className="size-4 mr-1.5 inline" />
+                  {saving ? "Đang gửi..." : "Gửi Đăng Ký"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Locked → chỉ hiện lịch cá nhân */}
+      {locked && (
+        <div className="p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm text-ink-muted">
+            <Lock className="size-4" />
+            <span>Đã gửi đăng ký · click vào một ngày để yêu cầu chỉnh sửa riêng.</span>
+          </div>
+          <MonthGrid
+            entries={monthEntries} anchor={anchor} statusByDate={monthShiftsByDate}
+            onPick={(e) => {
+              const existing = monthShiftsByDate[e.date];
+              setEditing({ date: e.date, sang: e.sang, chieu: e.chieu, existingId: existing?.id });
+            }}
+          />
+        </div>
+      )}
+
+      {/* Modal edit 1 ngày */}
       <Dialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)}>
         <DialogContent className="bg-white">
           <DialogHeader>
@@ -202,29 +410,32 @@ export function StaffScheduleRegistration() {
           </DialogHeader>
           {editing && (
             <div className="space-y-3">
-              <ToggleRow
-                label="Ca Sáng (8h – 12h)"
-                active={editing.sang}
-                onClick={() => setEditing({ ...editing, sang: !editing.sang })}
-              />
-              <ToggleRow
-                label="Ca Chiều (13h30 – 18h)"
-                active={editing.chieu}
-                onClick={() => setEditing({ ...editing, chieu: !editing.chieu })}
-              />
+              <ToggleRow label="Ca Sáng (8h – 12h)" active={editing.sang}
+                onClick={() => setEditing({ ...editing, sang: !editing.sang })} />
+              <ToggleRow label="Ca Chiều (13h30 – 18h)" active={editing.chieu}
+                onClick={() => setEditing({ ...editing, chieu: !editing.chieu })} />
+              {locked && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
+                  Thay đổi này sẽ được lưu ở trạng thái <b>chờ duyệt</b> riêng, không ảnh hưởng batch đã gửi.
+                </p>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditing(null)}>Huỷ</Button>
             <Button
               onClick={() => {
-                if (editing) {
-                  updateDay(editing.date, { sang: editing.sang, chieu: editing.chieu });
+                if (!editing) return;
+                if (locked) {
+                  saveSingleDay();
+                } else {
+                  updateDraftDay(editing.date, { sang: editing.sang, chieu: editing.chieu });
                   setEditing(null);
                 }
               }}
+              disabled={saving}
             >
-              Xong
+              {saving ? "Đang lưu..." : "Xong"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -238,11 +449,8 @@ function ToggleChip({
 }: { active: boolean; label: string; onClick: () => void; tone: "amber" | "sky" }) {
   const toneOn = tone === "amber" ? "bg-amber-100 border-amber-400 text-amber-800" : "bg-sky-100 border-sky-400 text-sky-800";
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-3 py-1.5 text-xs font-bold rounded-md border transition ${active ? toneOn : "bg-white border-hairline text-ink-muted hover:bg-brand-soft"}`}
-    >
+    <button type="button" onClick={onClick}
+      className={`px-3 py-1.5 text-xs font-bold rounded-md border transition ${active ? toneOn : "bg-white border-hairline text-ink-muted hover:bg-brand-soft"}`}>
       {active ? "✓ " : ""}{label}
     </button>
   );
@@ -250,19 +458,20 @@ function ToggleChip({
 
 function ToggleRow({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full px-4 py-3 rounded-md border text-sm font-bold transition ${active ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-hairline text-ink hover:bg-brand-soft"}`}
-    >
+    <button type="button" onClick={onClick}
+      className={`w-full px-4 py-3 rounded-md border text-sm font-bold transition ${active ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white border-hairline text-ink hover:bg-brand-soft"}`}>
       {active ? "✓ " : ""}{label}
     </button>
   );
 }
 
 function MonthGrid({
-  entries, anchor, onPick,
-}: { entries: MonthEntry[]; anchor: Date; onPick: (e: MonthEntry) => void }) {
+  entries, anchor, onPick, statusByDate,
+}: {
+  entries: MonthEntry[]; anchor: Date;
+  onPick: (e: MonthEntry) => void;
+  statusByDate?: Record<string, StaffShiftRow>;
+}) {
   const cells = useMemo(() => {
     const first = startOfMonth(anchor);
     const leading = (getDay(first) + 6) % 7;
@@ -276,21 +485,20 @@ function MonthGrid({
   return (
     <div className="grid grid-cols-7 gap-px bg-hairline rounded-lg overflow-hidden">
       {WEEKDAYS.map((w, i) => (
-        <div key={w} className={`bg-brand-dark text-white text-center text-xs font-black py-2 ${i === 6 ? "text-red-300" : ""}`}>
-          {w}
-        </div>
+        <div key={w} className={`bg-brand-dark text-white text-center text-xs font-black py-2 ${i === 6 ? "text-red-300" : ""}`}>{w}</div>
       ))}
       {cells.map((c, idx) => {
         if (!c) return <div key={idx} className="bg-gray-50 min-h-[80px]" />;
         const isWeekend = idx % 7 >= 5;
         const hasWork = c.sang || c.chieu;
+        const st = statusByDate?.[c.date]?.status;
+        const stTone =
+          st === "approved" ? "border-l-4 border-l-emerald-500" :
+          st === "rejected" ? "border-l-4 border-l-red-500" :
+          st === "pending" ? "border-l-4 border-l-amber-500" : "";
         return (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => onPick(c)}
-            className={`text-left bg-white min-h-[80px] p-1.5 hover:bg-brand-soft/40 ${hasWork ? "bg-emerald-50/60" : ""}`}
-          >
+          <button key={idx} type="button" onClick={() => onPick(c)}
+            className={`text-left bg-white min-h-[80px] p-1.5 hover:bg-brand-soft/40 ${hasWork ? "bg-emerald-50/60" : ""} ${stTone}`}>
             <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
               {new Date(c.date).getDate()}
             </div>
