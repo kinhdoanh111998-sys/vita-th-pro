@@ -14,6 +14,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendances: {
+        Row: {
+          check_in_approved: boolean
+          check_in_approved_at: string | null
+          check_in_approved_by: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          ot_approved: boolean
+          ot_approved_at: string | null
+          ot_approved_by: string | null
+          ot_hours: number
+          shift_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          check_in_approved?: boolean
+          check_in_approved_at?: string | null
+          check_in_approved_by?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          ot_approved?: boolean
+          ot_approved_at?: string | null
+          ot_approved_by?: string | null
+          ot_hours?: number
+          shift_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          check_in_approved?: boolean
+          check_in_approved_at?: string | null
+          check_in_approved_by?: string | null
+          check_in_time?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          ot_approved?: boolean
+          ot_approved_at?: string | null
+          ot_approved_by?: string | null
+          ot_hours?: number
+          shift_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendances_check_in_approved_by_fkey"
+            columns: ["check_in_approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_ot_approved_by_fkey"
+            columns: ["ot_approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendances_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           created_at: string
@@ -633,6 +719,100 @@ export type Database = {
         }
         Relationships: []
       }
+      shift_registrations: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          note: string | null
+          shift_id: string
+          status: Database["public"]["Enums"]["shift_registration_status"]
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          note?: string | null
+          shift_id: string
+          status?: Database["public"]["Enums"]["shift_registration_status"]
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          note?: string | null
+          shift_id?: string
+          status?: Database["public"]["Enums"]["shift_registration_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_registrations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_registrations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_registrations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          name: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           facebook_link: string | null
@@ -1013,6 +1193,60 @@ export type Database = {
       }
     }
     Functions: {
+      fn_check_in: {
+        Args: { p_shift_id: string }
+        Returns: {
+          check_in_approved: boolean
+          check_in_approved_at: string | null
+          check_in_approved_by: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          ot_approved: boolean
+          ot_approved_at: string | null
+          ot_approved_by: string | null
+          ot_hours: number
+          shift_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "attendances"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fn_check_out: {
+        Args: { p_attendance_id: string; p_notes?: string }
+        Returns: {
+          check_in_approved: boolean
+          check_in_approved_at: string | null
+          check_in_approved_by: string | null
+          check_in_time: string | null
+          check_out_time: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          ot_approved: boolean
+          ot_approved_at: string | null
+          ot_approved_by: string | null
+          ot_hours: number
+          shift_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "attendances"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1024,6 +1258,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "staff" | "customer" | "manager"
       order_item_type: "product" | "service"
+      shift_registration_status: "pending" | "approved" | "rejected"
       voucher_discount_type: "percent" | "fixed_amount"
     }
     CompositeTypes: {
@@ -1154,6 +1389,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "staff", "customer", "manager"],
       order_item_type: ["product", "service"],
+      shift_registration_status: ["pending", "approved", "rejected"],
       voucher_discount_type: ["percent", "fixed_amount"],
     },
   },
