@@ -32,6 +32,7 @@ const DEFAULT_FILTERS: AppStoreFilters = {
 function StorePage() {
   const [tab, setTab] = useState<(typeof CATEGORIES)[number]["key"]>("all");
   const [search, setSearch] = useState("");
+  const [branch, setBranch] = useState<string>(BRANCHES[0].id);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<AppStoreFilters>(DEFAULT_FILTERS);
   const { data = [], isLoading, error } = useServiceCatalog();
