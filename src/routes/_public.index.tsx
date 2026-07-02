@@ -145,12 +145,6 @@ function CommunityHome() {
 
 
 
-      {/* Hero Search */}
-      <section className="pt-4 md:pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
-        <OmniSearch hero />
-      </section>
-
-      {/* Hero Banner Carousel */}
       <HeroCarousel />
 
 
