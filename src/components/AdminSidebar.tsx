@@ -71,6 +71,12 @@ export function AdminSidebar() {
       </nav>
 
       <div className="mt-5 space-y-2">
+        <Link
+          to="/app/account"
+          className="block text-center rounded-full bg-white/10 text-white border border-white/20 px-3 py-2 text-[13px] font-extrabold hover:bg-white/20"
+        >
+          👤 Hồ sơ của tôi
+        </Link>
         <button
           onClick={handleSignOut}
           className="block w-full text-center rounded-full bg-white/10 text-white border border-white/20 px-3 py-2 text-[13px] font-extrabold hover:bg-white/20"

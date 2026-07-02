@@ -25,14 +25,9 @@ export function Header() {
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = sys?.hotline ?? settings?.hotline ?? "0988 000 888";
 
-  const accountTo =
-    role === "admin"
-      ? "/admin"
-      : role === "manager" || role === "staff" || role === "employee"
-        ? "/portal/timesheet"
-        : role === "customer"
-          ? "/portal/my-treatments"
-          : "/login";
+  // Everyone lands on the unified profile hub; role-branch happens there.
+  const accountTo = session ? "/app/account" : "/login";
+  void role;
 
   return (
     <>

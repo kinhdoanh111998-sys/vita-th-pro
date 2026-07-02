@@ -147,6 +147,13 @@ function PortalShell() {
           </div>
           <div className="flex items-center gap-3 text-sm">
             <Link
+              to="/app/account"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
+              title="Hồ sơ của tôi"
+            >
+              👤 Hồ sơ
+            </Link>
+            <Link
               to="/"
               className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
             >

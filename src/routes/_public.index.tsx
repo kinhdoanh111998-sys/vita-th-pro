@@ -22,6 +22,7 @@ import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 
 type Banner = {
@@ -113,6 +114,7 @@ const TESTIMONIALS: Testimonial[] = [
 
 function CommunityHome() {
   const { data: settings } = useSettings();
+  const { session, loading: authLoading } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -201,23 +203,36 @@ function CommunityHome() {
             >
               Đặt lịch
             </Link>
-            <Link
-              to="/dang-ky"
-              className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
-              style={{ color: "#484848" }}
-            >
-              Đăng ký
-            </Link>
-
-            {/* Login — visible on all sizes */}
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
-              style={{ borderColor: "#1B9606", color: "#1B9606" }}
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Đăng nhập</span>
-            </Link>
+            {authLoading ? (
+              <div className="h-10 w-[120px] rounded-lg bg-[#F2F2F2] animate-pulse" aria-hidden />
+            ) : session ? (
+              <Link
+                to="/app/account"
+                className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#147805] hover:text-[#147805]"
+                style={{ borderColor: "#1B9606", color: "#1B9606" }}
+              >
+                <User className="w-4 h-4" />
+                <span>Khu vực của tôi</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/dang-ky"
+                  className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
+                  style={{ color: "#484848" }}
+                >
+                  Đăng ký
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                  style={{ borderColor: "#1B9606", color: "#1B9606" }}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng nhập</span>
+                </Link>
+              </>
+            )}
 
             {/* Mobile hamburger */}
             <button
@@ -306,14 +321,25 @@ function CommunityHome() {
               >
                 Đặt lịch
               </Link>
-              <Link
-                to="/dang-ky"
-                onClick={() => setDrawerOpen(false)}
-                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
-                style={{ color: "#484848" }}
-              >
-                Đăng ký
-              </Link>
+              {session ? (
+                <Link
+                  to="/app/account"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#1B9606" }}
+                >
+                  Khu vực của tôi
+                </Link>
+              ) : (
+                <Link
+                  to="/dang-ky"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#484848" }}
+                >
+                  Đăng ký
+                </Link>
+              )}
             </nav>
 
             <div
