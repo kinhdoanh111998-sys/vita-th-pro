@@ -1,107 +1,103 @@
+## Mục tiêu
 
-## Xác định loại Zalo App
+Khi bất kỳ khách hàng nào chia sẻ link (bài viết, sản phẩm, dịch vụ, sự kiện…) kèm mã giới thiệu (`?ref=A7K2QX`), người bấm vào sẽ:
 
-Với App ID + Secret Key, bạn đang có **Zalo Login (Web OAuth v4)** — luồng chuẩn OAuth 2.0 qua `oauth.zaloapp.com/v4/permission`. Tôi đã tích hợp nhiều lần, đây là stack quen thuộc.
-
-## Callback URL cần cấu hình
-
-Trong **Zalo Developer Console → App của bạn → Login → Redirect URI**, thêm CẢ HAI URL (một cho preview, một cho published):
-```
-https://view-forge-space.lovable.app/auth/zalo/callback
-https://id-preview--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app/auth/zalo/callback
-```
-Sau khi publish custom domain thì thêm domain đó nữa.
-
-## Cảnh báo về "mk = SĐT vĩnh viễn"
-
-Tôi vẫn triển khai theo yêu cầu, nhưng **cảnh báo rõ**: nếu ai lộ SĐT khách (rất dễ, SĐT vốn không phải bí mật), họ đăng nhập được ngay bằng form login thường mà **không cần Zalo**. Rủi ro cực cao khi mở rộng khách hàng. Đề xuất backup: sau lần đầu tôi thêm 1 banner "Vui lòng đổi mật khẩu để bảo mật" ở trang tài khoản (không ép). Bạn đồng ý cứ để triển khai.
-
-## Kiến trúc luồng
-
-```text
-[User click "Đăng nhập Zalo"]
-        │
-        ▼
-GET /api/public/zalo/authorize   ← server route sinh state + PKCE, redirect
-        │
-        ▼
-oauth.zaloapp.com/v4/permission  ← user cho phép (permission: id, name, picture, phone)
-        │
-        ▼
-/auth/zalo/callback?code=...&state=...   ← route TSS (page)
-        │
-        ▼
-serverFn zaloExchangeAndSignIn({ code, codeVerifier, state })
-   1. Verify state (cookie)
-   2. POST oauth.zaloapp.com/v4/access_token   → access_token
-   3. GET graph.zalo.me/v2.0/me?fields=id,name,picture,phone
-   4. Nếu chưa có phone: trả error → client redirect lại authorize (fallback bạn muốn)
-   5. Chuẩn hoá phone (bỏ +84 → 0…)
-   6. supabaseAdmin.auth.admin: tìm user theo email ảo <phone>@khach.vitath.pro
-        - Nếu chưa có: createUser({ email, password: phone, email_confirm: true })
-          + insert users(role='customer', full_name)
-          + insert customers(phone, name, avatar_url, zalo_id)
-        - Nếu đã có: update avatar/name mới nhất
-   7. Trả về { email, password: phone } cho client
-        │
-        ▼
-Client: supabase.auth.signInWithPassword({ email, password })
-        │
-        ▼
-Redirect /app (customer landing đã có sẵn)
-```
-
-## Fallback khi user không đồng ý cho SĐT
-
-Đúng như bạn muốn — khả thi và tôi sẽ làm:
-- Server nhận `/me` không có `phone` → trả `{ error: "phone_required" }`
-- Client hiện toast "Bạn cần đồng ý chia sẻ số điện thoại để đăng nhập" + tự động redirect lại trang authorize Zalo sau 2s (user bấm lại Cho phép).
-
-## Thay đổi cụ thể
-
-### 1. Secrets (Lovable Cloud)
-Tôi sẽ mở form add_secret cho bạn nhập:
-- `ZALO_APP_ID` (public cũng được nhưng để chung server cho gọn)
-- `ZALO_APP_SECRET` (bắt buộc secret)
-
-### 2. Database migration
-Thêm cột vào `customers`:
-- `zalo_id text unique` — id Zalo để tránh trùng
-- `avatar_url text` (nếu chưa có)
-
-Không tạo bảng mới.
-
-### 3. File mới
-- `src/routes/api/public/zalo.authorize.ts` — server route: sinh `state` random + PKCE `code_verifier`, lưu vào httpOnly cookie 5 phút, redirect sang Zalo OAuth URL.
-- `src/routes/auth.zalo.callback.tsx` — route TSS page: đọc `code` từ URL, gọi serverFn `zaloExchangeAndSignIn`, rồi `signInWithPassword`, rồi navigate `/app`. Hiển thị spinner "Đang đăng nhập bằng Zalo…".
-- `src/lib/zalo-auth.functions.ts` — chứa serverFn `zaloExchangeAndSignIn` (dùng `supabaseAdmin` import động trong handler, KHÔNG top-level).
-- `src/lib/zalo-auth.server.ts` — helper gọi Zalo Graph API, chuẩn hoá phone.
-
-### 4. File chỉnh
-- `src/routes/login.tsx` — thêm nút **"Đăng nhập bằng Zalo"** (icon Zalo, màu #0068FF) phía trên form email/password, dẫn tới `/api/public/zalo/authorize`.
-- `src/routes/dang-ky.tsx` — thêm cùng nút Zalo với gợi ý "Không cần đăng ký, dùng Zalo là xong".
-
-Không đụng `client.ts`, `types.ts`, `AuthContext.tsx`, không phá luồng login cũ.
-
-## Chi tiết kỹ thuật quan trọng
-
-- **Endpoint Zalo** (v4):
-  - Authorize: `https://oauth.zaloapp.com/v4/permission?app_id=&redirect_uri=&code_challenge=&state=`
-  - Token: `POST https://oauth.zaloapp.com/v4/access_token` header `secret_key`, body `code, app_id, grant_type=authorization_code, code_verifier`
-  - Graph: `GET https://graph.zalo.me/v2.0/me?fields=id,name,picture,phone` header `access_token`
-- **PKCE bắt buộc** cho Zalo v4 (S256).
-- **`state` chống CSRF** lưu httpOnly cookie, verify server-side.
-- **Chuẩn hoá phone**: Zalo trả `+84…` hoặc `84…` → convert về `0…` để khớp format bạn đã dùng cho khách hàng.
-- **try/catch + finally**: mọi bước gọi API + Supabase đều bọc try/catch, callback page có `finally { setLoading(false) }` để không kẹt spinner (đúng convention CQC của bạn).
-- **Email ảo**: dùng đúng domain hiện tại `@khach.vitath.pro` để `AuthContext` fast-track customer sẵn có tự nhận.
-
-## Số credit dự kiến
-
-~4–5 credits cho toàn bộ Phase (1 migration + 4 file mới + 2 file chỉnh + secret form + typecheck).
+1. Được ghi nhận ref **im lặng** khi vào trang (không popup làm phiền).
+2. Khi thực hiện hành động cần đăng nhập (đặt lịch, mua hàng, bình luận, đăng ký voucher…) → hiện popup **"Bạn cần đăng nhập"** với 3 lựa chọn: Đăng nhập Zalo / Đăng ký / Đăng nhập email.
+3. Sau khi đăng ký/đăng nhập Zalo lần đầu → ref được **gán vĩnh viễn** vào tài khoản (`customers.referred_by`). Mọi đơn hàng, booking sau này của khách đó đều sinh hoa hồng cho người ref (**lifetime**).
+4. Nếu khách tắt popup không đăng ký → ref vẫn giữ **30 ngày** trên trình duyệt (localStorage). Lần sau quay lại đăng ký/đăng nhập vẫn được tính.
 
 ---
 
-**Xác nhận để tôi bắt đầu:**
-1. Bấm **Approve plan** để chuyển sang build mode.
-2. Sau khi build mode kích hoạt, tôi sẽ mở form nhập `ZALO_APP_ID` + `ZALO_APP_SECRET` trước tiên.
-3. Trong lúc chờ, bạn vào Zalo Developer Console thêm 2 Callback URL ở trên.
+## 1. Database
+
+Migration mới:
+
+- **`customers`**:
+  - `ref_code TEXT UNIQUE` — mã 6 ký tự sinh tự động (VD: `A7K2QX`), dùng làm `?ref=`.
+  - `referred_by UUID REFERENCES customers(id)` — người đã giới thiệu (nullable, set 1 lần, không đổi được sau khi set).
+  - `referred_at TIMESTAMPTZ` — thời điểm gán ref.
+  - Trigger: khi INSERT customer, nếu `ref_code` NULL thì tự sinh code ngẫu nhiên 6 ký tự (kiểm tra unique, retry nếu trùng).
+  - Backfill: cấp `ref_code` cho toàn bộ customers hiện có.
+
+- **`referral_clicks`** (mới, để đo funnel — optional nhưng nên có):
+  - `id, ref_code, landing_path, ip_hash, user_agent, session_id, created_at, converted_customer_id`.
+  - RLS: chỉ admin/manager đọc; INSERT bằng server function public.
+
+- **`commissions`**: giữ nguyên schema; thêm `commission_type = 'affiliate_order'` khi đơn hàng của khách được ref chuyển sang `paid`.
+
+- **Trigger `orders_after_paid_affiliate`**: khi `orders.status` chuyển sang `paid`, tra `customers.referred_by` của `orders.customer_id` — nếu có, tạo record `commissions` với `staff_id = referred_by`, `commission_type = 'affiliate_order'`, `amount = orders.total * affiliate_configs.commission_percent / 100`, `reference_id = orders.id`, `status = 'pending'`.
+
+---
+
+## 2. Ref tracking phía client (không popup khi lướt)
+
+- **Hook `useRefTracker()`** đặt trong `_public.tsx` layout (chạy trên mọi trang public):
+  - Đọc `?ref=` từ URL. Nếu có → lưu vào `localStorage` (`vitath_ref_v2 = { code, savedAt }`) và gọi API `/api/public/ref/click` để log analytics.
+  - Nếu localStorage đã có ref cũ **và** ref cũ chưa quá 30 ngày → giữ nguyên (**first-touch attribution**, không đè). Sau 30 ngày mới cho phép ghi đè.
+  - Xoá `?ref=` khỏi URL bằng `router.navigate({ replace: true, search: (s) => ({...s, ref: undefined}) })` để link trông sạch sau lần đầu.
+
+- **Helper `getStoredRef()`**: đọc ref còn hạn từ localStorage, trả về `code` hoặc `null`. Dùng ở mọi submit form.
+
+---
+
+## 3. Popup "Cần đăng nhập" (chỉ hiện khi action)
+
+- **`<RequireAuthDialog>`** component chung, thay cho các dòng "Vui lòng đăng nhập" hiện tại.
+  - 3 nút: **Đăng nhập bằng Zalo** (nhanh nhất, nhấn mạnh), **Đăng ký tài khoản mới**, **Đăng nhập email**.
+  - Nhận prop `intent` (booking / order / comment / voucher) để hiển thị context câu chữ.
+  - Sau khi login xong, tự quay lại action đang dở (dùng `sessionStorage.pending_action`).
+
+- Wrap các nút hành động: "Đặt lịch ngay", "Mua ngay", "Gửi bình luận", "Nhận voucher"… → nếu chưa auth thì mở dialog thay vì submit.
+
+- Trang tự bật popup **KHÔNG** làm. Ref đã được lưu ngầm ở bước 2.
+
+---
+
+## 4. Gán ref khi đăng ký / đăng nhập Zalo lần đầu
+
+Cập nhật `zalo-auth.functions.ts` (`zaloExchangeAndSignIn`):
+
+- Nhận thêm input `refCode?: string` (client đọc từ `getStoredRef()` gửi lên khi callback).
+- Trong nhánh **create user** (khách mới):
+  - Tra `customers` theo `ref_code = refCode` → lấy `referrer_id`.
+  - INSERT customer mới với `referred_by = referrer_id`, `referred_at = now()`.
+  - Không cho tự ref bản thân.
+- Trong nhánh **user đã tồn tại**: KHÔNG đè `referred_by` (đã set 1 lần là vĩnh viễn).
+
+Tương tự cho flow đăng ký email (`/dang-ky`): đọc `getStoredRef()` khi submit, truyền vào server function tạo customer.
+
+Sau khi login/signup thành công → **xoá** ref khỏi localStorage (đã gán vào DB rồi).
+
+---
+
+## 5. AffiliateCard (portal) — dùng ref_code mới
+
+- Đổi `refCode = customer.ref_code` (thay vì `uid`).
+- Link ref: `${origin}/?ref=${ref_code}` (landing trang chủ), có thể thêm helper "chia sẻ trang này" trên từng trang sản phẩm/bài viết để link ra `/products/xxx?ref=...`.
+- Query "Đã giới thiệu": `count(customers where referred_by = <my_customer_id>)`.
+- Query "Hoa hồng": `sum(commissions.amount where staff_id = <my_customer_id> and commission_type = 'affiliate_order')`.
+
+---
+
+## 6. Admin
+
+- `/admin/commissions`: thêm filter theo `commission_type = 'affiliate_order'`, cột "Từ đơn hàng", "Người giới thiệu", "Khách mua".
+- `/admin/settings` → tab affiliate: đã có `affiliate_configs` — chỉ cần đảm bảo có ít nhất 1 config `active = true` với `commission_percent` mặc định (VD 5%). Trigger đọc config này để tính.
+
+---
+
+## Câu trả lời cho 2 lo lắng của bạn
+
+- **"Trường hợp khách đăng ký/đăng nhập Zalo sẽ được tính là ref ngay"** → Đúng, bước 4 gán `referred_by` ngay trong lần tạo tài khoản.
+- **"Trường hợp khách tắt popup thì link ref vẫn được tính đúng chứ"** → Đúng, ref đã lưu vào localStorage ở bước 2 ngay khi vào trang (trước cả khi popup xuất hiện), giữ 30 ngày. Bất kỳ lúc nào trong 30 ngày đó khách quay lại và đăng ký → ref vẫn được gán. Chỉ mất khi khách xoá cookies/localStorage hoặc quá 30 ngày.
+
+---
+
+## Chi tiết kỹ thuật
+
+- **Ref code generator**: `substring(md5(random()::text || clock_timestamp()::text), 1, 6)` viết hoa, kiểm tra unique.
+- **Attribution model**: first-touch (ref đầu tiên trong 30 ngày thắng), lifetime (mọi đơn của khách được ref đều sinh hoa hồng, không hết hạn).
+- **Chống self-referral**: check `referrer_id != new_customer_id` trong trigger.
+- **Chống fraud cơ bản**: không tạo hoa hồng nếu đơn `refunded/cancelled`; hoa hồng ở status `pending` → admin duyệt manual sang `approved/paid` trong `/admin/commissions`.
+- **File sẽ đụng**: migration mới; `src/lib/refTracker.ts` (mới); `src/routes/_public.tsx` (mount hook); `src/components/RequireAuthDialog.tsx` (mới); `src/lib/zalo-auth.functions.ts` (nhận refCode); `src/routes/auth.zalo.callback.tsx` (truyền refCode); `src/routes/dang-ky.tsx` (truyền refCode); `src/components/portal/dashboard/AffiliateCard.tsx` (dùng ref_code); `src/routes/admin.commissions.tsx` (filter mới); các nút action ở booking/order/comment (wrap `<RequireAuthDialog>`).
