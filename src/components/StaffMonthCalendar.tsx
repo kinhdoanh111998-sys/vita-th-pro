@@ -63,6 +63,8 @@ const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 export function StaffMonthCalendar() {
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"));
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
   const monthKey = format(anchor, "yyyy-MM");
 
   const q = useQuery({
