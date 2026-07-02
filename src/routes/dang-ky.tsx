@@ -33,11 +33,21 @@ function RegisterPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const trimmedName = fullName.trim();
+    const trimmedPhone = phone.trim().replace(/\s+/g, "");
+
+    if (!trimmedName) {
+      toast.error("Vui lòng nhập họ và tên");
+      return;
+    }
+    if (!/^0\d{9,10}$/.test(trimmedPhone)) {
+      toast.error("Số điện thoại không hợp lệ (VD: 09xxxxxxxx)");
+      return;
+    }
     if (password.length < 6) {
       toast.error("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
-
     if (password !== confirmPassword) {
       toast.error("Mật khẩu xác nhận không khớp");
       return;
@@ -45,23 +55,38 @@ function RegisterPage() {
 
     setSubmitting(true);
 
-    const virtualEmail = `${phone}@khach.vitath.pro`;
+    const virtualEmail = `${trimmedPhone}@khach.vitath.pro`;
 
     const { data, error } = await supabase.auth.signUp({
       email: virtualEmail,
       password,
     });
 
-    if (error && error.message.includes("already registered")) {
-      toast.error("Số điện thoại này đã được đăng ký!");
-      setSubmitting(false);
-      return;
-    }
     if (error) {
-      toast.error("Đăng ký thất bại: " + error.message);
+      console.error("[dang-ky] signUp error:", error);
+      const msg = (error.message || "").toLowerCase();
+      let friendly = error.message;
+      if (msg.includes("already registered") || msg.includes("already been registered") || msg.includes("user already")) {
+        friendly = "Số điện thoại này đã được đăng ký!";
+      } else if (msg.includes("pwned") || msg.includes("leaked") || msg.includes("compromised")) {
+        friendly = "Mật khẩu này quá phổ biến/đã bị lộ. Vui lòng chọn mật khẩu khác an toàn hơn.";
+      } else if (msg.includes("weak") || msg.includes("password should")) {
+        friendly = "Mật khẩu quá yếu. Hãy dùng ít nhất 8 ký tự gồm chữ và số.";
+      } else if (msg.includes("invalid") && msg.includes("email")) {
+        friendly = "Số điện thoại không hợp lệ.";
+      } else if (msg.includes("rate") || msg.includes("too many")) {
+        friendly = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít phút.";
+      } else if (msg.includes("signup") && msg.includes("disabled")) {
+        friendly = "Chức năng đăng ký đang tạm khoá. Vui lòng liên hệ quản trị viên.";
+      }
+      toast.error(friendly);
       setSubmitting(false);
       return;
     }
+
+    // Cập nhật biến local để phần insert dưới dùng đúng giá trị đã trim
+    const phoneClean = trimmedPhone;
+    const nameClean = trimmedName;
 
     if (data.user) {
       // 1. Lưu vào bảng customers (Cột tên là 'name', bắt buộc truyền 'id')
