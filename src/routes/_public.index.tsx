@@ -117,11 +117,29 @@ const TESTIMONIALS: Testimonial[] = [
 
 
 function CommunityHome() {
+  const { data: settings } = useSettings();
+  const { session, loading: authLoading } = useAuth();
+  const brand = settings?.brand ?? "Vita TH Pro";
+  const hotline = settings?.hotline ?? "0988 000 888";
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [skinAIOpen, setSkinAIOpen] = useState(false);
 
   const { data: stores = [] } = useActiveStores();
   const { data: appNavItems = [] } = useNavigationItems("app");
   const shortcuts = appNavItems.filter((i) => i.is_visible);
+
+
+  const navLinks: Array<{ label: string; to: string }> = [
+    { label: "Trang chủ", to: "/" },
+    { label: "Giới thiệu", to: "/about" },
+    { label: "Sản phẩm", to: "/products" },
+    { label: "Dịch vụ", to: "/services" },
+    { label: "Sự kiện", to: "/events" },
+    { label: "Cộng đồng", to: "/community" },
+    { label: "Tin tức", to: "/news" },
+    { label: "Liên hệ", to: "/contact" },
+  ];
+
 
 
   return (
