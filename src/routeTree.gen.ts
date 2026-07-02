@@ -68,6 +68,7 @@ import { Route as AppNewsIdRouteImport } from './routes/app.news.$id'
 import { Route as AppEventsIdRouteImport } from './routes/app.events.$id'
 import { Route as ApiPublicSeedDemoEmployeesRouteImport } from './routes/api/public/seed-demo-employees'
 import { Route as ApiPublicSeedDemoCustomerRouteImport } from './routes/api/public/seed-demo-customer'
+import { Route as ApiPublicLookupTreatmentsRouteImport } from './routes/api/public/lookup-treatments'
 import { Route as PublicServicesIdRouteImport } from './routes/_public.services.$id'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
@@ -380,6 +381,12 @@ const ApiPublicSeedDemoCustomerRoute =
     path: '/api/public/seed-demo-customer',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicLookupTreatmentsRoute =
+  ApiPublicLookupTreatmentsRouteImport.update({
+    id: '/api/public/lookup-treatments',
+    path: '/api/public/lookup-treatments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PublicServicesIdRoute = PublicServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -523,6 +530,7 @@ export interface FileRoutesByFullPath {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
@@ -592,6 +600,7 @@ export interface FileRoutesByTo {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
@@ -669,6 +678,7 @@ export interface FileRoutesById {
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/_public/services/$id': typeof PublicServicesIdRoute
+  '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
@@ -746,6 +756,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
@@ -815,6 +826,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
@@ -891,6 +903,7 @@ export interface FileRouteTypes {
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
     | '/_public/services/$id'
+    | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
@@ -911,6 +924,7 @@ export interface RootRouteChildren {
   KhachHangRoute: typeof KhachHangRouteWithChildren
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
+  ApiPublicLookupTreatmentsRoute: typeof ApiPublicLookupTreatmentsRoute
   ApiPublicSeedDemoCustomerRoute: typeof ApiPublicSeedDemoCustomerRoute
   ApiPublicSeedDemoEmployeesRoute: typeof ApiPublicSeedDemoEmployeesRoute
 }
@@ -1330,6 +1344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSeedDemoCustomerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/lookup-treatments': {
+      id: '/api/public/lookup-treatments'
+      path: '/api/public/lookup-treatments'
+      fullPath: '/api/public/lookup-treatments'
+      preLoaderRoute: typeof ApiPublicLookupTreatmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_public/services/$id': {
       id: '/_public/services/$id'
       path: '/$id'
@@ -1699,6 +1720,7 @@ const rootRouteChildren: RootRouteChildren = {
   KhachHangRoute: KhachHangRouteWithChildren,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
+  ApiPublicLookupTreatmentsRoute: ApiPublicLookupTreatmentsRoute,
   ApiPublicSeedDemoCustomerRoute: ApiPublicSeedDemoCustomerRoute,
   ApiPublicSeedDemoEmployeesRoute: ApiPublicSeedDemoEmployeesRoute,
 }
