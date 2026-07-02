@@ -448,9 +448,9 @@ function ToursPage() {
                 </Row>
               </dl>
               <p className="mt-3 text-[11px] text-ink-muted leading-relaxed">
-                Bấm <b>Hoàn thành</b>: tạo Tour, chuyển buổi liệu trình sang{" "}
-                <i>completed</i>, ghi nhận hoa hồng nhân viên (trạng thái{" "}
-                <i>pending</i>) và gửi thông báo cho NV.
+                Bấm <b>Bắt đầu</b>: tạo Tour trạng thái <i>in_progress</i>, NV
+                bị khoá khỏi danh sách khả dụng. Khi NV quét QR khách ở{" "}
+                <i>/app/scan</i> → Tour đóng, hoa hồng ghi nhận, NV khả dụng lại.
               </p>
             </div>
 
