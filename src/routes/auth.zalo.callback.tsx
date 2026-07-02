@@ -49,9 +49,11 @@ function ZaloCallbackPage() {
           return;
         }
 
+        const refCode = getStoredRef() ?? undefined;
         const result = await zaloExchangeAndSignIn({
-          data: { code: search.code, state: search.state },
+          data: { code: search.code, state: search.state, refCode },
         });
+
 
         if (!result.ok) {
           if (result.error === "phone_required") {
