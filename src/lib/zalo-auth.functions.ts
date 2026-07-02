@@ -4,6 +4,7 @@ import { ZALO_STATE_COOKIE, ZALO_VERIFIER_COOKIE, CUSTOMER_EMAIL_DOMAIN } from "
 type ExchangeInput = {
   code: string;
   state: string;
+  refCode?: string;
 };
 
 type ExchangeResult =
@@ -15,8 +16,10 @@ export const zaloExchangeAndSignIn = createServerFn({ method: "POST" })
     if (!data || typeof data.code !== "string" || typeof data.state !== "string") {
       throw new Error("invalid_input");
     }
-    return { code: data.code, state: data.state };
+    const refCode = typeof data.refCode === "string" ? data.refCode.trim().toUpperCase().slice(0, 12) : undefined;
+    return { code: data.code, state: data.state, refCode };
   })
+
   .handler(async ({ data }): Promise<ExchangeResult> => {
     try {
       const { getCookie, deleteCookie } = await import("@tanstack/react-start/server");
