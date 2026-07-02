@@ -203,23 +203,36 @@ function CommunityHome() {
             >
               Đặt lịch
             </Link>
-            <Link
-              to="/dang-ky"
-              className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
-              style={{ color: "#484848" }}
-            >
-              Đăng ký
-            </Link>
-
-            {/* Login — visible on all sizes */}
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
-              style={{ borderColor: "#1B9606", color: "#1B9606" }}
-            >
-              <LogIn className="w-4 h-4" />
-              <span>Đăng nhập</span>
-            </Link>
+            {authLoading ? (
+              <div className="h-10 w-[120px] rounded-lg bg-[#F2F2F2] animate-pulse" aria-hidden />
+            ) : session ? (
+              <Link
+                to="/app/account"
+                className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#147805] hover:text-[#147805]"
+                style={{ borderColor: "#1B9606", color: "#1B9606" }}
+              >
+                <User className="w-4 h-4" />
+                <span>Khu vực của tôi</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/dang-ky"
+                  className="hidden xl:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold transition-colors hover:text-[#147805]"
+                  style={{ color: "#484848" }}
+                >
+                  Đăng ký
+                </Link>
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                  style={{ borderColor: "#1B9606", color: "#1B9606" }}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng nhập</span>
+                </Link>
+              </>
+            )}
 
             {/* Mobile hamburger */}
             <button
