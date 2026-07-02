@@ -22,6 +22,7 @@ import { AffiliateStoreCard } from "@/components/app/AffiliateStoreCard";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 
 type Banner = {
