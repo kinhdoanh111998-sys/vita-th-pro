@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { LogIn, Menu, Search, X, Loader2, Package, Wrench, Newspaper, CalendarDays } from "lucide-react";
+import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { LogIn, Menu, X } from "lucide-react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
 import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigationItems } from "@/lib/useNavigationItems";
 import { OmniSearch } from "@/components/OmniSearch";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+
 
 const FALLBACK_NAV = [
   { label: "Trang chủ", route: "/" },
