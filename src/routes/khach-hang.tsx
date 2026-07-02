@@ -230,23 +230,7 @@ function KhachHangPage() {
     }
   }, [treatmentsQ.data, serviceMap]);
 
-  /** Payload QR — JSON chứa treatment_id + order_id + session_number để KTV quét trừ buổi. */
-  const qrPayload = useMemo(() => {
-    const s = availableSessions.find((x) => x.treatment.id === (selectedTreatmentIdRef.current ?? ""));
-    if (!s) return "";
-    try {
-      return JSON.stringify({
-        v: 1,
-        treatment_id: s.treatment.id,
-        order_id: s.treatment.order_id,
-        session_number: s.treatment.session_number,
-        qr_code_id: s.treatment.qr_code_id,
-      });
-    } catch {
-      return s.treatment.qr_code_id ?? "";
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableSessions]);
+  // qrPayload sẽ được build inline khi render (phụ thuộc vào `selected` khai báo phía dưới).
 
   /* -------- Dropdown state -------- */
   const [pickerOpen, setPickerOpen] = useState(false);
