@@ -247,9 +247,22 @@ function OrdersPage() {
           qc.invalidateQueries({ queryKey: ["treatments"] });
         }}
       />
+
+      <OrderDetailDrawer
+        orderId={viewOrderId}
+        onOpenChange={(v) => { if (!v) setViewOrderId(null); }}
+        customers={customersQ.data ?? []}
+        catalog={catalogQ.data ?? []}
+        staff={staffQ.data ?? []}
+        onChanged={() => {
+          qc.invalidateQueries({ queryKey: ["orders"] });
+          qc.invalidateQueries({ queryKey: ["treatments"] });
+        }}
+      />
     </>
   );
 }
+
 
 /* ============================================================ */
 function CreateOrderDrawer({
