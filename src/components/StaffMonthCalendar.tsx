@@ -156,50 +156,108 @@ export function StaffMonthCalendar() {
               const iso = format(d, "yyyy-MM-dd");
               const items = byDate[iso] ?? [];
               const isWeekend = idx % 7 >= 5;
+              const isSelected = selectedDate === iso;
               return (
-                <div
-                  key={idx}
-                  className={`bg-white min-h-[90px] p-1.5 flex flex-col ${items.length ? "bg-emerald-50/40" : ""}`}
-                >
-                  <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
-                    {d.getDate()}
-                  </div>
-                  <div className="mt-1 flex flex-wrap items-center -space-x-2">
-                    {items.slice(0, 6).map((s) => {
-                      const u = q.data?.users[s.staff_id];
-                      return (
-                        <Tooltip key={s.id}>
-                          <TooltipTrigger asChild>
+                <Tooltip key={idx} open={hoverDate === iso && items.length > 0 ? true : undefined}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDate(iso)}
+                      onMouseEnter={() => setHoverDate(iso)}
+                      onMouseLeave={() => setHoverDate((h) => (h === iso ? null : h))}
+                      className={`text-left bg-white min-h-[90px] p-1.5 flex flex-col transition ${items.length ? "bg-emerald-50/40" : ""} ${isSelected ? "ring-2 ring-brand-dark ring-inset" : "hover:bg-brand-soft/30"}`}
+                    >
+                      <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
+                        {d.getDate()}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center -space-x-2">
+                        {items.slice(0, 6).map((s) => {
+                          const u = q.data?.users[s.staff_id];
+                          return (
                             <div
-                              className={`size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white cursor-pointer ${avatarColor(s.staff_id)}`}
+                              key={s.id}
+                              className={`size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white ${avatarColor(s.staff_id)}`}
                             >
                               {initials(u?.full_name, u?.email)}
                             </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-white text-ink border border-hairline shadow-md">
-                            <div className="font-black">{u?.full_name ?? u?.email ?? "—"}</div>
-                            <div className="text-xs text-ink-muted">{u?.email}</div>
-                            <div className="text-xs mt-1">
-                              Vai trò: <b>{u?.role ?? "—"}</b>
-                            </div>
-                            <div className={`inline-block mt-1 px-2 py-0.5 rounded text-[11px] font-bold ${shiftBadge(s.shift_type)}`}>
-                              {shiftLabel(s.shift_type)}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                    {items.length > 6 && (
-                      <div className="size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white bg-gray-500">
-                        +{items.length - 6}
+                          );
+                        })}
+                        {items.length > 6 && (
+                          <div className="size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white bg-gray-500">
+                            +{items.length - 6}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                    </button>
+                  </TooltipTrigger>
+                  {items.length > 0 && (
+                    <TooltipContent className="bg-white text-ink border border-hairline shadow-md max-w-xs">
+                      <div className="font-black mb-1">
+                        {format(d, "EEEE, dd/MM/yyyy", { locale: vi })} · {items.length} nhân sự
+                      </div>
+                      <div className="space-y-1">
+                        {items.map((s) => {
+                          const u = q.data?.users[s.staff_id];
+                          return (
+                            <div key={s.id} className="flex items-center gap-2 text-xs">
+                              <div className={`size-5 rounded-full grid place-items-center text-[9px] font-black text-white ${avatarColor(s.staff_id)}`}>
+                                {initials(u?.full_name, u?.email)}
+                              </div>
+                              <span className="font-bold truncate max-w-[120px]">{u?.full_name ?? u?.email ?? "—"}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${shiftBadge(s.shift_type)}`}>
+                                {shiftLabel(s.shift_type)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
               );
             })}
           </TooltipProvider>
         </div>
+
+        {selectedDate && (
+          <div className="mt-4 border border-hairline rounded-xl overflow-hidden">
+            <div className="px-4 py-3 bg-brand-soft/40 border-b border-hairline flex items-center justify-between">
+              <div>
+                <div className="font-black">
+                  Chi tiết ngày {(() => { try { return format(new Date(selectedDate), "EEEE, dd/MM/yyyy", { locale: vi }); } catch { return selectedDate; } })()}
+                </div>
+                <div className="text-xs text-ink-muted">
+                  {(byDate[selectedDate] ?? []).length} nhân sự có ca làm việc
+                </div>
+              </div>
+              <button onClick={() => setSelectedDate(null)} className="text-xs text-ink-muted hover:text-ink">Đóng</button>
+            </div>
+            <div className="divide-y divide-hairline">
+              {(byDate[selectedDate] ?? []).length === 0 ? (
+                <div className="px-4 py-6 text-center text-sm text-ink-muted">Không có nhân sự nào làm ngày này.</div>
+              ) : (
+                (byDate[selectedDate] ?? []).map((s) => {
+                  const u = q.data?.users[s.staff_id];
+                  return (
+                    <div key={s.id} className="px-4 py-3 flex items-center gap-3">
+                      <div className={`size-9 rounded-full grid place-items-center text-xs font-black text-white ${avatarColor(s.staff_id)}`}>
+                        {initials(u?.full_name, u?.email)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold truncate">{u?.full_name ?? u?.email ?? "—"}</div>
+                        <div className="text-xs text-ink-muted truncate">{u?.email} · {u?.role ?? "—"}</div>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${shiftBadge(s.shift_type)}`}>
+                        {shiftLabel(s.shift_type)}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-700 uppercase">{s.status}</span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
