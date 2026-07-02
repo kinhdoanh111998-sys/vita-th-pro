@@ -470,12 +470,19 @@ function ModerationDrawer({ onClose }: { onClose: () => void }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("news_comments")
-        .select("*, news:news_id(title)")
+        .select("*, news:news_id(title), contact:news_comment_contacts(contact_info)")
         .eq("status", tab)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return (data ?? []) as (NewsComment & { news: { title: string } | null })[];
+      type Row = NewsComment & {
+        news: { title: string } | null;
+        contact: { contact_info: string | null }[] | { contact_info: string | null } | null;
+      };
+      return (data ?? []).map((r: Row) => {
+        const c = Array.isArray(r.contact) ? r.contact[0] : r.contact;
+        return { ...r, contact_info: c?.contact_info ?? null };
+      }) as (NewsComment & { news: { title: string } | null })[];
     },
   });
 
