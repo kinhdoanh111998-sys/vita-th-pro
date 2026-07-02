@@ -31,7 +31,7 @@ function HistoryPage() {
           <span className="inline-flex text-xs font-black uppercase tracking-[0.25em] bg-white/15 rounded-full px-3 py-1">
             Về Vita TH Pro
           </span>
-          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight">
+          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight text-white">
             Lịch sử phát triển
           </h1>
           <p className="mt-3 text-white/85 max-w-2xl mx-auto">
