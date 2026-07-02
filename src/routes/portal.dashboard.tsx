@@ -80,6 +80,9 @@ function PortalDashboard() {
         <ShiftRegistrationPanel />
       </div>
 
+      {/* ==== ĐĂNG KÝ LỊCH THÁNG (Tuần mẫu → nhân bản → lưu) ==== */}
+      <StaffScheduleRegistration />
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
         <StatCard
