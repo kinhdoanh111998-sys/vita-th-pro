@@ -1,11 +1,16 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkles, CheckCircle2, Copy, Link2, Users2, Share2, LogOut } from "lucide-react";
+import {
+  Sparkles, CheckCircle2, Copy, Link2, Users2, Share2, LogOut,
+  ChevronDown, Search, X, ShieldCheck, Package,
+} from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import logo from "@/assets/vita-th-pro-logo.png";
 
 export const Route = createFileRoute("/khach-hang")({
@@ -14,12 +19,25 @@ export const Route = createFileRoute("/khach-hang")({
 
 type Treatment = {
   id: string;
-  package_name: string | null;
-  total_sessions: number | null;
-  used_sessions: number | null;
+  order_id: string;
+  session_number: number;
+  status: string;
+  qr_code_id: string;
+  service_id: string | null;
+};
+type Order = {
+  id: string;
+  service_id: string | null;
+  quantity: number | null;
+  total_price: number | null;
   status: string | null;
   created_at: string | null;
+  order_code: string | null;
 };
+type Service = { id: string; name: string; default_sessions: number | null };
+
+const money = (n: number) =>
+  n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 function KhachHangPage() {
   const navigate = useNavigate();
@@ -27,7 +45,6 @@ function KhachHangPage() {
   const [checking, setChecking] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  // In-page session check — bypass any AuthGuard
   useEffect(() => {
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -50,7 +67,7 @@ function KhachHangPage() {
     };
   }, [navigate]);
 
-  const customer = useQuery({
+  const customerQ = useQuery({
     queryKey: ["kh-customer-by-email", email],
     enabled: !!email,
     queryFn: async () => {
@@ -64,24 +81,135 @@ function KhachHangPage() {
     },
   });
 
-  const customerId = customer.data?.id ?? null;
-  const fullName = customer.data?.name ?? email;
-  const phone = customer.data?.phone ?? "";
+  const customerId = customerQ.data?.id ?? null;
+  const fullName = customerQ.data?.name ?? email;
+  const phone = customerQ.data?.phone ?? "";
 
-  const treatments = useQuery({
-    queryKey: ["kh-my-treatments", customerId],
+  const treatmentsQ = useQuery({
+    queryKey: ["kh-treatments", customerId],
     enabled: !!customerId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("treatments")
-        .select("id, package_name, total_sessions, used_sessions, status, created_at")
+        .select("id, order_id, session_number, status, qr_code_id, service_id")
         .eq("customer_id", customerId!)
-        .order("created_at", { ascending: false });
+        .order("order_id")
+        .order("session_number");
       if (error) throw error;
       return (data ?? []) as Treatment[];
     },
   });
 
+  const orderIds = Array.from(new Set((treatmentsQ.data ?? []).map((t) => t.order_id)));
+
+  const ordersQ = useQuery({
+    queryKey: ["kh-orders", customerId],
+    enabled: !!customerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, service_id, quantity, total_price, status, created_at, order_code")
+        .eq("customer_id", customerId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Order[];
+    },
+  });
+
+  const serviceIds = Array.from(
+    new Set(
+      [
+        ...(treatmentsQ.data ?? []).map((t) => t.service_id),
+        ...(ordersQ.data ?? []).map((o) => o.service_id),
+      ].filter(Boolean) as string[],
+    ),
+  );
+  const servicesQ = useQuery({
+    queryKey: ["kh-services", serviceIds.join(",")],
+    enabled: serviceIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("id, name, default_sessions")
+        .in("id", serviceIds);
+      if (error) throw error;
+      return (data ?? []) as Service[];
+    },
+  });
+
+  const serviceMap = useMemo(
+    () => new Map((servicesQ.data ?? []).map((s) => [s.id, s])),
+    [servicesQ.data],
+  );
+  const orderMap = useMemo(
+    () => new Map((ordersQ.data ?? []).map((o) => [o.id, o])),
+    [ordersQ.data],
+  );
+
+  /** Nhóm treatments theo order_id, chỉ giữ buổi PENDING tiếp theo (session_number nhỏ nhất). */
+  const availableSessions = useMemo(() => {
+    const groups = new Map<string, Treatment[]>();
+    for (const t of treatmentsQ.data ?? []) {
+      if (t.status !== "pending") continue;
+      const list = groups.get(t.order_id) ?? [];
+      list.push(t);
+      groups.set(t.order_id, list);
+    }
+    const out: Array<{
+      treatment: Treatment;
+      serviceName: string;
+      totalSessions: number;
+      remaining: number;
+      packageIndex: number;
+    }> = [];
+    let idx = 0;
+    for (const [orderId, list] of groups.entries()) {
+      idx += 1;
+      list.sort((a, b) => a.session_number - b.session_number);
+      const next = list[0];
+      const order = orderMap.get(orderId);
+      const svc = next.service_id ? serviceMap.get(next.service_id) : null;
+      const totalSessions =
+        (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
+      out.push({
+        treatment: next,
+        serviceName: svc?.name ?? "Liệu trình",
+        totalSessions,
+        remaining: list.length,
+        packageIndex: idx,
+      });
+    }
+    return out;
+  }, [treatmentsQ.data, orderMap, serviceMap]);
+
+  /** Đã sử dụng — treatments hoàn thành. */
+  const usedSessions = useMemo(() => {
+    return (treatmentsQ.data ?? [])
+      .filter((t) => t.status !== "pending")
+      .map((t) => {
+        const svc = t.service_id ? serviceMap.get(t.service_id) : null;
+        return {
+          id: t.id,
+          serviceName: svc?.name ?? "Liệu trình",
+          session_number: t.session_number,
+          status: t.status,
+        };
+      });
+  }, [treatmentsQ.data, serviceMap]);
+
+  /* -------- Dropdown state -------- */
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState("");
+  const [selectedTreatmentId, setSelectedTreatmentId] = useState<string | null>(null);
+  const selected = availableSessions.find((s) => s.treatment.id === selectedTreatmentId) ?? null;
+
+  const filteredPicker = availableSessions.filter((s) =>
+    !pickerQuery.trim()
+      ? true
+      : s.serviceName.toLowerCase().includes(pickerQuery.trim().toLowerCase()),
+  );
+
+  /* -------- Affiliate (giữ nguyên logic cũ) -------- */
   const referrals = useQuery({
     queryKey: ["kh-affiliate-referrals", phone],
     enabled: !!phone,
@@ -109,7 +237,6 @@ function KhachHangPage() {
       toast.error("Không thể sao chép, vui lòng copy thủ công.");
     }
   }
-
   async function handleShare() {
     if (!link) return;
     if (navigator.share) {
@@ -159,83 +286,262 @@ function KhachHangPage() {
       </header>
 
       <main className="mx-auto max-w-[1180px] px-5 py-8 space-y-10">
-        {/* Treatments */}
         <section>
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-black text-brand-dark">Liệu trình của tôi</h1>
-              <p className="text-sm text-ink-muted">
-                Xin chào {fullName}, đây là danh sách liệu trình bạn đang sử dụng.
-              </p>
-            </div>
-            <Link
-              to="/khach-hang/qr"
-              className="inline-flex items-center gap-2 rounded-full bg-brand text-white px-4 py-2 text-sm font-semibold shadow hover:bg-brand-dark transition"
-            >
-              <Sparkles className="w-4 h-4" />
-              Mã QR check-in
-            </Link>
+          <div className="mb-5">
+            <h1 className="text-2xl font-black text-brand-dark">Liệu trình của tôi</h1>
+            <p className="text-sm text-ink-muted">
+              Xin chào {fullName}, đây là danh sách liệu trình bạn đang sử dụng.
+            </p>
           </div>
 
+          {/* HAI CỘT */}
+          <div className="grid lg:grid-cols-2 gap-5">
+            {/* ============ TRÁI: Liệu trình còn khả dụng ============ */}
+            <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-brand/10 grid place-items-center text-brand-dark">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-black text-brand-dark">Liệu trình còn khả dụng</h3>
+                  <p className="text-xs text-ink-muted">
+                    Chọn để lấy mã QR check-in cho buổi tiếp theo.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-brand-dark bg-brand-soft rounded-full px-2.5 py-1">
+                  {availableSessions.length}
+                </span>
+              </div>
 
-          {customer.isLoading || treatments.isLoading ? (
-            <div className="text-ink-muted">Đang tải dữ liệu...</div>
-          ) : !customer.data ? (
-            <div className="rounded-2xl border border-hairline bg-white p-6 text-ink-muted">
-              Chưa tìm thấy hồ sơ khách hàng cho tài khoản này. Vui lòng liên hệ Spa để được liên kết tài khoản.
-            </div>
-          ) : (treatments.data ?? []).length === 0 ? (
-            <div className="rounded-2xl border border-hairline bg-white p-6 text-ink-muted">
-              Bạn chưa có liệu trình nào.
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(treatments.data ?? []).map((t) => {
-                const total = Number(t.total_sessions ?? 0);
-                const used = Number(t.used_sessions ?? 0);
-                const remaining = Math.max(total - used, 0);
-                const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
-                const done = remaining === 0 && total > 0;
-                return (
-                  <div
-                    key={t.id}
-                    className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-3"
+              {/* Dropdown chọn liệu trình + search */}
+              <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center justify-between gap-2 w-full rounded-xl border border-hairline bg-[#fafcf7] px-4 py-3 text-left hover:border-brand-primary transition"
+                    disabled={availableSessions.length === 0}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-brand/10 grid place-items-center text-brand-dark">
-                          <Sparkles className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="font-extrabold text-ink leading-tight">
-                            {t.package_name ?? "Liệu trình"}
-                          </div>
-                          <div className="text-[11px] uppercase tracking-wider text-ink-muted">
-                            {t.status ?? "active"}
-                          </div>
-                        </div>
-                      </div>
-                      {done && <CheckCircle2 className="w-5 h-5 text-emerald-600" />}
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <Stat label="Tổng" value={total} />
-                      <Stat label="Đã dùng" value={used} />
-                      <Stat label="Còn lại" value={remaining} highlight />
-                    </div>
-
-                    <div>
-                      <Progress value={pct} className="h-2" />
-                      <div className="text-[11px] text-ink-muted mt-1 text-right">{pct}%</div>
+                    <span className="text-sm">
+                      {selected ? (
+                        <>
+                          <span className="font-bold text-brand-dark">
+                            {selected.serviceName}
+                          </span>
+                          <span className="text-ink-muted">
+                            {" "}
+                            · Buổi #{selected.treatment.session_number}
+                          </span>
+                        </>
+                      ) : availableSessions.length === 0 ? (
+                        <span className="text-ink-muted italic">
+                          Bạn chưa có buổi khả dụng
+                        </span>
+                      ) : (
+                        <span className="text-ink-muted">
+                          -- Chọn liệu trình để lấy mã QR --
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown className="w-4 h-4 text-ink-muted" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="p-0 w-[--radix-popover-trigger-width] bg-white z-50 shadow-md border border-hairline"
+                >
+                  <div className="p-2 border-b border-hairline">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted" />
+                      <Input
+                        placeholder="Tìm liệu trình…"
+                        value={pickerQuery}
+                        onChange={(e) => setPickerQuery(e.target.value)}
+                        className="h-8 pl-8 text-xs"
+                        autoFocus
+                      />
                     </div>
                   </div>
-                );
-              })}
+                  <div className="max-h-72 overflow-y-auto">
+                    {filteredPicker.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-xs text-ink-muted italic">
+                        Không tìm thấy liệu trình.
+                      </div>
+                    ) : (
+                      filteredPicker.map((s) => (
+                        <button
+                          key={s.treatment.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedTreatmentId(s.treatment.id);
+                            setPickerOpen(false); // collapse
+                            setPickerQuery("");
+                          }}
+                          className="w-full text-left px-4 py-3 hover:bg-brand-soft/60 border-b border-hairline last:border-b-0"
+                        >
+                          <div className="text-sm font-bold text-ink">
+                            {s.serviceName}
+                          </div>
+                          <div className="text-[11px] text-ink-muted mt-0.5">
+                            Buổi tiếp theo: #{s.treatment.session_number}/
+                            {s.totalSessions} · còn {s.remaining} buổi
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Tóm tắt + QR */}
+              {selected ? (
+                <div className="rounded-2xl border border-hairline bg-gradient-to-br from-brand-soft to-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5" /> Mã QR check-in
+                      </div>
+                      <div className="font-black text-brand-dark mt-1">
+                        {selected.serviceName}
+                      </div>
+                      <div className="text-xs text-ink-muted mt-0.5">
+                        Buổi #{selected.treatment.session_number} /{" "}
+                        {selected.totalSessions} · còn lại{" "}
+                        <b className="text-brand-dark">{selected.remaining}</b>{" "}
+                        buổi
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTreatmentId(null)}
+                      className="text-ink-muted hover:text-rose-600"
+                      aria-label="Bỏ chọn"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="mt-3 grid place-items-center bg-white rounded-2xl p-4 border border-hairline">
+                    <QRCodeCanvas
+                      value={selected.treatment.qr_code_id}
+                      size={192}
+                      level="H"
+                      includeMargin={false}
+                    />
+                    <div className="mt-2 text-[10px] font-mono text-ink-muted">
+                      {selected.treatment.qr_code_id.slice(0, 8)}…
+                      {selected.treatment.qr_code_id.slice(-4)}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[11px] text-center text-ink-muted">
+                    Đưa mã này cho kỹ thuật viên để check-in buổi.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-hairline bg-[#fafcf7] p-6 text-center text-xs text-ink-muted">
+                  Chọn 1 liệu trình từ dropdown bên trên để hiển thị mã QR.
+                </div>
+              )}
             </div>
-          )}
+
+            {/* ============ PHẢI: Đơn hàng + Liệu trình đã sử dụng ============ */}
+            <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 grid place-items-center text-emerald-700">
+                  <Package className="w-5 h-5" />
+                </div>
+                {/* "Đơn hàng" được thiết kế NHỎ hơn "Liệu trình của tôi" */}
+                <div className="flex-1">
+                  <h3 className="text-sm font-black text-emerald-800 uppercase tracking-wider">
+                    Đơn hàng
+                  </h3>
+                  <p className="text-xs text-ink-muted">
+                    Dịch vụ/sản phẩm đã mua & buổi đã sử dụng.
+                  </p>
+                </div>
+              </div>
+
+              {/* Buổi đã sử dụng */}
+              <div>
+                <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2">
+                  Liệu trình đã sử dụng ({usedSessions.length})
+                </div>
+                {usedSessions.length === 0 ? (
+                  <div className="rounded-xl border border-hairline bg-[#fafcf7] p-4 text-xs text-ink-muted italic text-center">
+                    Chưa có buổi nào được ghi nhận.
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {usedSessions.map((u) => (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-2 rounded-xl border border-hairline bg-[#fafcf7] px-3 py-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <div className="flex-1 text-sm">
+                          <span className="font-semibold text-ink">
+                            {u.serviceName}
+                          </span>{" "}
+                          <span className="text-ink-muted">— Buổi #{u.session_number}</span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                          {u.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Đơn hàng */}
+              <div>
+                <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2">
+                  Đơn hàng ({ordersQ.data?.length ?? 0})
+                </div>
+                {(ordersQ.data ?? []).length === 0 ? (
+                  <div className="rounded-xl border border-hairline bg-[#fafcf7] p-4 text-xs text-ink-muted italic text-center">
+                    Chưa có đơn hàng.
+                  </div>
+                ) : (
+                  <ul className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                    {(ordersQ.data ?? []).map((o) => {
+                      const svc = o.service_id
+                        ? serviceMap.get(o.service_id)
+                        : null;
+                      return (
+                        <li
+                          key={o.id}
+                          className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-ink truncate">
+                              {svc?.name ?? "Đơn hàng"}
+                            </div>
+                            <div className="text-[10px] text-ink-muted">
+                              {o.order_code ?? o.id.slice(0, 6)} ·{" "}
+                              {o.created_at
+                                ? new Date(o.created_at).toLocaleDateString("vi-VN")
+                                : ""}{" "}
+                              · SL {o.quantity ?? 1}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-black text-brand-dark">
+                              {money(Number(o.total_price ?? 0))}
+                            </div>
+                            <div className="text-[10px] text-ink-muted uppercase">
+                              {o.status ?? "—"}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
 
-        {/* Affiliate */}
+        {/* Affiliate — giữ nguyên */}
         <section>
           <div className="mb-6">
             <h2 className="text-2xl font-black text-brand-dark">Tiếp thị liên kết</h2>
@@ -251,7 +557,7 @@ function KhachHangPage() {
                 Link giới thiệu của bạn
               </div>
 
-              {customer.isLoading ? (
+              {customerQ.isLoading ? (
                 <div className="text-ink-muted">Đang tải...</div>
               ) : !phone ? (
                 <div className="rounded-xl bg-amber-50 border border-amber-200 text-amber-800 p-4 text-sm">
@@ -296,15 +602,6 @@ function KhachHangPage() {
           </div>
         </section>
       </main>
-    </div>
-  );
-}
-
-function Stat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
-  return (
-    <div className={`rounded-xl px-2 py-2 ${highlight ? "bg-brand/10 text-brand-dark" : "bg-[#f3f7f3] text-ink"}`}>
-      <div className="text-lg font-black leading-none">{value}</div>
-      <div className="text-[11px] uppercase tracking-wider mt-1">{label}</div>
     </div>
   );
 }
