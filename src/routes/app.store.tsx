@@ -1,9 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { FilterSidebar, type AppStoreFilters } from "@/components/app/FilterSidebar";
 import { ServiceCard } from "@/components/ServiceCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from "@/components/ui/select";
+
+const BRANCHES = [
+  { id: "hn", label: "Cơ sở 1 - Hà Nội" },
+  { id: "dn", label: "Cơ sở 2 - Đà Nẵng" },
+  { id: "hcm", label: "Cơ sở 3 - TP.HCM" },
+];
+
 
 const CATEGORIES = [
   { key: "all", label: "Tất cả" },
