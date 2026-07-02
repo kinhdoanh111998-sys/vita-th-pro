@@ -1,8 +1,9 @@
-import { Outlet, createFileRoute, useRouterState, useNavigate } from "@tanstack/react-router";
+import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Header } from "@/components/Header";
+import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/Footer";
 import { saveRef, logRefClick } from "@/lib/refTracker";
+
 
 export const Route = createFileRoute("/_public")({
   component: PublicLayout,
