@@ -67,6 +67,7 @@ import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$produ
 import { Route as AppNewsIdRouteImport } from './routes/app.news.$id'
 import { Route as AppEventsIdRouteImport } from './routes/app.events.$id'
 import { Route as ApiPublicSeedDemoEmployeesRouteImport } from './routes/api/public/seed-demo-employees'
+import { Route as ApiPublicSeedDemoCustomerRouteImport } from './routes/api/public/seed-demo-customer'
 import { Route as PublicServicesIdRouteImport } from './routes/_public.services.$id'
 import { Route as PublicProductsTechnologyTransferRouteImport } from './routes/_public.products.technology-transfer'
 import { Route as PublicProductsServicesRouteImport } from './routes/_public.products.services'
@@ -373,6 +374,12 @@ const ApiPublicSeedDemoEmployeesRoute =
     path: '/api/public/seed-demo-employees',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSeedDemoCustomerRoute =
+  ApiPublicSeedDemoCustomerRouteImport.update({
+    id: '/api/public/seed-demo-customer',
+    path: '/api/public/seed-demo-customer',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PublicServicesIdRoute = PublicServicesIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -516,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
@@ -584,6 +592,7 @@ export interface FileRoutesByTo {
   '/products/services': typeof PublicProductsServicesRoute
   '/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/services/$id': typeof PublicServicesIdRoute
+  '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
@@ -660,6 +669,7 @@ export interface FileRoutesById {
   '/_public/products/services': typeof PublicProductsServicesRoute
   '/_public/products/technology-transfer': typeof PublicProductsTechnologyTransferRoute
   '/_public/services/$id': typeof PublicServicesIdRoute
+  '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
@@ -736,6 +746,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
     | '/app/news/$id'
@@ -804,6 +815,7 @@ export interface FileRouteTypes {
     | '/products/services'
     | '/products/technology-transfer'
     | '/services/$id'
+    | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
     | '/app/news/$id'
@@ -879,6 +891,7 @@ export interface FileRouteTypes {
     | '/_public/products/services'
     | '/_public/products/technology-transfer'
     | '/_public/services/$id'
+    | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
     | '/app/events/$id'
     | '/app/news/$id'
@@ -898,6 +911,7 @@ export interface RootRouteChildren {
   KhachHangRoute: typeof KhachHangRouteWithChildren
   LoginRoute: typeof LoginRoute
   PortalRoute: typeof PortalRouteWithChildren
+  ApiPublicSeedDemoCustomerRoute: typeof ApiPublicSeedDemoCustomerRoute
   ApiPublicSeedDemoEmployeesRoute: typeof ApiPublicSeedDemoEmployeesRoute
 }
 
@@ -1309,6 +1323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSeedDemoEmployeesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/seed-demo-customer': {
+      id: '/api/public/seed-demo-customer'
+      path: '/api/public/seed-demo-customer'
+      fullPath: '/api/public/seed-demo-customer'
+      preLoaderRoute: typeof ApiPublicSeedDemoCustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_public/services/$id': {
       id: '/_public/services/$id'
       path: '/$id'
@@ -1678,18 +1699,9 @@ const rootRouteChildren: RootRouteChildren = {
   KhachHangRoute: KhachHangRouteWithChildren,
   LoginRoute: LoginRoute,
   PortalRoute: PortalRouteWithChildren,
+  ApiPublicSeedDemoCustomerRoute: ApiPublicSeedDemoCustomerRoute,
   ApiPublicSeedDemoEmployeesRoute: ApiPublicSeedDemoEmployeesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
