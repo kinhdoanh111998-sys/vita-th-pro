@@ -119,7 +119,7 @@ function StaffChip({ s }: { s: StaffMember }) {
 }
 
 
-function DroppableTarget({
+export function DroppableTarget({
   t,
   activeStaffId,
 }: {
