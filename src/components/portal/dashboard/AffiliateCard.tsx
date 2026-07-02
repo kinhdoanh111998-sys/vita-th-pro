@@ -12,26 +12,40 @@ const money = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 export function AffiliateCard() {
-  const { session, email } = useAuth();
+  const { session } = useAuth();
   const uid = session?.user.id ?? null;
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(false);
 
-  // Ref code = user id (an toàn, không đổi). Fallback về email nếu chưa có uid.
-  const refCode = uid ?? email ?? "";
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const link = refCode ? `${origin}/dang-ky?ref=${encodeURIComponent(refCode)}` : "";
+  // Lấy ref_code (6 ký tự) từ hồ sơ khách hàng.
+  const meQ = useQuery({
+    queryKey: ["portal-aff-me", uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, ref_code")
+        .eq("id", uid!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; ref_code: string | null } | null;
+    },
+  });
 
-  // Số khách đã giới thiệu thành công
+  const refCode = meQ.data?.ref_code ?? "";
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const link = refCode ? `${origin}/?ref=${encodeURIComponent(refCode)}` : "";
+
+  // Số khách đã giới thiệu thành công (referred_by = customer id của tôi)
   const referralsQ = useQuery({
-    queryKey: ["portal-aff-referrals", refCode],
-    enabled: !!refCode,
+    queryKey: ["portal-aff-referrals", uid],
+    enabled: !!uid,
     queryFn: async () => {
       try {
         const { count, error } = await supabase
           .from("customers")
           .select("id", { count: "exact", head: true })
-          .eq("referred_by", refCode);
+          .eq("referred_by", uid!);
         if (error) throw error;
         return count ?? 0;
       } catch (e) {
@@ -41,7 +55,8 @@ export function AffiliateCard() {
     },
   });
 
-  // Tổng hoa hồng affiliate (tạm tính) — từ bảng commissions, type = 'affiliate'
+
+  // Tổng hoa hồng affiliate (tạm tính) — commission_type = 'affiliate_order'
   const commissionQ = useQuery({
     queryKey: ["portal-aff-commission", uid],
     enabled: !!uid,
@@ -51,10 +66,11 @@ export function AffiliateCard() {
           .from("commissions")
           .select("amount")
           .eq("staff_id", uid!)
-          .eq("commission_type", "affiliate");
+          .in("commission_type", ["affiliate_order", "affiliate"]);
         if (error) throw error;
         return (data ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
       } catch (e) {
+
         console.warn("[AffiliateCard] commission error", e);
         return 0;
       }

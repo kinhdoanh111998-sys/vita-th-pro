@@ -4,6 +4,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { zaloExchangeAndSignIn } from "@/lib/zalo-auth.functions";
+import { getStoredRef, clearRef } from "@/lib/refTracker";
+
 
 type ZaloCallbackSearch = {
   code?: string;
@@ -47,9 +49,11 @@ function ZaloCallbackPage() {
           return;
         }
 
+        const refCode = getStoredRef() ?? undefined;
         const result = await zaloExchangeAndSignIn({
-          data: { code: search.code, state: search.state },
+          data: { code: search.code, state: search.state, refCode },
         });
+
 
         if (!result.ok) {
           if (result.error === "phone_required") {
@@ -76,6 +80,7 @@ function ZaloCallbackPage() {
           return;
         }
 
+        try { clearRef(); } catch { /* ignore */ }
         toast.success("Đăng nhập thành công qua Zalo!");
         navigate({ to: "/app", replace: true });
       } catch (err) {

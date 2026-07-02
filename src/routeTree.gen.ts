@@ -89,6 +89,7 @@ import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team
 import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
 import { Route as PublicAboutCertificationsRouteImport } from './routes/_public.about.certifications'
 import { Route as ApiPublicZaloAuthorizeRouteImport } from './routes/api/public/zalo.authorize'
+import { Route as ApiPublicRefClickRouteImport } from './routes/api/public/ref.click'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -496,6 +497,11 @@ const ApiPublicZaloAuthorizeRoute = ApiPublicZaloAuthorizeRouteImport.update({
   path: '/api/public/zalo/authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicRefClickRoute = ApiPublicRefClickRouteImport.update({
+  id: '/api/public/ref/click',
+  path: '/api/public/ref/click',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -576,6 +582,7 @@ export interface FileRoutesByFullPath {
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
   '/services/': typeof PublicServicesIndexRoute
+  '/api/public/ref/click': typeof ApiPublicRefClickRoute
   '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRoutesByTo {
@@ -651,6 +658,7 @@ export interface FileRoutesByTo {
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
   '/services': typeof PublicServicesIndexRoute
+  '/api/public/ref/click': typeof ApiPublicRefClickRoute
   '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRoutesById {
@@ -734,6 +742,7 @@ export interface FileRoutesById {
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
   '/_public/services/': typeof PublicServicesIndexRoute
+  '/api/public/ref/click': typeof ApiPublicRefClickRoute
   '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRouteTypes {
@@ -817,6 +826,7 @@ export interface FileRouteTypes {
     | '/news/'
     | '/products/'
     | '/services/'
+    | '/api/public/ref/click'
     | '/api/public/zalo/authorize'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -892,6 +902,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/products'
     | '/services'
+    | '/api/public/ref/click'
     | '/api/public/zalo/authorize'
   id:
     | '__root__'
@@ -974,6 +985,7 @@ export interface FileRouteTypes {
     | '/_public/news/'
     | '/_public/products/'
     | '/_public/services/'
+    | '/api/public/ref/click'
     | '/api/public/zalo/authorize'
   fileRoutesById: FileRoutesById
 }
@@ -990,6 +1002,7 @@ export interface RootRouteChildren {
   ApiPublicSeedDemoEmployeesRoute: typeof ApiPublicSeedDemoEmployeesRoute
   ApiPublicSeedDemoTechnicianRoute: typeof ApiPublicSeedDemoTechnicianRoute
   AuthZaloCallbackRoute: typeof AuthZaloCallbackRoute
+  ApiPublicRefClickRoute: typeof ApiPublicRefClickRoute
   ApiPublicZaloAuthorizeRoute: typeof ApiPublicZaloAuthorizeRoute
 }
 
@@ -1555,6 +1568,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZaloAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/ref/click': {
+      id: '/api/public/ref/click'
+      path: '/api/public/ref/click'
+      fullPath: '/api/public/ref/click'
+      preLoaderRoute: typeof ApiPublicRefClickRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1828,6 +1848,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSeedDemoEmployeesRoute: ApiPublicSeedDemoEmployeesRoute,
   ApiPublicSeedDemoTechnicianRoute: ApiPublicSeedDemoTechnicianRoute,
   AuthZaloCallbackRoute: AuthZaloCallbackRoute,
+  ApiPublicRefClickRoute: ApiPublicRefClickRoute,
   ApiPublicZaloAuthorizeRoute: ApiPublicZaloAuthorizeRoute,
 }
 export const routeTree = rootRouteImport
