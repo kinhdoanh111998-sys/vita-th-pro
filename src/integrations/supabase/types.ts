@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_configs: {
+        Row: {
+          active: boolean
+          commission_percent: number
+          created_at: string
+          id: string
+          note: string | null
+          ref_code: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          ref_code: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          commission_percent?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          ref_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       attendances: {
         Row: {
           check_in_approved: boolean
@@ -141,6 +171,39 @@ export type Database = {
           subtitle?: string | null
           title?: string
           type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bonus_tiers: {
+        Row: {
+          active: boolean
+          bonus_amount: number
+          bonus_type: string
+          created_at: string
+          id: string
+          target_amount: number
+          tier_name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          bonus_amount?: number
+          bonus_type?: string
+          created_at?: string
+          id?: string
+          target_amount?: number
+          tier_name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          bonus_amount?: number
+          bonus_type?: string
+          created_at?: string
+          id?: string
+          target_amount?: number
+          tier_name?: string
           updated_at?: string
         }
         Relationships: []
@@ -777,6 +840,36 @@ export type Database = {
           is_system?: boolean
           key?: string
           label?: string
+        }
+        Relationships: []
+      }
+      salary_configs: {
+        Row: {
+          base_salary_per_shift: number
+          created_at: string
+          id: string
+          note: string | null
+          ot_hourly_rate: number
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          base_salary_per_shift?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          ot_hourly_rate?: number
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          base_salary_per_shift?: number
+          created_at?: string
+          id?: string
+          note?: string | null
+          ot_hourly_rate?: number
+          role?: string
+          updated_at?: string
         }
         Relationships: []
       }
