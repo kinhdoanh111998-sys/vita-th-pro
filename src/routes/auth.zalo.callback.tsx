@@ -80,6 +80,7 @@ function ZaloCallbackPage() {
           return;
         }
 
+        try { clearRef(); } catch { /* ignore */ }
         toast.success("Đăng nhập thành công qua Zalo!");
         navigate({ to: "/app", replace: true });
       } catch (err) {
