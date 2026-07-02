@@ -4,8 +4,9 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import {
-  Plus, Trash2, Search, User, Ticket, X, Minus, ShoppingCart, Check,
+  Plus, Trash2, Search, User, Ticket, X, Minus, ShoppingCart, Check, Eye, Save, Ban,
 } from "lucide-react";
+
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
@@ -62,8 +63,10 @@ function fmt(n: number) { return n.toLocaleString("vi-VN") + " ₫"; }
 function OrdersPage() {
   const qc = useQueryClient();
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
 
   const customersQ = useQuery({
     queryKey: ["customers", "list"],
