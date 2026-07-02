@@ -473,6 +473,33 @@ export type Database = {
           },
         ]
       }
+      role_definitions: {
+        Row: {
+          app_role: Database["public"]["Enums"]["app_role"]
+          created_at: string
+          id: string
+          is_system: boolean
+          key: string
+          label: string
+        }
+        Insert: {
+          app_role?: Database["public"]["Enums"]["app_role"]
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          key: string
+          label: string
+        }
+        Update: {
+          app_role?: Database["public"]["Enums"]["app_role"]
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          key?: string
+          label?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           category: string | null

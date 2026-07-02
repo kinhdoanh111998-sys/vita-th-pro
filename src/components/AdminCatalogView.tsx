@@ -1,7 +1,7 @@
-import { useRef, useState, type FormEvent, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type DragEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ImageIcon, Loader2, Pencil, Plus, Upload, X } from "lucide-react";
+import { ImageIcon, Loader2, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
@@ -108,6 +108,13 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const listQ = useQuery({
@@ -123,7 +130,14 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     },
   });
 
-  const rows = listQ.data ?? [];
+  const allRows = listQ.data ?? [];
+  const rows = useMemo(() => {
+    if (!debouncedSearch) return allRows;
+    return allRows.filter((r) => {
+      const hay = `${r.name ?? ""} ${r.sku ?? ""} ${r.category ?? ""} ${r.short_description ?? ""}`.toLowerCase();
+      return hay.includes(debouncedSearch);
+    });
+  }, [allRows, debouncedSearch]);
 
   const openCreate = () => {
     setForm(EMPTY);
@@ -228,20 +242,36 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       if (!form.name.trim()) throw new Error("Vui lòng nhập tên.");
       if (!form.price || Number(form.price) < 0)
         throw new Error("Vui lòng nhập giá bán hợp lệ.");
-      if (!isService && !form.category)
-        throw new Error("Vui lòng chọn danh mục sản phẩm.");
+
+      // Auto-sinh mã cho Dịch vụ theo format SRV-001 khi tạo mới và bỏ trống SKU.
+      let finalSku = form.sku.trim() || null;
+      if (isService && !form.id && !finalSku) {
+        const { data: existing, error: skuErr } = await supabase
+          .from("services")
+          .select("sku")
+          .like("sku", "SRV-%");
+        if (skuErr) throw skuErr;
+        const used = new Set<number>();
+        for (const row of existing ?? []) {
+          const m = /^SRV-(\d+)$/i.exec(String(row.sku ?? ""));
+          if (m) used.add(parseInt(m[1], 10));
+        }
+        let next = 1;
+        while (used.has(next)) next += 1;
+        finalSku = `SRV-${String(next).padStart(3, "0")}`;
+      }
 
       const payload = {
         type: lockedType,
         name: form.name.trim(),
-        sku: form.sku.trim() || null,
+        sku: finalSku,
         description: form.description.trim() || null,
         features: form.features.trim() || null,
         short_description: form.short_description.trim() || null,
         category: form.category.trim() || null,
-        cost_price: form.cost_price ? Number(form.cost_price) : 0,
+        cost_price: isService ? 0 : form.cost_price ? Number(form.cost_price) : 0,
         price: Number(form.price),
-        sale_price: form.sale_price ? Number(form.sale_price) : null,
+        sale_price: isService ? null : form.sale_price ? Number(form.sale_price) : null,
         stock_quantity: form.stock_quantity ? Number(form.stock_quantity) : 0,
         default_sessions: isService
           ? form.default_sessions
@@ -322,6 +352,20 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       )}
 
       <div className="bg-white rounded-2xl border border-hairline shadow-sm p-5">
+        <div className="mb-4 relative max-w-md">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Tìm theo tên, SKU, danh mục ${isService ? "dịch vụ" : "sản phẩm"}...`}
+            className="pl-9"
+          />
+          {debouncedSearch && (
+            <div className="mt-1 text-xs text-ink-muted">
+              {rows.length} kết quả cho "{debouncedSearch}"
+            </div>
+          )}
+        </div>
         <div className="overflow-auto">
           <table className="w-full min-w-[1100px] border-collapse">
             <thead>
@@ -599,13 +643,13 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Mã (SKU)</Label>
+                <Label>Mã (SKU){isService && !form.id ? " — tự sinh nếu để trống" : ""}</Label>
                 <Input
                   value={form.sku}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, sku: e.target.value }))
                   }
-                  placeholder={isService ? "VD: DV-001" : "VD: MAY-001"}
+                  placeholder={isService ? "Tự sinh SRV-001, SRV-002..." : "VD: MAY-001"}
                 />
               </div>
               {isService ? (
@@ -641,18 +685,20 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Giá nhập (VND)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.cost_price}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, cost_price: e.target.value }))
-                  }
-                />
-              </div>
+            <div className={`grid gap-3 ${isService ? "grid-cols-1" : "grid-cols-3"}`}>
+              {!isService && (
+                <div className="space-y-1.5">
+                  <Label>Giá nhập (VND)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.cost_price}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, cost_price: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Giá bán (VND) *</Label>
                 <Input
@@ -665,17 +711,19 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
                   }
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Giá KM (VND)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.sale_price}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, sale_price: e.target.value }))
-                  }
-                />
-              </div>
+              {!isService && (
+                <div className="space-y-1.5">
+                  <Label>Giá KM (VND)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.sale_price}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, sale_price: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
