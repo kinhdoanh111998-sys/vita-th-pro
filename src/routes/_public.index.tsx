@@ -114,6 +114,7 @@ const TESTIMONIALS: Testimonial[] = [
 
 function CommunityHome() {
   const { data: settings } = useSettings();
+  const { session, loading: authLoading } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
