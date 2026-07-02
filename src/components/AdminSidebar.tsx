@@ -23,6 +23,7 @@ const tabs: Tab[] = [
   { to: "/admin/voucher", label: "Voucher / Khuyến mãi", roles: ["admin", "manager"] },
   { to: "/admin/employees", label: "Nhân viên", roles: ["admin", "manager"] },
   { to: "/admin/tours", label: "Tour làm cho khách", roles: ["admin", "manager"] },
+  { to: "/admin/shifts", label: "Ca & Chấm công", roles: ["admin", "manager"] },
   { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin", "manager"] },
   { to: "/admin/settings", label: "Cài đặt/Xuất dữ liệu", roles: ["admin"] },
 ];
