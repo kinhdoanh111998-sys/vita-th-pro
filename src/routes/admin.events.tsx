@@ -402,9 +402,9 @@ function EventDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="w-full max-w-[900px] h-full bg-white overflow-y-auto flex flex-col"
+        className="w-full max-w-[900px] max-h-[90vh] bg-white rounded-2xl overflow-y-auto flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
