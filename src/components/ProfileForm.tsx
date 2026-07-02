@@ -130,7 +130,7 @@ function StaffProfileForm({
           <Field label="Email">
             <Input value={data.email ?? ""} disabled />
           </Field>
-          <Field label="Số điện thoại (liên lạc khẩn cấp)">
+          <Field label="SỐ ĐIỆN THOẠI">
             <Input
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
