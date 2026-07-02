@@ -12,7 +12,7 @@ const money = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 export function AffiliateCard() {
-  const { session, email } = useAuth();
+  const { session } = useAuth();
   const uid = session?.user.id ?? null;
   const [copied, setCopied] = useState(false);
   const [zoom, setZoom] = useState(false);
