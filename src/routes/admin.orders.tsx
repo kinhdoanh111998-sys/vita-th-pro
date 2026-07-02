@@ -284,24 +284,25 @@ function CreateOrderDrawer({
     ).slice(0, 6);
   }, [customers, customerSearch]);
 
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, it) => {
-      const cat = catalog.find((c) => c.id === it.item_id);
-      const price = cat?.price ?? 0;
-      return sum + price * (Number(it.quantity) || 0);
-    }, 0);
-  }, [items, catalog]);
+  // NOTE: Không dùng useMemo vì react-hook-form `watch` trả về reference ổn định,
+  // deps sẽ không đổi khi user chỉnh quantity → memo không tính lại (bug tổng = 0).
+  const subtotal = (items ?? []).reduce((sum, it) => {
+    const cat = catalog.find((c) => c.id === it?.item_id);
+    const price = cat?.price ?? 0;
+    return sum + price * (Number(it?.quantity) || 0);
+  }, 0);
 
-  const discountAmount = useMemo(() => {
+  const discountAmount = (() => {
     if (!appliedVoucher) return 0;
     const val = Number(appliedVoucher.discount_value);
     const raw = appliedVoucher.discount_type === "percent"
       ? Math.round((subtotal * val) / 100)
       : val;
     return Math.min(raw, subtotal);
-  }, [appliedVoucher, subtotal]);
+  })();
 
   const total = Math.max(0, subtotal - discountAmount);
+
 
   const applyVoucher = async () => {
     const code = (watch("voucher_code") || "").trim().toUpperCase();
