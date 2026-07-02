@@ -92,12 +92,25 @@ function RegisterPage() {
     const nameClean = trimmedName;
 
     if (data.user) {
+      // Resolve refCode → referrer customer id (nếu có)
+      let referrerId: string | null = null;
+      if (refCode) {
+        const { data: refCust } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("ref_code", refCode)
+          .maybeSingle();
+        if (refCust?.id && refCust.id !== data.user.id) {
+          referrerId = refCust.id;
+        }
+      }
+
       const { error: customerError } = await supabase.from("customers").insert({
         id: data.user.id,
         email: virtualEmail,
         phone: phoneClean,
         name: nameClean,
-        referred_by: referredBy || null,
+        referred_by: referrerId,
       });
       if (customerError) console.error("Lỗi tạo customer:", customerError);
 
@@ -112,12 +125,15 @@ function RegisterPage() {
 
     toast.success("Đăng ký thành công!");
     try {
+      clearRef();
       localStorage.removeItem("affiliate_ref");
+      sessionStorage.removeItem("vita_affiliate_ref");
     } catch {
       /* ignore */
     }
     navigate({ to: "/khach-hang", replace: true });
   };
+
 
   return (
     <div className="min-h-screen bg-[#f3f7f3] flex items-center justify-center p-5">
