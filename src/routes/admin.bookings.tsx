@@ -329,12 +329,12 @@ function CreateBookingDialog({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Tạo Lịch hẹn mới</SheetTitle>
-          <SheetDescription>Chọn khách sẵn có hoặc tạo khách ẩn ngay khi lưu.</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+        <DialogHeader>
+          <DialogTitle>Tạo Lịch hẹn mới</DialogTitle>
+          <DialogDescription>Chọn khách sẵn có hoặc tạo khách ẩn ngay khi lưu.</DialogDescription>
+        </DialogHeader>
 
         <div className="space-y-4 mt-4">
           <div className="space-y-1.5">
@@ -388,8 +388,8 @@ function CreateBookingDialog({
             <Button onClick={submit} disabled={saving}>{saving ? "Đang lưu…" : "Lưu lịch hẹn"}</Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
