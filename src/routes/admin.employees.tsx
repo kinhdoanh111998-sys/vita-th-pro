@@ -195,7 +195,7 @@ function EmployeesAdmin() {
                 </Select>
               </div>
             </div>
-            <Button type="submit" disabled={savingRole} variant="outline">
+            <Button type="submit" disabled={savingRole} variant="secondary">
               <Plus size={16} /> {savingRole ? "Đang thêm…" : "Thêm vai trò mới"}
             </Button>
             <div className="flex flex-wrap gap-1.5 pt-2 border-t border-hairline">
