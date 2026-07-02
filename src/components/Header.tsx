@@ -31,7 +31,7 @@ export function Header() {
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = sys?.hotline ?? settings?.hotline ?? "0988 000 888";
 
-  const navLinks = useMemo(() => {
+  const navLinks = useMemo<{ label: string; route: string }[]>(() => {
     if (!navItems.length) return FALLBACK_NAV;
     return navItems.filter((i) => i.is_visible).map((i) => ({ label: i.label, route: i.route }));
   }, [navItems]);
