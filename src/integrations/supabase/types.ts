@@ -385,6 +385,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          avatar_url: string | null
           created_at: string
           dob: string | null
           email: string | null
@@ -397,8 +398,10 @@ export type Database = {
           phone: string | null
           source: string | null
           status: string | null
+          zalo_id: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           dob?: string | null
           email?: string | null
@@ -411,8 +414,10 @@ export type Database = {
           phone?: string | null
           source?: string | null
           status?: string | null
+          zalo_id?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           dob?: string | null
           email?: string | null
@@ -425,6 +430,7 @@ export type Database = {
           phone?: string | null
           source?: string | null
           status?: string | null
+          zalo_id?: string | null
         }
         Relationships: []
       }
