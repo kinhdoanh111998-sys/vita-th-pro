@@ -42,11 +42,16 @@ export function AttendanceWidget() {
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [earlyOpen, setEarlyOpen] = useState(false);
+  const [earlyReason, setEarlyReason] = useState("");
+  const [earlySaving, setEarlySaving] = useState(false);
 
+  // Live tick 1s để countdown & tự đổi nút khi hết ca
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30_000);
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
 
   const shiftsQ = useQuery({
     queryKey: ["portal-shifts-map"],
