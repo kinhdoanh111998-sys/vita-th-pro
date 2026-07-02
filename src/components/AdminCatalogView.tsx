@@ -130,7 +130,14 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
     },
   });
 
-  const rows = listQ.data ?? [];
+  const allRows = listQ.data ?? [];
+  const rows = useMemo(() => {
+    if (!debouncedSearch) return allRows;
+    return allRows.filter((r) => {
+      const hay = `${r.name ?? ""} ${r.sku ?? ""} ${r.category ?? ""} ${r.short_description ?? ""}`.toLowerCase();
+      return hay.includes(debouncedSearch);
+    });
+  }, [allRows, debouncedSearch]);
 
   const openCreate = () => {
     setForm(EMPTY);
