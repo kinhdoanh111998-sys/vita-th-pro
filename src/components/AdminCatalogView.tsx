@@ -242,20 +242,36 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       if (!form.name.trim()) throw new Error("Vui lòng nhập tên.");
       if (!form.price || Number(form.price) < 0)
         throw new Error("Vui lòng nhập giá bán hợp lệ.");
-      if (!isService && !form.category)
-        throw new Error("Vui lòng chọn danh mục sản phẩm.");
+
+      // Auto-sinh mã cho Dịch vụ theo format SRV-001 khi tạo mới và bỏ trống SKU.
+      let finalSku = form.sku.trim() || null;
+      if (isService && !form.id && !finalSku) {
+        const { data: existing, error: skuErr } = await supabase
+          .from("services")
+          .select("sku")
+          .like("sku", "SRV-%");
+        if (skuErr) throw skuErr;
+        const used = new Set<number>();
+        for (const row of existing ?? []) {
+          const m = /^SRV-(\d+)$/i.exec(String(row.sku ?? ""));
+          if (m) used.add(parseInt(m[1], 10));
+        }
+        let next = 1;
+        while (used.has(next)) next += 1;
+        finalSku = `SRV-${String(next).padStart(3, "0")}`;
+      }
 
       const payload = {
         type: lockedType,
         name: form.name.trim(),
-        sku: form.sku.trim() || null,
+        sku: finalSku,
         description: form.description.trim() || null,
         features: form.features.trim() || null,
         short_description: form.short_description.trim() || null,
         category: form.category.trim() || null,
-        cost_price: form.cost_price ? Number(form.cost_price) : 0,
+        cost_price: isService ? 0 : form.cost_price ? Number(form.cost_price) : 0,
         price: Number(form.price),
-        sale_price: form.sale_price ? Number(form.sale_price) : null,
+        sale_price: isService ? null : form.sale_price ? Number(form.sale_price) : null,
         stock_quantity: form.stock_quantity ? Number(form.stock_quantity) : 0,
         default_sessions: isService
           ? form.default_sessions
