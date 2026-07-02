@@ -237,6 +237,18 @@ function ToursPage() {
       if (!customerId || !treatmentId || !technicianId) {
         throw new Error("Chọn đủ khách, buổi và nhân viên.");
       }
+      if (busySet.has(technicianId)) {
+        throw new Error("Nhân viên đang thực hiện ca khác — chưa thể xếp thêm.");
+      }
+      // Chặn xếp trùng cho cùng 1 buổi đang chạy
+      const { data: dup } = await supabase
+        .from("tours")
+        .select("id")
+        .eq("treatment_id", treatmentId)
+        .eq("status", "in_progress")
+        .maybeSingle();
+      if (dup) throw new Error("Buổi này đang có ca đang chạy.");
+
       const commission = Number(commissionAmount || 0);
       const now = new Date().toISOString();
       const { data: tour, error: tErr } = await supabase.from("tours").insert({
@@ -245,40 +257,27 @@ function ToursPage() {
         technician_id: technicianId,
         notes: notes.trim() || null,
         commission_amount: commission,
-        status: "completed",
+        status: "in_progress",
         start_time: now,
-        end_time: now,
+        end_time: null,
       }).select().single();
       if (tErr) throw tErr;
 
-      const { error: uErr } = await supabase
-        .from("treatments")
-        .update({ status: "completed" })
-        .eq("id", treatmentId);
-      if (uErr) throw uErr;
-
-      if (commission > 0) {
-        await supabase.from("commissions").insert({
-          staff_id: technicianId,
-          commission_type: "tour_service",
-          reference_id: tour.id,
-          amount: commission,
-          status: "pending",
-        });
-      }
+      // Đánh dấu buổi đang thực hiện (giữ 'pending' cho luồng QR — chỉ cập nhật ghi chú qua tour)
+      // KHÔNG update treatment ở đây — chờ khách xác nhận qua QR
 
       // Ghi log thông báo cho NV
       await supabase.from("notifications").insert({
         recipient_id: technicianId,
-        type: "tour_completed",
-        title: "Bạn vừa hoàn thành 1 ca làm",
-        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}`,
+        type: "tour_started",
+        title: "Bạn được xếp 1 ca làm mới",
+        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}. Quét QR khách khi hoàn tất.`,
         ref_type: "tour",
         ref_id: tour.id,
       });
     },
     onSuccess: () => {
-      toast.success("Đã hoàn thành ca làm & ghi nhận hoa hồng.");
+      toast.success("Đã bắt đầu ca — Nhân viên sẽ khả dụng lại sau khi quét QR kết thúc.");
       resetForm();
       qc.invalidateQueries({ queryKey: ["tours2"] });
     },
