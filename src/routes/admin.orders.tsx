@@ -400,14 +400,13 @@ function CreateOrderDrawer({
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // 4) Increment voucher usage
+      // 4) Increment voucher usage (best-effort; not race-safe)
       if (appliedVoucher) {
-        await supabase.rpc; // no-op guard; direct update below
         await supabase.from("vouchers").update({
-          used_count: (Number(appliedVoucher as unknown as { used_count?: number }).valueOf ? 0 : 0) + 1,
+          used_count: (Number((appliedVoucher as unknown as { used_count?: number }).used_count) || 0) + 1,
         }).eq("id", appliedVoucher.id);
-        // Note: not using RPC; race-safe increment would need a DB function.
       }
+
 
       toast.success(`Đã tạo đơn ${order.order_code ?? ""}`, {
         description: `Tổng ${fmt(total)}. Liệu trình sẽ được tự sinh cho các dịch vụ.`,
