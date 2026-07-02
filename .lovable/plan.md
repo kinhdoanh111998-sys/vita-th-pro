@@ -1,80 +1,107 @@
 
-# PHASE 1 — Đồng bộ Route Tài khoản & Auth State
+## Xác định loại Zalo App
 
-Chỉ thi công Phase 1. Không đụng migration DB, không đụng logic ca/chấm công (dành cho Phase 2 & 3).
+Với App ID + Secret Key, bạn đang có **Zalo Login (Web OAuth v4)** — luồng chuẩn OAuth 2.0 qua `oauth.zaloapp.com/v4/permission`. Tôi đã tích hợp nhiều lần, đây là stack quen thuộc.
 
-## 1. Trang `/app` — Profile đa nhiệm theo role
+## Callback URL cần cấu hình
 
-Tái cấu trúc `src/routes/app.index.tsx` (và điều chỉnh `AppLayout` nếu cần) để render theo `role` từ `useAuth()`:
+Trong **Zalo Developer Console → App của bạn → Login → Redirect URI**, thêm CẢ HAI URL (một cho preview, một cho published):
+```
+https://view-forge-space.lovable.app/auth/zalo/callback
+https://id-preview--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app/auth/zalo/callback
+```
+Sau khi publish custom domain thì thêm domain đó nữa.
 
-- **role = customer**: bê nguyên UI hiện có của `/khach-hang` sang. Sau đó **redirect `/khach-hang` → `/app`** (đổi `src/routes/khach-hang.tsx` thành route redirect) để tránh duy trì 2 nơi.
-  - Khối bê nguyên: "Liệu trình còn khả dụng" (dropdown QR thông minh), "Liệu trình đã sử dụng", "Đơn hàng lịch sử", "Tiếp thị liên kết" (Hình 4), "Đã giới thiệu thành công".
-  - Bổ sung 2 thẻ mới:
-    - **Thẻ Hoa hồng**: tái sử dụng `PerformanceCard` từ `src/components/portal/dashboard/PerformanceCard.tsx` (đổi copy phù hợp customer, hoặc bọc lại thành `CustomerCommissionCard` nếu source query khác).
-    - **Khối Đổi thưởng / Lịch sử đổi thưởng**: static UI (chưa nối DB), 2 tab hoặc 2 card cạnh nhau, empty state "Chưa có phần thưởng nào".
-- **role = staff / technician / sale**: form thông tin cá nhân cơ bản (họ tên, email, phone, avatar — readonly hoặc cho update `full_name`/`phone` qua `users` table nếu cột đã có) + nút CTA nổi bật **"Vào Workspace Vận Hành"** → `/portal/dashboard`.
-- **role = admin / manager**: form thông tin cá nhân + nút CTA **"Vào Hệ Thống Quản Trị Admin"** → `/admin`.
-- Fallback role không xác định: hiện form cơ bản + nút "Về trang chủ".
+## Cảnh báo về "mk = SĐT vĩnh viễn"
 
-Xoá route con `src/routes/app.account.tsx` (nội dung placeholder) hoặc chuyển hướng nó về `/app`.
+Tôi vẫn triển khai theo yêu cầu, nhưng **cảnh báo rõ**: nếu ai lộ SĐT khách (rất dễ, SĐT vốn không phải bí mật), họ đăng nhập được ngay bằng form login thường mà **không cần Zalo**. Rủi ro cực cao khi mở rộng khách hàng. Đề xuất backup: sau lần đầu tôi thêm 1 banner "Vui lòng đổi mật khẩu để bảo mật" ở trang tài khoản (không ép). Bạn đồng ý cứ để triển khai.
 
-## 2. Cross-Navigation link Profile
+## Kiến trúc luồng
 
-- **Sidebar `/portal`** (`src/routes/portal.tsx` + navbar bên trong): thêm 1 mục "Hồ sơ của tôi" (icon User) → `/app`.
-- **Sidebar `/admin`** (`src/components/AdminSidebar.tsx` hoặc `AdminTopbar.tsx`): thêm icon/link Profile → `/app`.
+```text
+[User click "Đăng nhập Zalo"]
+        │
+        ▼
+GET /api/public/zalo/authorize   ← server route sinh state + PKCE, redirect
+        │
+        ▼
+oauth.zaloapp.com/v4/permission  ← user cho phép (permission: id, name, picture, phone)
+        │
+        ▼
+/auth/zalo/callback?code=...&state=...   ← route TSS (page)
+        │
+        ▼
+serverFn zaloExchangeAndSignIn({ code, codeVerifier, state })
+   1. Verify state (cookie)
+   2. POST oauth.zaloapp.com/v4/access_token   → access_token
+   3. GET graph.zalo.me/v2.0/me?fields=id,name,picture,phone
+   4. Nếu chưa có phone: trả error → client redirect lại authorize (fallback bạn muốn)
+   5. Chuẩn hoá phone (bỏ +84 → 0…)
+   6. supabaseAdmin.auth.admin: tìm user theo email ảo <phone>@khach.vitath.pro
+        - Nếu chưa có: createUser({ email, password: phone, email_confirm: true })
+          + insert users(role='customer', full_name)
+          + insert customers(phone, name, avatar_url, zalo_id)
+        - Nếu đã có: update avatar/name mới nhất
+   7. Trả về { email, password: phone } cho client
+        │
+        ▼
+Client: supabase.auth.signInWithPassword({ email, password })
+        │
+        ▼
+Redirect /app (customer landing đã có sẵn)
+```
 
-## 3. Notification Router
+## Fallback khi user không đồng ý cho SĐT
 
-- Cập nhật handler onClick của Notification (nơi list notification — dự kiến `src/routes/app.notifications.tsx` + component dropdown ở header nếu có):
-  - Đọc `notifications.type` và/hoặc trường `redirect_url` (nếu đã có cột, nếu chưa thì fallback theo `type`).
-  - Map cứng bảng chuyển hướng theo role + type, ví dụ:
-    - `type='shift_approved'` + role staff → `/portal/dashboard`
-    - `type='new_booking'` + role staff → `/portal/bookings`
-    - `type='order_paid'` + role customer → `/app` (mục Đơn hàng)
-    - `type='shift_request_pending'` + role admin → `/admin/shifts`
-  - Nếu có `redirect_url` hợp lệ (same-origin) thì ưu tiên nó.
-  - Sau khi navigate, đánh dấu `read=true` (giữ hàm đã có nếu có).
+Đúng như bạn muốn — khả thi và tôi sẽ làm:
+- Server nhận `/me` không có `phone` → trả `{ error: "phone_required" }`
+- Client hiện toast "Bạn cần đồng ý chia sẻ số điện thoại để đăng nhập" + tự động redirect lại trang authorize Zalo sau 2s (user bấm lại Cho phép).
 
-## 4. Fix Auth header trang chủ `/homepage`
+## Thay đổi cụ thể
 
-- File `src/components/Header.tsx` (dùng cho `_public`):
-  - Đọc `useAuth()` (đã có `session`, `role`, `fullName`).
-  - Nếu `session` tồn tại → ẩn cụm nút "Đăng ký" + "Đăng nhập", thay bằng nút duy nhất **"Khu vực của tôi"** → `/app` (icon User + tên rút gọn).
-  - Nếu chưa có session → giữ nguyên 2 nút hiện tại.
-  - Đảm bảo không hydration mismatch: có thể dùng `useHydrated()` gate hoặc render dựa vào loading state của AuthContext.
+### 1. Secrets (Lovable Cloud)
+Tôi sẽ mở form add_secret cho bạn nhập:
+- `ZALO_APP_ID` (public cũng được nhưng để chung server cho gọn)
+- `ZALO_APP_SECRET` (bắt buộc secret)
 
-## 5. Trang `/about` — 4 khối tĩnh chuẩn Luxury Clinic
+### 2. Database migration
+Thêm cột vào `customers`:
+- `zalo_id text unique` — id Zalo để tránh trùng
+- `avatar_url text` (nếu chưa có)
 
-Đã có sẵn các file `_public.about.*.tsx` (history, team, testimonials, certifications, index). Nhiệm vụ:
-- Rà lại `_public.about.tsx` làm layout tab/nav 4 mục.
-- Viết lại UI tĩnh (Tailwind, tông brand-dark + brand + hairline hiện có) cho:
-  1. **Lịch sử phát triển** — Timeline dọc (2 cột so le trên desktop, 1 cột mobile), mốc năm + mô tả + ảnh minh hoạ (dùng placeholder gradient nếu chưa có ảnh thật).
-  2. **Đội ngũ chuyên gia** — Grid 3 cột (md), card avatar tròn, tên, chức danh, chuyên môn ngắn, hover shadow.
-  3. **Khách hàng nói về chúng tôi** — Testimonials grid (2–3 cột), icon quote, quote text, avatar + tên khách + dịch vụ đã dùng, sao rating.
-  4. **Chứng nhận & Chứng chỉ** — Grid card certificate với khung viền vàng nhạt/hairline, tên chứng chỉ, đơn vị cấp, năm; có thể click zoom (Dialog) hiển thị ảnh certificate.
-- Nội dung tĩnh: text tiếng Việt, thương hiệu **Vita TH Pro**. Không nối DB ở phase này.
-- Mỗi route con set `head()` riêng (title + description + og:title + og:description).
+Không tạo bảng mới.
 
-## 6. Quy tắc kỹ thuật bắt buộc
+### 3. File mới
+- `src/routes/api/public/zalo.authorize.ts` — server route: sinh `state` random + PKCE `code_verifier`, lưu vào httpOnly cookie 5 phút, redirect sang Zalo OAuth URL.
+- `src/routes/auth.zalo.callback.tsx` — route TSS page: đọc `code` từ URL, gọi serverFn `zaloExchangeAndSignIn`, rồi `signInWithPassword`, rồi navigate `/app`. Hiển thị spinner "Đang đăng nhập bằng Zalo…".
+- `src/lib/zalo-auth.functions.ts` — chứa serverFn `zaloExchangeAndSignIn` (dùng `supabaseAdmin` import động trong handler, KHÔNG top-level).
+- `src/lib/zalo-auth.server.ts` — helper gọi Zalo Graph API, chuẩn hoá phone.
 
-- Mọi call Supabase (nếu có ở /app customer): `try/catch` + `finally { setLoading(false) }`.
-- Không đụng: migration DB, `staff_shifts`, `attendances`, widget chấm công, admin shifts calendar, homepage "Cửa hàng liên kết", dropdown chi nhánh — **để Phase 2 & 3**.
-- Không sửa các file auto-gen (`src/integrations/supabase/*`, `routeTree.gen.ts`, `.env`).
-- Chạy `tsgo` sau khi xong Phase 1 để verify.
+### 4. File chỉnh
+- `src/routes/login.tsx` — thêm nút **"Đăng nhập bằng Zalo"** (icon Zalo, màu #0068FF) phía trên form email/password, dẫn tới `/api/public/zalo/authorize`.
+- `src/routes/dang-ky.tsx` — thêm cùng nút Zalo với gợi ý "Không cần đăng ký, dùng Zalo là xong".
 
-## Deliverables
+Không đụng `client.ts`, `types.ts`, `AuthContext.tsx`, không phá luồng login cũ.
 
-| File | Hành động |
-|---|---|
-| `src/routes/app.index.tsx` | Viết lại: render theo role |
-| `src/routes/khach-hang.tsx` | Redirect → `/app` |
-| `src/routes/app.account.tsx` | Xoá hoặc redirect |
-| `src/components/portal/CustomerCommissionCard.tsx` (nếu cần) | Bọc PerformanceCard cho customer |
-| `src/components/portal/RewardExchangeCard.tsx` | Static UI mới |
-| `src/routes/portal.tsx` + sidebar | Thêm link "Hồ sơ" → `/app` |
-| `src/components/AdminSidebar.tsx` | Thêm link "Hồ sơ" → `/app` |
-| `src/routes/app.notifications.tsx` + notification click handler | Router theo type/redirect_url |
-| `src/components/Header.tsx` | Auth-aware nút "Khu vực của tôi" |
-| `src/routes/_public.about.tsx` + 4 route con | Static UI 4 khối luxury |
+## Chi tiết kỹ thuật quan trọng
 
-Sau khi Phase 1 xong, mình sẽ báo cáo và **chờ bạn duyệt** rồi mới sang Phase 2 (batch approval + lock tuần mẫu + admin duyệt).
+- **Endpoint Zalo** (v4):
+  - Authorize: `https://oauth.zaloapp.com/v4/permission?app_id=&redirect_uri=&code_challenge=&state=`
+  - Token: `POST https://oauth.zaloapp.com/v4/access_token` header `secret_key`, body `code, app_id, grant_type=authorization_code, code_verifier`
+  - Graph: `GET https://graph.zalo.me/v2.0/me?fields=id,name,picture,phone` header `access_token`
+- **PKCE bắt buộc** cho Zalo v4 (S256).
+- **`state` chống CSRF** lưu httpOnly cookie, verify server-side.
+- **Chuẩn hoá phone**: Zalo trả `+84…` hoặc `84…` → convert về `0…` để khớp format bạn đã dùng cho khách hàng.
+- **try/catch + finally**: mọi bước gọi API + Supabase đều bọc try/catch, callback page có `finally { setLoading(false) }` để không kẹt spinner (đúng convention CQC của bạn).
+- **Email ảo**: dùng đúng domain hiện tại `@khach.vitath.pro` để `AuthContext` fast-track customer sẵn có tự nhận.
+
+## Số credit dự kiến
+
+~4–5 credits cho toàn bộ Phase (1 migration + 4 file mới + 2 file chỉnh + secret form + typecheck).
+
+---
+
+**Xác nhận để tôi bắt đầu:**
+1. Bấm **Approve plan** để chuyển sang build mode.
+2. Sau khi build mode kích hoạt, tôi sẽ mở form nhập `ZALO_APP_ID` + `ZALO_APP_SECRET` trước tiên.
+3. Trong lúc chờ, bạn vào Zalo Developer Console thêm 2 Callback URL ở trên.
