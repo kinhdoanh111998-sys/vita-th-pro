@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LogOut, ShieldCheck, Briefcase, User, ArrowRight, Home } from "lucide-react";
+import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CustomerHomeContent } from "@/components/CustomerHomeContent";
+import { ProfileForm } from "@/components/ProfileForm";
 
 export const Route = createFileRoute("/app/account")({
   component: AccountHub,
 });
+
 
 function AccountHub() {
   const { session, role, email, fullName, loading, signOut } = useAuth();
