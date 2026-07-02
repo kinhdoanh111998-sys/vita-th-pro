@@ -2,8 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Search,
-  LogIn,
   Sparkles,
   Store,
   CalendarDays,
@@ -13,7 +11,6 @@ import {
   Home as HomeIcon,
   User,
   ChevronRight,
-  Menu,
   X,
   Star,
   Quote,
@@ -21,13 +18,11 @@ import {
   Phone,
 } from "lucide-react";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
-import { OmniSearch } from "@/components/OmniSearch";
-import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/AuthContext";
-import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+
+
 
 
 
@@ -115,28 +110,12 @@ const TESTIMONIALS: Testimonial[] = [
 
 
 function CommunityHome() {
-  const { data: settings } = useSettings();
-  const { session, loading: authLoading } = useAuth();
-  const brand = settings?.brand ?? "Vita TH Pro";
-  const hotline = settings?.hotline ?? "0988 000 888";
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [skinAIOpen, setSkinAIOpen] = useState(false);
 
   const { data: stores = [] } = useActiveStores();
   const { data: appNavItems = [] } = useNavigationItems("app");
   const shortcuts = appNavItems.filter((i) => i.is_visible);
 
-
-  const navLinks: Array<{ label: string; to: string }> = [
-    { label: "Trang chủ", to: "/" },
-    { label: "Giới thiệu", to: "/about" },
-    { label: "Sản phẩm", to: "/products" },
-    { label: "Dịch vụ", to: "/services" },
-    { label: "Sự kiện", to: "/events" },
-    { label: "Cộng đồng", to: "/community" },
-    { label: "Tin tức", to: "/news" },
-    { label: "Liên hệ", to: "/contact" },
-  ];
 
   return (
     <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-[#FAFAFA] pb-24 md:pb-12">
@@ -146,12 +125,6 @@ function CommunityHome() {
 
 
 
-      {/* Hero Search */}
-      <section className="pt-4 md:pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
-        <OmniSearch hero />
-      </section>
-
-      {/* Hero Banner Carousel */}
       <HeroCarousel />
 
 
@@ -481,7 +454,7 @@ function HeroCarousel() {
   };
 
   return (
-    <section className="pt-4 max-w-7xl mx-auto w-full">
+    <section className="pt-6 md:pt-8 max-w-7xl mx-auto w-full">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
@@ -493,17 +466,17 @@ function HeroCarousel() {
             <div className="relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] shadow-md bg-gray-100">
               <img src={src} alt={b.title} className="w-full h-full object-cover" />
               {(b.title || b.subtitle) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex flex-col justify-end p-5 md:p-8 text-white">
-                  <div className="text-lg md:text-3xl font-black tracking-tight max-w-[70%] drop-shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/30 to-black/50 flex flex-col items-center justify-center text-center px-6 md:px-12 py-10 text-white">
+                  <div className="text-xl md:text-4xl font-black tracking-tight drop-shadow-lg max-w-3xl">
                     {b.title}
                   </div>
                   {b.subtitle && (
-                    <div className="text-xs md:text-base mt-1 opacity-90 max-w-[70%] line-clamp-2">
+                    <div className="text-sm md:text-lg mt-2 md:mt-3 opacity-90 max-w-2xl line-clamp-2 drop-shadow-md">
                       {b.subtitle}
                     </div>
                   )}
                   {b.cta && (
-                    <span className="mt-3 inline-flex w-fit items-center gap-1.5 px-4 h-9 rounded-lg bg-emerald-600 text-white text-sm font-semibold">
+                    <span className="mt-4 inline-flex w-fit items-center gap-1.5 px-5 h-10 rounded-full bg-emerald-600 text-white text-sm font-semibold shadow-lg">
                       {b.cta}
                     </span>
                   )}
