@@ -108,6 +108,13 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const listQ = useQuery({
