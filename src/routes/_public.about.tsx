@@ -4,13 +4,14 @@ export const Route = createFileRoute("/_public/about")({
   component: AboutLayout,
 });
 
-const TABS = [
+type Tab = { to: "/about" | "/about/history" | "/about/team" | "/about/testimonials" | "/about/certifications"; label: string; exact?: boolean };
+const TABS: Tab[] = [
   { to: "/about", label: "Tổng quan", exact: true },
   { to: "/about/history", label: "Lịch sử phát triển" },
   { to: "/about/team", label: "Đội ngũ chuyên gia" },
   { to: "/about/testimonials", label: "Khách hàng" },
   { to: "/about/certifications", label: "Chứng nhận" },
-] as const;
+];
 
 function AboutLayout() {
   return (
