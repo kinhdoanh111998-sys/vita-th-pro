@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { StaffMonthCalendar } from "@/components/StaffMonthCalendar";
 
 export const Route = createFileRoute("/admin/shifts")({
   component: ShiftsPage,
@@ -53,13 +54,15 @@ function ShiftsPage() {
         title="Quản lý Ca & Chấm công"
         subtitle="Cấu hình ca làm · Duyệt đăng ký · Duyệt check-in & OT."
       />
-      <Tabs defaultValue="shifts" className="space-y-4">
+      <Tabs defaultValue="calendar" className="space-y-4">
         <TabsList className="bg-white border border-hairline">
+          <TabsTrigger value="calendar">Lịch Tháng</TabsTrigger>
           <TabsTrigger value="shifts">Danh mục Ca</TabsTrigger>
           <TabsTrigger value="regs">Duyệt Đăng ký</TabsTrigger>
           <TabsTrigger value="att">Chấm công & OT</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="calendar"><StaffMonthCalendar /></TabsContent>
         <TabsContent value="shifts"><ShiftsCrudTab /></TabsContent>
         <TabsContent value="regs"><RegistrationsTab /></TabsContent>
         <TabsContent value="att"><AttendancesTab /></TabsContent>

@@ -4,6 +4,7 @@ import { CalendarDays, Users2, ClipboardList } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { AttendanceWidget, ShiftRegistrationPanel } from "@/components/AttendanceWidget";
+import { StaffScheduleRegistration } from "@/components/StaffScheduleRegistration";
 
 export const Route = createFileRoute("/portal/dashboard")({
   component: PortalDashboard,
@@ -78,6 +79,9 @@ function PortalDashboard() {
         <AttendanceWidget />
         <ShiftRegistrationPanel />
       </div>
+
+      {/* ==== ĐĂNG KÝ LỊCH THÁNG (Tuần mẫu → nhân bản → lưu) ==== */}
+      <StaffScheduleRegistration />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
