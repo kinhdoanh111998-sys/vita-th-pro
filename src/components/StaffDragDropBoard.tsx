@@ -83,7 +83,7 @@ function StaffCard({ s, dragging = false }: { s: StaffMember; dragging?: boolean
   );
 }
 
-function DraggableStaff({ s }: { s: StaffMember }) {
+export function DraggableStaff({ s, compact = false }: { s: StaffMember; compact?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `staff:${s.id}`,
     data: { staffId: s.id },
@@ -95,10 +95,29 @@ function DraggableStaff({ s }: { s: StaffMember }) {
       {...listeners}
       style={{ opacity: isDragging ? 0.35 : 1, touchAction: "none" }}
     >
-      <StaffCard s={s} />
+      {compact ? <StaffChip s={s} /> : <StaffCard s={s} />}
     </div>
   );
 }
+
+function StaffChip({ s }: { s: StaffMember }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-hairline bg-white px-2 py-1.5 shadow-sm hover:border-brand-primary/50 hover:shadow transition">
+      <Avatar className="size-7 shrink-0">
+        <AvatarFallback className="bg-brand-soft text-brand-dark text-[10px] font-bold">
+          {initials(s.full_name)}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0 flex-1">
+        <div className="font-bold text-xs truncate leading-tight">{s.full_name}</div>
+        <div className="text-[10px] text-ink-muted truncate leading-tight">
+          {ROLE_LABEL[s.role] ?? s.role}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function DroppableTarget({
   t,
