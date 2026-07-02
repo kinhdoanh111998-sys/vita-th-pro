@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { Link } from "@tanstack/react-router";
-import { LogIn, Menu, X } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { LogIn, LogOut, Menu, UserPlus, X, Search, CalendarCheck } from "lucide-react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
 import { useSystemSettings } from "@/lib/useSystemSettings";
@@ -23,8 +23,9 @@ export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { data: settings } = useSettings();
   const { data: sys } = useSystemSettings();
-  const { session, role } = useAuth();
+  const { session, signOut } = useAuth();
   const { data: navItems = [] } = useNavigationItems("homepage");
+  const navigate = useNavigate();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = sys?.hotline ?? settings?.hotline ?? "0988 000 888";
 
@@ -33,8 +34,11 @@ export function Header() {
     return navItems.filter((i) => i.is_visible).map((i) => ({ label: i.label, route: i.route }));
   }, [navItems]);
 
-  const accountTo = session ? "/app/account" : "/login";
-  void role;
+  const handleSignOut = async () => {
+    await signOut();
+    setDrawerOpen(false);
+    navigate({ to: "/" });
+  };
 
   return (
     <>
@@ -42,7 +46,7 @@ export function Header() {
         className="sticky top-0 z-40 bg-white border-b"
         style={{ borderColor: "#E3E3E3" }}
       >
-        <div className="w-full flex items-center gap-3 px-4 md:px-8 xl:px-12 py-2.5 md:py-3">
+        <div className="w-full flex items-center gap-3 px-4 md:px-6 xl:px-8 py-2.5 md:py-3">
           <Link to="/" className="flex items-center gap-3 shrink-0">
             <img src={logo} alt={brand} className="h-11 md:h-12 w-auto object-contain" />
             <div className="hidden md:flex flex-col leading-tight">
@@ -55,12 +59,12 @@ export function Header() {
             </div>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-0.5 ml-3 xl:ml-4">
+          <nav className="hidden lg:flex items-center gap-0.5 ml-2 shrink-0">
             {navLinks.map((n) => (
               <Link
                 key={n.route}
                 to={n.route}
-                className="px-2 xl:px-2.5 py-2 rounded-lg text-[13px] xl:text-[13.5px] font-semibold whitespace-nowrap transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
+                className="px-2 py-2 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors hover:bg-[#D9F0D6] hover:text-[#147805]"
                 style={{ color: "#484848" }}
                 activeProps={{ style: { color: "#1B9606", backgroundColor: "#D9F0D6" } }}
                 activeOptions={{ exact: n.route === "/" }}
@@ -70,29 +74,68 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Omni Search — desktop only */}
-          <div className="hidden md:block flex-1 max-w-md ml-auto">
+          {/* Omnisearch — chèn giữa menu và CTA */}
+          <div className="hidden lg:block flex-1 min-w-0 max-w-sm xl:max-w-md mx-2">
             <OmniSearch />
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* CTA + Auth cluster */}
+          <div className="flex items-center gap-2 ml-auto lg:ml-0 shrink-0">
+            <Link
+              to="/lookup"
+              className="hidden xl:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+              style={{ borderColor: "#1B9606", color: "#1B9606" }}
+            >
+              <Search className="w-4 h-4" />
+              <span>Tra cứu liệu trình</span>
+            </Link>
+            <Link
+              to="/booking"
+              className="hidden lg:inline-flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-lg text-[13px] font-semibold text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: "#1B9606" }}
+            >
+              <CalendarCheck className="w-4 h-4" />
+              <span>Đặt lịch</span>
+            </Link>
+
             {session ? (
-              <Link
-                to={accountTo}
-                className="inline-flex items-center h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
-                style={{ borderColor: "#1B9606", color: "#1B9606" }}
-              >
-                Khu vực của tôi
-              </Link>
+              <>
+                <Link
+                  to="/app/account"
+                  className="hidden md:inline-flex items-center h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                  style={{ borderColor: "#1B9606", color: "#1B9606" }}
+                >
+                  Khu vực của tôi
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-red-50 hover:border-red-500 hover:text-red-600"
+                  style={{ borderColor: "#E3E3E3", color: "#484848" }}
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Đăng xuất</span>
+                </button>
+              </>
             ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 h-10 px-3 md:px-4 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
-                style={{ borderColor: "#1B9606", color: "#1B9606" }}
-              >
-                <LogIn className="w-4 h-4" />
-                <span>Đăng nhập</span>
-              </Link>
+              <>
+                <Link
+                  to="/dang-ky"
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                  style={{ borderColor: "#E3E3E3", color: "#484848" }}
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Đăng ký</span>
+                </Link>
+                <Link
+                  to="/login"
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
+                  style={{ borderColor: "#1B9606", color: "#1B9606" }}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Đăng nhập</span>
+                </Link>
+              </>
             )}
 
             <button
@@ -137,6 +180,54 @@ export function Header() {
                   {n.label}
                 </Link>
               ))}
+
+              <div className="h-px bg-[#E3E3E3] my-2" />
+
+              <Link
+                to="/lookup"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Tra cứu liệu trình
+              </Link>
+              <Link
+                to="/dang-ky"
+                onClick={() => setDrawerOpen(false)}
+                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                style={{ color: "#484848" }}
+              >
+                Đăng ký
+              </Link>
+              {session ? (
+                <>
+                  <Link
+                    to="/app/account"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                    style={{ color: "#484848" }}
+                  >
+                    Khu vực của tôi
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    className="w-full text-left px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-red-50 hover:text-red-600"
+                    style={{ color: "#484848" }}
+                  >
+                    Đăng xuất
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                  style={{ color: "#484848" }}
+                >
+                  Đăng nhập
+                </Link>
+              )}
             </nav>
 
             <div className="px-4 py-3 border-t" style={{ borderColor: "#E3E3E3" }}>
