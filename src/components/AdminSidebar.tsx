@@ -11,7 +11,9 @@ type Tab = {
 
 const tabs: Tab[] = [
   { to: "/admin", label: "Dashboard", exact: true, roles: ["admin", "manager"] },
+  { to: "/admin/navigation", label: "Quản lý Trang chủ", roles: ["admin", "manager"] },
   { to: "/admin/banners", label: "Banner", roles: ["admin"] },
+  { to: "/admin/stores", label: "Cửa hàng", roles: ["admin", "manager"] },
   { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin", "manager"] },
   { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin", "manager"] },
   { to: "/admin/news", label: "Tin tức & Kiểm duyệt", roles: ["admin", "manager"] },
@@ -27,6 +29,7 @@ const tabs: Tab[] = [
   { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin", "manager"] },
   { to: "/admin/settings", label: "Cài đặt/Xuất dữ liệu", roles: ["admin"] },
 ];
+
 
 export function AdminSidebar() {
   const { role, email, fullName, signOut } = useAuth();

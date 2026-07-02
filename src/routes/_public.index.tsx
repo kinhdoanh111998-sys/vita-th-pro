@@ -25,6 +25,9 @@ import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
+import { useActiveStores } from "@/lib/useStores";
+import { useNavigationItems } from "@/lib/useNavigationItems";
+
 
 type Banner = {
   id: string;
@@ -38,56 +41,30 @@ type Banner = {
   is_active: boolean;
 };
 
-const BRANCHES = [
-  {
-    id: 1,
-    name: "VITA Premium Hà Nội",
-    address: "Tầng 3, 456 Thái Hà, Đống Đa, Hà Nội",
-    hotline: "1900 6868",
-    gradient: "from-rose-500 via-pink-500 to-amber-400",
-    mapUrl: "#",
-  },
-  {
-    id: 2,
-    name: "VITA Signature Đà Nẵng",
-    address: "789 Nguyễn Văn Linh, Hải Châu, Đà Nẵng",
-    hotline: "0236 7788 999",
-    gradient: "from-sky-500 via-indigo-500 to-violet-500",
-    mapUrl: "#",
-  },
-  {
-    id: 3,
-    name: "VITA Flagship TP.HCM",
-    address: "123 Nguyễn Huệ, Bến Nghé, Quận 1, TP.HCM",
-    hotline: "028 3822 5566",
-    gradient: "from-emerald-500 via-teal-500 to-cyan-500",
-    mapUrl: "#",
-  },
+const BRANCH_GRADIENTS = [
+  "from-rose-500 via-pink-500 to-amber-400",
+  "from-sky-500 via-indigo-500 to-violet-500",
+  "from-emerald-500 via-teal-500 to-cyan-500",
+  "from-fuchsia-500 via-purple-500 to-indigo-500",
 ];
-
-
-
 
 export const Route = createFileRoute("/_public/")({
   component: CommunityHome,
 });
 
-type Shortcut = {
-  icon: typeof Sparkles;
-  label: string;
-  color: string;
-  to?: string;
-  action?: "soi-da-ai";
+type ShortcutIcon = typeof Sparkles;
+
+const SHORTCUT_ICONS: Record<string, { icon: ShortcutIcon; color: string }> = {
+  skin_ai:  { icon: Sparkles, color: "bg-pink-100 text-pink-600" },
+  store:    { icon: Store, color: "bg-emerald-100 text-emerald-600" },
+  booking:  { icon: CalendarDays, color: "bg-amber-100 text-amber-600" },
+  scan:     { icon: QrCode, color: "bg-sky-100 text-sky-600" },
+  wallet:   { icon: Wallet, color: "bg-violet-100 text-violet-600" },
+  vouchers: { icon: Gift, color: "bg-rose-100 text-rose-600" },
 };
 
-const SHORTCUTS: Shortcut[] = [
-  { icon: Sparkles, label: "Soi da AI", color: "bg-pink-100 text-pink-600", action: "soi-da-ai" },
-  { icon: Store, label: "Cửa hàng", color: "bg-emerald-100 text-emerald-600", to: "/products" },
-  { icon: CalendarDays, label: "Đặt lịch", color: "bg-amber-100 text-amber-600", to: "/booking" },
-  { icon: QrCode, label: "Quét QR", color: "bg-sky-100 text-sky-600", to: "/app/scan" },
-  { icon: Wallet, label: "Ví VITA", color: "bg-violet-100 text-violet-600", to: "/wallet" },
-  { icon: Gift, label: "Ưu đãi", color: "bg-rose-100 text-rose-600", to: "/wallet" },
-];
+const SKIN_AI_KEY = "skin_ai";
+
 
 
 type Testimonial = {
@@ -142,6 +119,11 @@ function CommunityHome() {
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [skinAIOpen, setSkinAIOpen] = useState(false);
+
+  const { data: stores = [] } = useActiveStores();
+  const { data: appNavItems = [] } = useNavigationItems("app");
+  const shortcuts = appNavItems.filter((i) => i.is_visible);
+
 
   const navLinks: Array<{ label: string; to: string }> = [
     { label: "Trang chủ", to: "/" },
@@ -392,23 +374,25 @@ function CommunityHome() {
       {/* Shortcuts */}
       <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
-          {SHORTCUTS.map((s) => {
+          {shortcuts.map((s) => {
+            const meta = SHORTCUT_ICONS[s.menu_key] ?? { icon: Sparkles, color: "bg-gray-100 text-gray-600" };
+            const Icon = meta.icon;
             const inner = (
               <>
                 <div
-                  className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${s.color} group-active:scale-95 transition`}
+                  className={`w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center ${meta.color} group-active:scale-95 transition`}
                 >
-                  <s.icon className="w-6 h-6 md:w-7 md:h-7" />
+                  <Icon className="w-6 h-6 md:w-7 md:h-7" />
                 </div>
                 <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
                   {s.label}
                 </span>
               </>
             );
-            if (s.action === "soi-da-ai") {
+            if (s.menu_key === SKIN_AI_KEY) {
               return (
                 <button
-                  key={s.label}
+                  key={s.id}
                   onClick={() => setSkinAIOpen(true)}
                   className="flex flex-col items-center gap-1.5 md:gap-2 group"
                 >
@@ -418,14 +402,15 @@ function CommunityHome() {
             }
             return (
               <Link
-                key={s.label}
-                to={s.to!}
+                key={s.id}
+                to={s.route}
                 className="flex flex-col items-center gap-1.5 md:gap-2 group"
               >
                 {inner}
               </Link>
             );
           })}
+
         </div>
       </section>
 
@@ -443,43 +428,68 @@ function CommunityHome() {
           <div className="mx-auto mt-3 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
-          {BRANCHES.map((b) => (
-            <article
-              key={b.id}
-              className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className={`relative h-40 md:h-48 bg-gradient-to-br ${b.gradient} overflow-hidden`}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.25),transparent_60%)]" />
-                <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white uppercase tracking-wider">
-                  <Store className="w-3.5 h-3.5" /> VITA TH PRO
+          {stores.map((b, i) => {
+            const gradient = BRANCH_GRADIENTS[i % BRANCH_GRADIENTS.length];
+            const hotline = b.hotline ?? b.phone ?? "";
+            return (
+              <article
+                key={b.id}
+                className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              >
+                <div className={`relative h-40 md:h-48 bg-gradient-to-br ${gradient} overflow-hidden`}>
+                  {b.main_image && (
+                    <img
+                      src={b.main_image}
+                      alt={b.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.35),transparent_60%)]" />
+                  <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white uppercase tracking-wider">
+                    <Store className="w-3.5 h-3.5" /> VITA TH PRO
+                  </div>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md leading-tight">
+                      {b.name}
+                    </h3>
+                  </div>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md leading-tight">
-                    {b.name}
-                  </h3>
-                </div>
-              </div>
-              <div className="p-5 space-y-3">
-                <div className="flex items-start gap-2 text-sm text-gray-700">
-                  <MapPin className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
-                  <span className="leading-relaxed">{b.address}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <a href={`tel:${b.hotline.replace(/\s/g, "")}`} className="font-bold text-gray-900 hover:text-emerald-600">
-                    {b.hotline}
+                <div className="p-5 space-y-3">
+                  {b.address && (
+                    <div className="flex items-start gap-2 text-sm text-gray-700">
+                      <MapPin className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
+                      <span className="leading-relaxed">{b.address}</span>
+                    </div>
+                  )}
+                  {hotline && (
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <a
+                        href={`tel:${hotline.replace(/\s/g, "")}`}
+                        className="font-bold text-gray-900 hover:text-emerald-600"
+                      >
+                        {hotline}
+                      </a>
+                    </div>
+                  )}
+                  <a
+                    href={
+                      b.address
+                        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`
+                        : "#"
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 flex items-center justify-center gap-2 w-full rounded-full border-2 border-emerald-600 text-emerald-700 font-bold text-sm py-2.5 hover:bg-emerald-600 hover:text-white transition-colors"
+                  >
+                    <MapPin className="w-4 h-4" /> Xem bản đồ
                   </a>
                 </div>
-                <a
-                  href={b.mapUrl}
-                  className="mt-2 flex items-center justify-center gap-2 w-full rounded-full border-2 border-emerald-600 text-emerald-700 font-bold text-sm py-2.5 hover:bg-emerald-600 hover:text-white transition-colors"
-                >
-                  <MapPin className="w-4 h-4" /> Xem bản đồ
-                </a>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
+
         </div>
       </section>
 

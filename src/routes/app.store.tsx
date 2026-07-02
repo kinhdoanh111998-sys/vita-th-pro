@@ -1,18 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { FilterSidebar, type AppStoreFilters } from "@/components/app/FilterSidebar";
 import { ServiceCard } from "@/components/ServiceCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import { useActiveStores } from "@/lib/useStores";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
 
-const BRANCHES = [
-  { id: "hn", label: "Cơ sở 1 - Hà Nội" },
-  { id: "dn", label: "Cơ sở 2 - Đà Nẵng" },
-  { id: "hcm", label: "Cơ sở 3 - TP.HCM" },
-];
 
 
 const CATEGORIES = [
@@ -32,10 +28,15 @@ const DEFAULT_FILTERS: AppStoreFilters = {
 function StorePage() {
   const [tab, setTab] = useState<(typeof CATEGORIES)[number]["key"]>("all");
   const [search, setSearch] = useState("");
-  const [branch, setBranch] = useState<string>(BRANCHES[0].id);
+  const { data: stores = [] } = useActiveStores();
+  const [branch, setBranch] = useState<string>("");
+  useEffect(() => {
+    if (!branch && stores.length > 0) setBranch(stores[0].id);
+  }, [branch, stores]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<AppStoreFilters>(DEFAULT_FILTERS);
   const { data = [], isLoading, error } = useServiceCatalog();
+
 
   const serviceCategories = useMemo(() => {
     const set = new Set<string>();
@@ -104,9 +105,10 @@ function StorePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {BRANCHES.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.label}</SelectItem>
+                {stores.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
                 ))}
+
               </SelectContent>
             </Select>
           </div>

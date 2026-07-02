@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LogOut, ShieldCheck, Briefcase, User, ArrowRight, Home } from "lucide-react";
+import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CustomerHomeContent } from "@/components/CustomerHomeContent";
+import { ProfileForm } from "@/components/ProfileForm";
 
 export const Route = createFileRoute("/app/account")({
   component: AccountHub,
 });
+
 
 function AccountHub() {
   const { session, role, email, fullName, loading, signOut } = useAuth();
@@ -116,12 +118,11 @@ function AccountHub() {
         </div>
       )}
 
-      {/* Body */}
-      {isCustomer ? (
-        <CustomerHomeContent />
-      ) : (
-        <StaffProfileBasic email={email} fullName={fullName} />
-      )}
+      {/* Profile editor — hiện cho MỌI role */}
+      <ProfileForm />
+
+      {/* Dashboard khách hàng (liệu trình + QR + đơn hàng) */}
+      {isCustomer && <CustomerHomeContent />}
 
       {/* Về trang chủ */}
       <div className="pt-2">
@@ -136,31 +137,3 @@ function AccountHub() {
   );
 }
 
-function StaffProfileBasic({ email, fullName }: { email: string | null; fullName: string | null }) {
-  return (
-    <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-brand/10 grid place-items-center text-brand-dark">
-          <User className="w-5 h-5" />
-        </div>
-        <div>
-          <h3 className="font-black text-brand-dark">Thông tin cá nhân</h3>
-          <p className="text-xs text-ink-muted">Dữ liệu tài khoản của bạn.</p>
-        </div>
-      </div>
-      <dl className="grid sm:grid-cols-2 gap-4 text-sm">
-        <div>
-          <dt className="text-[11px] uppercase tracking-widest text-ink-muted font-bold">Họ và tên</dt>
-          <dd className="mt-1 font-semibold text-ink">{fullName ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-[11px] uppercase tracking-widest text-ink-muted font-bold">Email</dt>
-          <dd className="mt-1 font-semibold text-ink truncate">{email ?? "—"}</dd>
-        </div>
-      </dl>
-      <p className="mt-4 text-xs text-ink-muted italic">
-        Muốn cập nhật họ tên, email hoặc số điện thoại? Vui lòng liên hệ quản trị viên hệ thống.
-      </p>
-    </div>
-  );
-}
