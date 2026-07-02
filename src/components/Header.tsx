@@ -7,7 +7,7 @@ import { useSettings } from "@/lib/useSettings";
 import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigationItems } from "@/lib/useNavigationItems";
-import { supabase } from "@/lib/supabaseClient";
+import { OmniSearch } from "@/components/OmniSearch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -23,29 +23,6 @@ const FALLBACK_NAV = [
   { label: "Liên hệ", route: "/contact" },
 ];
 
-type SearchType = "all" | "service" | "product" | "news" | "event";
-
-const TYPE_LABELS: Record<SearchType, string> = {
-  all: "Tất cả",
-  service: "Dịch vụ",
-  product: "Sản phẩm",
-  news: "Tin tức",
-  event: "Sự kiện",
-};
-
-type SearchResult = {
-  id: string;
-  title: string;
-  kind: "service" | "product" | "news" | "event";
-  route: string;
-};
-
-const ICON_BY_KIND: Record<SearchResult["kind"], typeof Package> = {
-  service: Wrench,
-  product: Package,
-  news: Newspaper,
-  event: CalendarDays,
-};
 
 export function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
