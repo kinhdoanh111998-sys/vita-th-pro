@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/lib/AuthContext";
-import { AttendanceWidget, ShiftRegistrationPanel } from "@/components/AttendanceWidget";
+import { AttendanceWidget } from "@/components/AttendanceWidget";
 import { StaffScheduleRegistration } from "@/components/StaffScheduleRegistration";
 import { AffiliateCard } from "@/components/portal/dashboard/AffiliateCard";
 import { PerformanceCard } from "@/components/portal/dashboard/PerformanceCard";
@@ -28,21 +28,18 @@ function PortalDashboard() {
         </p>
       </div>
 
-      {/* KHỐI CHẤM CÔNG */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AttendanceWidget />
-        <ShiftRegistrationPanel />
-      </div>
+      {/* Chấm công */}
+      <AttendanceWidget />
 
-      {/* 3 THẺ TIỆN ÍCH MỚI */}
+      {/* Lịch làm việc & Đăng ký ca (batch) */}
+      <StaffScheduleRegistration />
+
+      {/* Tiện ích */}
       <div className="grid gap-4 lg:grid-cols-2">
         <ShiftSummaryCard />
         <PerformanceCard />
       </div>
       <AffiliateCard />
-
-      {/* ĐĂNG KÝ LỊCH THÁNG */}
-      <StaffScheduleRegistration />
     </div>
   );
 }
