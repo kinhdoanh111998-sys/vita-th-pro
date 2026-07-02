@@ -685,18 +685,20 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label>Giá nhập (VND)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.cost_price}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, cost_price: e.target.value }))
-                  }
-                />
-              </div>
+            <div className={`grid gap-3 ${isService ? "grid-cols-1" : "grid-cols-3"}`}>
+              {!isService && (
+                <div className="space-y-1.5">
+                  <Label>Giá nhập (VND)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.cost_price}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, cost_price: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Giá bán (VND) *</Label>
                 <Input
@@ -709,17 +711,19 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
                   }
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label>Giá KM (VND)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.sale_price}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, sale_price: e.target.value }))
-                  }
-                />
-              </div>
+              {!isService && (
+                <div className="space-y-1.5">
+                  <Label>Giá KM (VND)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={form.sale_price}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, sale_price: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
