@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "@tanstack/react-router";
 import { LogIn, Menu, X } from "lucide-react";
 import logo from "@/assets/vita-th-pro-logo.png";
@@ -7,6 +7,7 @@ import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigationItems } from "@/lib/useNavigationItems";
 import { OmniSearch } from "@/components/OmniSearch";
+
 
 
 const FALLBACK_NAV = [
