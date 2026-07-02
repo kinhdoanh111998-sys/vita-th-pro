@@ -396,6 +396,9 @@ export type Database = {
           note: string | null
           notes: string | null
           phone: string | null
+          ref_code: string | null
+          referred_at: string | null
+          referred_by: string | null
           source: string | null
           status: string | null
           zalo_id: string | null
@@ -412,6 +415,9 @@ export type Database = {
           note?: string | null
           notes?: string | null
           phone?: string | null
+          ref_code?: string | null
+          referred_at?: string | null
+          referred_by?: string | null
           source?: string | null
           status?: string | null
           zalo_id?: string | null
@@ -428,11 +434,22 @@ export type Database = {
           note?: string | null
           notes?: string | null
           phone?: string | null
+          ref_code?: string | null
+          referred_at?: string | null
+          referred_by?: string | null
           source?: string | null
           status?: string | null
           zalo_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "customers_referred_by_fkey"
+            columns: ["referred_by"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_media: {
         Row: {
@@ -827,6 +844,47 @@ export type Database = {
             columns: ["voucher_id"]
             isOneToOne: false
             referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_clicks: {
+        Row: {
+          converted_customer_id: string | null
+          created_at: string
+          id: string
+          ip_hash: string | null
+          landing_path: string | null
+          ref_code: string
+          session_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          converted_customer_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          landing_path?: string | null
+          ref_code: string
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          converted_customer_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          landing_path?: string | null
+          ref_code?: string
+          session_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_clicks_converted_customer_id_fkey"
+            columns: ["converted_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -1568,6 +1626,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      gen_ref_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
