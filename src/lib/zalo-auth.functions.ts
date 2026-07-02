@@ -113,6 +113,19 @@ export const zaloExchangeAndSignIn = createServerFn({ method: "POST" })
         });
         if (uErr) console.error("[zalo] insert users error:", uErr);
 
+        // Resolve refCode → referrer customer id (nếu có)
+        let referrerId: string | null = null;
+        if (data.refCode) {
+          const { data: refCust } = await supabaseAdmin
+            .from("customers")
+            .select("id")
+            .eq("ref_code", data.refCode)
+            .maybeSingle();
+          if (refCust?.id && refCust.id !== userId) {
+            referrerId = refCust.id;
+          }
+        }
+
         // customers row
         const { error: cErr } = await supabaseAdmin.from("customers").insert({
           id: userId,
@@ -122,8 +135,10 @@ export const zaloExchangeAndSignIn = createServerFn({ method: "POST" })
           full_name: fullName,
           avatar_url: avatarUrl,
           zalo_id: me.id,
+          referred_by: referrerId,
         });
         if (cErr) console.error("[zalo] insert customers error:", cErr);
+
       } else {
         // Refresh password (in case user changed it — force back to phone per rule)
         // and update profile with latest Zalo data.
