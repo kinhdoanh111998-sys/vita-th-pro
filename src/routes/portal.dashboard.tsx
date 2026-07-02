@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Users2, ClipboardList } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
+import { AttendanceWidget, ShiftRegistrationPanel } from "@/components/AttendanceWidget";
 
 export const Route = createFileRoute("/portal/dashboard")({
   component: PortalDashboard,
 });
+
 
 function todayRange() {
   const start = new Date();
@@ -71,7 +73,14 @@ function PortalDashboard() {
         </p>
       </div>
 
+      {/* ==== KHỐI CHẤM CÔNG & ĐĂNG KÝ CA (Mobile-first) ==== */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AttendanceWidget />
+        <ShiftRegistrationPanel />
+      </div>
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
         <StatCard
           icon={<CalendarDays className="size-5" />}
           label="Lịch hẹn hôm nay"
