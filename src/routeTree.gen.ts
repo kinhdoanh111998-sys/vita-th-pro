@@ -64,6 +64,7 @@ import { Route as PublicServicesIndexRouteImport } from './routes/_public.servic
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
+import { Route as AuthZaloCallbackRouteImport } from './routes/auth.zalo.callback'
 import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
 import { Route as AppNewsIdRouteImport } from './routes/app.news.$id'
@@ -87,6 +88,7 @@ import { Route as PublicAboutTestimonialsRouteImport } from './routes/_public.ab
 import { Route as PublicAboutTeamRouteImport } from './routes/_public.about.team'
 import { Route as PublicAboutHistoryRouteImport } from './routes/_public.about.history'
 import { Route as PublicAboutCertificationsRouteImport } from './routes/_public.about.certifications'
+import { Route as ApiPublicZaloAuthorizeRouteImport } from './routes/api/public/zalo.authorize'
 
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
@@ -362,6 +364,11 @@ const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PublicAboutRoute,
 } as any)
+const AuthZaloCallbackRoute = AuthZaloCallbackRouteImport.update({
+  id: '/auth/zalo/callback',
+  path: '/auth/zalo/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppStoreCheckoutRoute = AppStoreCheckoutRouteImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -484,6 +491,11 @@ const PublicAboutCertificationsRoute =
     path: '/certifications',
     getParentRoute: () => PublicAboutRoute,
   } as any)
+const ApiPublicZaloAuthorizeRoute = ApiPublicZaloAuthorizeRouteImport.update({
+  id: '/api/public/zalo/authorize',
+  path: '/api/public/zalo/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
@@ -559,10 +571,12 @@ export interface FileRoutesByFullPath {
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
+  '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/about/': typeof PublicAboutIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
   '/services/': typeof PublicServicesIndexRoute
+  '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRoutesByTo {
   '/dang-ky': typeof DangKyRoute
@@ -632,10 +646,12 @@ export interface FileRoutesByTo {
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
+  '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/about': typeof PublicAboutIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
   '/services': typeof PublicServicesIndexRoute
+  '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -713,10 +729,12 @@ export interface FileRoutesById {
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
   '/app/store/checkout': typeof AppStoreCheckoutRoute
+  '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/_public/about/': typeof PublicAboutIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
   '/_public/services/': typeof PublicServicesIndexRoute
+  '/api/public/zalo/authorize': typeof ApiPublicZaloAuthorizeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -794,10 +812,12 @@ export interface FileRouteTypes {
     | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
+    | '/auth/zalo/callback'
     | '/about/'
     | '/news/'
     | '/products/'
     | '/services/'
+    | '/api/public/zalo/authorize'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/dang-ky'
@@ -867,10 +887,12 @@ export interface FileRouteTypes {
     | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
+    | '/auth/zalo/callback'
     | '/about'
     | '/news'
     | '/products'
     | '/services'
+    | '/api/public/zalo/authorize'
   id:
     | '__root__'
     | '/_public'
@@ -947,10 +969,12 @@ export interface FileRouteTypes {
     | '/app/news/$id'
     | '/app/store/$productId'
     | '/app/store/checkout'
+    | '/auth/zalo/callback'
     | '/_public/about/'
     | '/_public/news/'
     | '/_public/products/'
     | '/_public/services/'
+    | '/api/public/zalo/authorize'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -965,6 +989,8 @@ export interface RootRouteChildren {
   ApiPublicSeedDemoCustomerRoute: typeof ApiPublicSeedDemoCustomerRoute
   ApiPublicSeedDemoEmployeesRoute: typeof ApiPublicSeedDemoEmployeesRoute
   ApiPublicSeedDemoTechnicianRoute: typeof ApiPublicSeedDemoTechnicianRoute
+  AuthZaloCallbackRoute: typeof AuthZaloCallbackRoute
+  ApiPublicZaloAuthorizeRoute: typeof ApiPublicZaloAuthorizeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1354,6 +1380,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicAboutIndexRouteImport
       parentRoute: typeof PublicAboutRoute
     }
+    '/auth/zalo/callback': {
+      id: '/auth/zalo/callback'
+      path: '/auth/zalo/callback'
+      fullPath: '/auth/zalo/callback'
+      preLoaderRoute: typeof AuthZaloCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/store/checkout': {
       id: '/app/store/checkout'
       path: '/checkout'
@@ -1514,6 +1547,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/about/certifications'
       preLoaderRoute: typeof PublicAboutCertificationsRouteImport
       parentRoute: typeof PublicAboutRoute
+    }
+    '/api/public/zalo/authorize': {
+      id: '/api/public/zalo/authorize'
+      path: '/api/public/zalo/authorize'
+      fullPath: '/api/public/zalo/authorize'
+      preLoaderRoute: typeof ApiPublicZaloAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1787,6 +1827,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicSeedDemoCustomerRoute: ApiPublicSeedDemoCustomerRoute,
   ApiPublicSeedDemoEmployeesRoute: ApiPublicSeedDemoEmployeesRoute,
   ApiPublicSeedDemoTechnicianRoute: ApiPublicSeedDemoTechnicianRoute,
+  AuthZaloCallbackRoute: AuthZaloCallbackRoute,
+  ApiPublicZaloAuthorizeRoute: ApiPublicZaloAuthorizeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

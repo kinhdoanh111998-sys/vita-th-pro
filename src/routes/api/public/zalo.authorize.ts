@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/zalo/authorize")({
             generateState,
             codeChallengeFromVerifier,
           } = await import("@/lib/zalo-auth.server");
-          const { ZALO_STATE_COOKIE, ZALO_VERIFIER_COOKIE } = await import("@/lib/zalo-auth.functions");
+          const { ZALO_STATE_COOKIE, ZALO_VERIFIER_COOKIE } = await import("@/lib/zalo-auth.constants");
 
           const state = generateState();
           const verifier = generateCodeVerifier();

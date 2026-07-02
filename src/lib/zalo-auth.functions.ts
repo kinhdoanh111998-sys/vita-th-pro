@@ -1,9 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getCookie, deleteCookie } from "@tanstack/react-start/server";
-
-export const ZALO_STATE_COOKIE = "zalo_oauth_state";
-export const ZALO_VERIFIER_COOKIE = "zalo_oauth_verifier";
-export const CUSTOMER_EMAIL_DOMAIN = "@khach.vitath.pro";
+import { ZALO_STATE_COOKIE, ZALO_VERIFIER_COOKIE, CUSTOMER_EMAIL_DOMAIN } from "./zalo-auth.constants";
 
 type ExchangeInput = {
   code: string;
@@ -23,6 +19,7 @@ export const zaloExchangeAndSignIn = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<ExchangeResult> => {
     try {
+      const { getCookie, deleteCookie } = await import("@tanstack/react-start/server");
       const appId = process.env.ZALO_APP_ID;
       const appSecret = process.env.ZALO_APP_SECRET;
       if (!appId || !appSecret) {
