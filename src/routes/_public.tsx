@@ -10,8 +10,6 @@ export const Route = createFileRoute("/_public")({
 });
 
 function PublicLayout() {
-  const navigate = useNavigate();
-
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -33,23 +31,16 @@ function PublicLayout() {
     } catch {
       // ignore
     }
-    void navigate; // silence unused
-  }, [navigate]);
-
-
-
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // Trang chủ (/) tự render header/footer riêng theo phong cách Luxury,
-  // nên ẩn Header/Footer mặc định để tránh 2 thanh chồng nhau.
-  const hideChrome = pathname === "/";
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
-      {!hideChrome && <Header />}
+      <Header />
       <main className="flex-1">
         <Outlet />
       </main>
-      {!hideChrome && <Footer />}
+      <Footer />
     </div>
   );
 }
+
