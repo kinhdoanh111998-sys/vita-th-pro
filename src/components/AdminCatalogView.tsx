@@ -352,6 +352,20 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
       )}
 
       <div className="bg-white rounded-2xl border border-hairline shadow-sm p-5">
+        <div className="mb-4 relative max-w-md">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Tìm theo tên, SKU, danh mục ${isService ? "dịch vụ" : "sản phẩm"}...`}
+            className="pl-9"
+          />
+          {debouncedSearch && (
+            <div className="mt-1 text-xs text-ink-muted">
+              {rows.length} kết quả cho "{debouncedSearch}"
+            </div>
+          )}
+        </div>
         <div className="overflow-auto">
           <table className="w-full min-w-[1100px] border-collapse">
             <thead>
