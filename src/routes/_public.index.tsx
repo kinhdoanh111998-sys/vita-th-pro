@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Search,
+  LogIn,
   Sparkles,
   Store,
   CalendarDays,
@@ -11,6 +13,7 @@ import {
   Home as HomeIcon,
   User,
   ChevronRight,
+  Menu,
   X,
   Star,
   Quote,
@@ -18,9 +21,13 @@ import {
   Phone,
 } from "lucide-react";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
+import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/AuthContext";
+import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+
 
 
 
