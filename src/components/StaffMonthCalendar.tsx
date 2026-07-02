@@ -75,7 +75,8 @@ export function StaffMonthCalendar() {
           .from("staff_shifts")
           .select("id,staff_id,date,shift_type,status")
           .gte("date", from)
-          .lte("date", to);
+          .lte("date", to)
+          .eq("status", "approved");
         if (error) throw error;
         const ids = Array.from(new Set((shifts ?? []).map((s) => s.staff_id)));
         let usersMap: Record<string, StaffInfo> = {};
