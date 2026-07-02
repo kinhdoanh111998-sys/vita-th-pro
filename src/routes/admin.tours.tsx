@@ -14,7 +14,11 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { DraggableStaff, DroppableTarget, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { AssignDndProvider } from "@/components/AssignDndProvider";
+import { Input as UIInput } from "@/components/ui/input";
+import { Search } from "lucide-react";
+
 
 export const Route = createFileRoute("/admin/tours")({
   component: ToursPage,
