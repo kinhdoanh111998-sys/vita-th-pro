@@ -211,7 +211,7 @@ function BookingsAdmin() {
       <AdminTopbar
         title="Lịch hẹn"
         subtitle="Kéo thẻ nhân viên vào lịch hẹn để phân công. Viền đỏ = sắp tới giờ."
-        actions={<Button onClick={() => setCreateOpen(true)}><Plus className="size-4 mr-1" />Tạo Lịch hẹn mới</Button>}
+        right={<Button onClick={() => setCreateOpen(true)}><Plus className="size-4 mr-1" />Tạo Lịch hẹn mới</Button>}
       />
 
       <StaffDragDropBoard
