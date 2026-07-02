@@ -36,6 +36,7 @@ import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminVoucherRouteImport } from './routes/admin.voucher'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
+import { Route as AdminShiftsRouteImport } from './routes/admin.shifts'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
@@ -218,6 +219,11 @@ const AdminTreatmentsRoute = AdminTreatmentsRouteImport.update({
 const AdminToursRoute = AdminToursRouteImport.update({
   id: '/tours',
   path: '/tours',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminShiftsRoute = AdminShiftsRouteImport.update({
+  id: '/shifts',
+  path: '/shifts',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
@@ -503,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -573,6 +580,7 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -652,6 +660,7 @@ export interface FileRoutesById {
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shifts': typeof AdminShiftsRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -732,6 +741,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/shifts'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -802,6 +812,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/shifts'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -880,6 +891,7 @@ export interface FileRouteTypes {
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/shifts'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -1130,6 +1142,13 @@ declare module '@tanstack/react-router' {
       path: '/tours'
       fullPath: '/admin/tours'
       preLoaderRoute: typeof AdminToursRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/shifts': {
+      id: '/admin/shifts'
+      path: '/shifts'
+      fullPath: '/admin/shifts'
+      preLoaderRoute: typeof AdminShiftsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/settings': {
@@ -1611,6 +1630,7 @@ interface AdminRouteChildren {
   AdminProductsRoute: typeof AdminProductsRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminShiftsRoute: typeof AdminShiftsRoute
   AdminToursRoute: typeof AdminToursRoute
   AdminTreatmentsRoute: typeof AdminTreatmentsRoute
   AdminVoucherRoute: typeof AdminVoucherRoute
@@ -1631,6 +1651,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminProductsRoute: AdminProductsRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminShiftsRoute: AdminShiftsRoute,
   AdminToursRoute: AdminToursRoute,
   AdminTreatmentsRoute: AdminTreatmentsRoute,
   AdminVoucherRoute: AdminVoucherRoute,
