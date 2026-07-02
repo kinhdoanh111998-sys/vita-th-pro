@@ -185,8 +185,8 @@ function PortalBookings() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="flex-1 border-red-400 text-red-600 hover:bg-red-50"
+                    variant="danger"
+                    className="flex-1"
                     disabled={isPending}
                     onClick={() => updateAcceptance(t.id, "declined")}
                   >
@@ -196,7 +196,7 @@ function PortalBookings() {
               ) : acceptance === "declined" ? (
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="ghost"
                   disabled={isPending}
                   onClick={() => updateAcceptance(t.id, "accepted")}
                 >
