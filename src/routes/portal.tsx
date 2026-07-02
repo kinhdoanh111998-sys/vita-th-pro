@@ -1,10 +1,24 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/AuthContext";
+import { supabase } from "@/lib/supabaseClient";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/portal")({
   component: PortalLayout,
 });
+
+type NotificationRow = {
+  id: string;
+  recipient_id: string | null;
+  type: string | null;
+  title: string | null;
+  body: string | null;
+  ref_type: string | null;
+  ref_id: string | null;
+};
 
 function PortalLayout() {
   const { pathname } = useLocation();
