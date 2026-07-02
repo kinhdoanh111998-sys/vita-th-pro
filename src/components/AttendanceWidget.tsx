@@ -192,35 +192,92 @@ export function AttendanceWidget() {
 
   // Đã check-in, đã duyệt → cho phép check-out
   if (att && att.check_in_approved) {
+    const earlyRequested = !!att.early_checkout_requested;
     return (
-      <Card tone="brand">
+      <Card tone={shiftEnded ? "warn" : "brand"}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <div className="text-xs uppercase tracking-wider font-bold text-brand">Đang trong ca</div>
+            <div className={`text-xs uppercase tracking-wider font-bold ${shiftEnded ? "text-red-600" : "text-brand"}`}>
+              {shiftEnded ? "Đã hết giờ ca" : "Đang trong ca"}
+            </div>
             <div className="text-2xl font-black text-brand-dark mt-1">{shift?.name ?? "Ca làm"}</div>
             <div className="text-xs text-ink-muted font-mono mt-0.5">
               {shift?.start_time.slice(0, 5)} – {shift?.end_time.slice(0, 5)}
             </div>
           </div>
-          {endMs && (
+          {endMs !== null && (
             <div className="text-right">
-              <div className="text-xs text-ink-muted font-bold">Còn lại</div>
-              <div className="text-3xl font-black text-brand-dark font-mono">{remH}h {remM.toString().padStart(2, "0")}m</div>
+              <div className="text-xs text-ink-muted font-bold">
+                {shiftEnded ? "Hãy Checkout ngay" : "Ca làm việc kết thúc sau"}
+              </div>
+              <div className={`text-3xl font-black font-mono ${shiftEnded ? "text-red-600 animate-pulse" : "text-brand-dark"}`}>
+                {shiftEnded
+                  ? "00:00:00"
+                  : `${remH.toString().padStart(2, "0")}:${remM.toString().padStart(2, "0")}:${remS.toString().padStart(2, "0")}`}
+              </div>
             </div>
           )}
         </div>
+
+        {earlyRequested && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900">
+            <AlarmClockOff className="size-4 mt-0.5" />
+            <div>
+              Đã gửi yêu cầu <b>tan ca sớm</b>
+              {att.early_checkout_reason ? ` · Lý do: ${att.early_checkout_reason}` : ""}. Chờ quản lý xử lý.
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 space-y-2">
           <Label className="text-xs">Ghi chú cuối ca (tuỳ chọn)</Label>
           <Input value={notes} onChange={(e) => setNotes(e.target.value)}
             placeholder="Bàn giao, sự cố, khách VIP..." />
         </div>
-        <Button onClick={doCheckOut} disabled={busy}
-          className="mt-4 w-full h-14 text-base bg-red-600 hover:bg-red-700">
-          <LogOut className="size-5 mr-2 inline" /> BẤM CHECK-OUT XUẤT CA
-        </Button>
+
+        <div className="mt-4 flex flex-col sm:flex-row gap-2">
+          <Button onClick={doCheckOut} disabled={busy}
+            className={`flex-1 h-14 text-base ${shiftEnded ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-brand hover:bg-brand-dark"}`}>
+            <LogOut className="size-5 mr-2 inline" />
+            {shiftEnded ? "CHECKOUT NGAY" : "Check-out xuất ca"}
+          </Button>
+          {!shiftEnded && !earlyRequested && (
+            <Button variant="ghost" onClick={() => setEarlyOpen(true)}
+              className="h-14 border border-hairline">
+              <AlarmClockOff className="size-4 mr-2 inline" /> Tan ca sớm
+            </Button>
+          )}
+        </div>
+
+        {/* Dialog xin về sớm */}
+        <Dialog open={earlyOpen} onOpenChange={setEarlyOpen}>
+          <DialogContent className="bg-white">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <AlarmClockOff className="size-5 text-amber-600" /> Yêu cầu tan ca sớm
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label className="text-xs">Lý do xin về sớm <span className="text-red-500">*</span></Label>
+              <Textarea value={earlyReason} onChange={(e) => setEarlyReason(e.target.value)}
+                placeholder="Ví dụ: Có việc đột xuất gia đình, đi khám bệnh..."
+                rows={4} />
+              <p className="text-xs text-ink-muted">
+                Yêu cầu sẽ được gửi ngay đến quản lý. Bạn vẫn cần Check-out khi thực sự ra về.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setEarlyOpen(false)}>Huỷ</Button>
+              <Button onClick={requestEarlyCheckout} disabled={earlySaving}>
+                {earlySaving ? "Đang gửi..." : "Gửi yêu cầu"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Card>
     );
   }
+
 
   // Đã check-in nhưng chưa duyệt
   if (att && !att.check_in_approved) {
