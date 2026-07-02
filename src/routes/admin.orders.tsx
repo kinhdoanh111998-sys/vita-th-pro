@@ -670,3 +670,273 @@ function CreateOrderDrawer({
     </Sheet>
   );
 }
+
+/* ============================================================ */
+type OrderItemRow = {
+  id: string;
+  order_id: string;
+  item_type: "product" | "service";
+  item_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+};
+
+function OrderDetailDrawer({
+  orderId, onOpenChange, customers, catalog, staff, onChanged,
+}: {
+  orderId: string | null;
+  onOpenChange: (v: boolean) => void;
+  customers: Customer[];
+  catalog: CatalogItem[];
+  staff: StaffUser[];
+  onChanged: () => void;
+}) {
+  const open = !!orderId;
+
+  const orderQ = useQuery({
+    queryKey: ["order", "detail", orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("orders")
+        .select("*").eq("id", orderId!).maybeSingle();
+      if (error) throw error;
+      return data as OrderRow | null;
+    },
+  });
+
+  const itemsQ = useQuery({
+    queryKey: ["order", "items", orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("order_items")
+        .select("*").eq("order_id", orderId!);
+      if (error) throw error;
+      return (data ?? []) as OrderItemRow[];
+    },
+  });
+
+  const treatmentsQ = useQuery({
+    queryKey: ["order", "treatments", orderId],
+    enabled: !!orderId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("treatments")
+        .select("id,session_number,status,service_id")
+        .eq("order_id", orderId!)
+        .order("session_number");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const [salesId, setSalesId] = useState("");
+  const [commissionRate, setCommissionRate] = useState<number>(5);
+
+  useEffect(() => {
+    if (orderQ.data) {
+      setSalesId(orderQ.data.sales_staff_id ?? "");
+      setCommissionRate(Number(orderQ.data.commission_rate ?? 5));
+    }
+  }, [orderQ.data]);
+
+  const order = orderQ.data;
+  const customer = order ? customers.find((c) => c.id === order.customer_id) : null;
+  const catMap = useMemo(() => {
+    const m = new Map<string, CatalogItem>();
+    catalog.forEach((c) => m.set(c.id, c));
+    return m;
+  }, [catalog]);
+
+  const isPaid = order?.status === "paid";
+  const isCancelled = order?.status === "cancelled";
+
+  const saveMeta = useMutation({
+    mutationFn: async () => {
+      if (!order) return;
+      const { error } = await supabase.from("orders").update({
+        sales_staff_id: salesId || null,
+        commission_rate: Number(commissionRate) || 0,
+      }).eq("id", order.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã cập nhật đơn hàng");
+      onChanged();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const confirmPay = useMutation({
+    mutationFn: async () => {
+      if (!order) return;
+      const { error } = await supabase.from("orders")
+        .update({ status: "paid" }).eq("id", order.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã xác nhận thanh toán. Liệu trình sẽ được tự sinh.");
+      onChanged();
+      orderQ.refetch(); treatmentsQ.refetch();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const cancelOrder = useMutation({
+    mutationFn: async () => {
+      if (!order) return;
+      if (!window.confirm("Huỷ đơn này? Các liệu trình đã sinh (nếu có) sẽ được giữ lại làm lịch sử.")) {
+        throw new Error("Đã huỷ thao tác");
+      }
+      const { error } = await supabase.from("orders")
+        .update({ status: "cancelled" }).eq("id", order.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã huỷ đơn hàng");
+      onChanged();
+      orderQ.refetch();
+    },
+    onError: (e: Error) => { if (e.message !== "Đã huỷ thao tác") toast.error(e.message); },
+  });
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-white">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Eye className="size-5 text-brand" /> Chi tiết đơn hàng
+          </SheetTitle>
+        </SheetHeader>
+
+        {orderQ.isLoading || !order ? (
+          <div className="py-10 text-center text-ink-muted">Đang tải...</div>
+        ) : (
+          <div className="mt-5 space-y-4">
+            <section className="rounded-xl border border-hairline p-4 flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs text-ink-muted">Mã đơn</div>
+                <Badge className="bg-brand-dark text-white font-mono text-sm">
+                  {order.order_code ?? order.id.slice(0, 8)}
+                </Badge>
+                <div className="text-xs text-ink-muted mt-2">
+                  {new Date(order.created_at).toLocaleString("vi-VN")}
+                </div>
+              </div>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                isPaid ? "bg-emerald-100 text-emerald-700"
+                : isCancelled ? "bg-red-100 text-red-700"
+                : "bg-amber-100 text-amber-700"
+              }`}>{order.status}</span>
+            </section>
+
+            <section className="rounded-xl border border-hairline p-4">
+              <div className="font-bold text-brand-dark flex items-center gap-2 mb-2">
+                <User className="size-4" /> Khách hàng
+              </div>
+              <div className="font-bold">{customer?.name ?? "—"}</div>
+              <div className="text-xs text-ink-muted">{customer?.phone ?? ""}</div>
+            </section>
+
+            <section className="rounded-xl border border-hairline p-4">
+              <div className="font-bold text-brand-dark mb-3">Mặt hàng ({itemsQ.data?.length ?? 0})</div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-xs text-ink-muted text-left">
+                    <tr>
+                      <th className="py-2">Tên</th>
+                      <th className="py-2">Loại</th>
+                      <th className="py-2 text-right">Đơn giá</th>
+                      <th className="py-2 text-right">SL</th>
+                      <th className="py-2 text-right">Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(itemsQ.data ?? []).map((it) => {
+                      const cat = catMap.get(it.item_id);
+                      return (
+                        <tr key={it.id} className="border-t border-hairline">
+                          <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
+                          <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
+                          <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
+                          <td className="py-2 text-right">{it.quantity}</td>
+                          <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-3 space-y-1 text-sm border-t border-hairline pt-3">
+                <div className="flex justify-between"><span className="text-ink-muted">Tạm tính</span><span className="font-bold">{fmt(Number(order.subtotal_amount ?? 0))}</span></div>
+                <div className="flex justify-between"><span className="text-ink-muted">Giảm giá</span><span className="font-bold text-red-600">{Number(order.discount_amount) > 0 ? "-" + fmt(Number(order.discount_amount)) : "—"}</span></div>
+                <div className="flex justify-between text-lg pt-1"><span className="font-bold">Tổng</span><span className="font-black text-brand-dark">{fmt(Number(order.total_amount))}</span></div>
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-hairline p-4 space-y-3">
+              <div className="font-bold text-brand-dark">Người bán & Hoa hồng {isPaid && <span className="text-xs font-normal text-ink-muted">(có thể chỉnh sửa)</span>}</div>
+              <div className="grid grid-cols-[1fr_140px] gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Người bán</Label>
+                  <Select value={salesId || "__none"} onValueChange={(v) => setSalesId(v === "__none" ? "" : v)}>
+                    <SelectTrigger><SelectValue placeholder="Chưa gán" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">— Không có —</SelectItem>
+                      {staff.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.full_name ?? s.email} · <span className="text-ink-muted">{s.role}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">% Hoa hồng</Label>
+                  <Input type="number" step="0.1" min={0} max={100}
+                    value={commissionRate}
+                    onChange={(e) => setCommissionRate(Number(e.target.value))} />
+                </div>
+              </div>
+              <Button type="button" size="sm" onClick={() => saveMeta.mutate()} disabled={saveMeta.isPending}>
+                <Save className="size-4 mr-1 inline" /> {saveMeta.isPending ? "Đang lưu..." : "Lưu thay đổi"}
+              </Button>
+            </section>
+
+            {(treatmentsQ.data?.length ?? 0) > 0 && (
+              <section className="rounded-xl border border-hairline p-4">
+                <div className="font-bold text-brand-dark mb-2">Liệu trình đã sinh ({treatmentsQ.data!.length})</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {treatmentsQ.data!.map((t) => (
+                    <span key={t.id} className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ${
+                      t.status === "completed" ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                    }`}>
+                      #{t.session_number} · {t.status}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <SheetFooter className="sticky bottom-0 bg-white pt-3 border-t border-hairline flex-wrap gap-2">
+              {order.status === "pending" && (
+                <Button type="button" onClick={() => confirmPay.mutate()} disabled={confirmPay.isPending}>
+                  <Check className="size-4 mr-1 inline" /> Xác nhận thanh toán
+                </Button>
+              )}
+              {!isCancelled && (
+                <Button type="button" variant="ghost" onClick={() => cancelOrder.mutate()}
+                  disabled={cancelOrder.isPending}
+                  className="text-red-600 hover:bg-red-50">
+                  <Ban className="size-4 mr-1 inline" /> Huỷ đơn
+                </Button>
+              )}
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Đóng</Button>
+            </SheetFooter>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
