@@ -20,6 +20,7 @@ const tabs: Tab[] = [
   { to: "/admin/bookings", label: "Lịch hẹn", roles: ["admin", "manager"] },
   { to: "/admin/treatments", label: "Liệu trình", roles: ["admin", "manager"] },
   { to: "/admin/orders", label: "Đơn hàng", roles: ["admin", "manager"] },
+  { to: "/admin/voucher", label: "Voucher / Khuyến mãi", roles: ["admin", "manager"] },
   { to: "/admin/employees", label: "Nhân viên", roles: ["admin", "manager"] },
   { to: "/admin/tours", label: "Tour làm cho khách", roles: ["admin", "manager"] },
   { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin", "manager"] },
