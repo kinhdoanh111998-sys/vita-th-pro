@@ -29,10 +29,18 @@ type Order = {
   id: string;
   service_id: string | null;
   quantity: number | null;
-  total_price: number | null;
+  total_amount: number | null;
   status: string | null;
   created_at: string | null;
   order_code: string | null;
+};
+type OrderItem = {
+  order_id: string;
+  item_type: string;
+  item_id: string | null;
+  name: string | null;
+  quantity: number | null;
+  unit_price: number | null;
 };
 type Service = { id: string; name: string; default_sessions: number | null };
 
