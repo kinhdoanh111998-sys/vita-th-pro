@@ -385,6 +385,7 @@ export type Database = {
       }
       customers: {
         Row: {
+          address: string | null
           avatar_url: string | null
           created_at: string
           dob: string | null
@@ -404,6 +405,7 @@ export type Database = {
           zalo_id: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string
           dob?: string | null
@@ -423,6 +425,7 @@ export type Database = {
           zalo_id?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string
           dob?: string | null
@@ -565,6 +568,42 @@ export type Database = {
           price?: number | null
           start_at?: string
           title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      navigation_items: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          label: string
+          menu_key: string
+          platform: string
+          route: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          label: string
+          menu_key: string
+          platform: string
+          route: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          label?: string
+          menu_key?: string
+          platform?: string
+          route?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -1177,6 +1216,54 @@ export type Database = {
           },
         ]
       }
+      stores: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          hotline: string | null
+          id: string
+          images: string[]
+          is_active: boolean
+          main_image: string | null
+          name: string
+          open_hours: string | null
+          phone: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          hotline?: string | null
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          main_image?: string | null
+          name: string
+          open_hours?: string | null
+          phone?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          hotline?: string | null
+          id?: string
+          images?: string[]
+          is_active?: boolean
+          main_image?: string | null
+          name?: string
+          open_hours?: string | null
+          phone?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           facebook_link: string | null
@@ -1350,24 +1437,33 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar_url: string | null
           created_at: string
+          department: string | null
           email: string
           full_name: string | null
           id: string
+          phone: string | null
           role: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
+          department?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          phone?: string | null
           role?: string
         }
         Relationships: []

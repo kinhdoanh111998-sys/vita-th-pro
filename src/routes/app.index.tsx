@@ -1,19 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, CalendarDays, MapPin } from "lucide-react";
+import {
+  Bell, CalendarDays, MapPin, Sparkles, Store, QrCode, Wallet, Gift,
+} from "lucide-react";
 import {
   SearchBar,
   FilterTabs,
   StoreCard,
-  
-  HorizontalScrollList,
-  HScrollItem,
   SectionHeader,
 } from "@/components/AppComponents";
 import { CommunityFeedMobile } from "@/components/CommunityFeed";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, isUpcoming, type EventRow } from "@/lib/events";
+import { useActiveStores } from "@/lib/useStores";
+import { useNavigationItems } from "@/lib/useNavigationItems";
 
 export const Route = createFileRoute("/app/")({
   component: AppHome,
@@ -29,28 +30,24 @@ const TABS = [
   "Đặt lịch",
 ];
 
-const STORES = [
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png",
-    name: "Vita Wellness Center – Hà Nội",
-    rating: 4.8,
-    address: "123 Nguyễn Trãi, Thanh Xuân, Hà Nội",
-    distance: "1.2 km",
-  },
-  {
-    image:
-      "https://vitath.pro/wp-content/uploads/2025/11/ST-25-3.jpg",
-    name: "Vita Spa – Cầu Giấy",
-    rating: 4.6,
-    address: "45 Trần Thái Tông, Cầu Giấy, Hà Nội",
-    distance: "3.4 km",
-  },
-];
+const QUICK_ICONS: Record<string, { icon: typeof Sparkles; color: string }> = {
+  skin_ai:  { icon: Sparkles,     color: "bg-pink-100 text-pink-600" },
+  store:    { icon: Store,        color: "bg-emerald-100 text-emerald-600" },
+  booking:  { icon: CalendarDays, color: "bg-amber-100 text-amber-600" },
+  scan:     { icon: QrCode,       color: "bg-sky-100 text-sky-600" },
+  wallet:   { icon: Wallet,       color: "bg-violet-100 text-violet-600" },
+  vouchers: { icon: Gift,         color: "bg-rose-100 text-rose-600" },
+};
+
+
 
 
 function AppHome() {
   const [tab, setTab] = useState("Tất cả");
+  const { data: stores = [] } = useActiveStores();
+  const { data: appNav = [] } = useNavigationItems("app");
+  const quickItems = appNav.filter((i) => i.is_visible);
+
   const eventsQ = useQuery({
     queryKey: ["public", "events"],
     queryFn: async () => {
@@ -65,6 +62,7 @@ function AppHome() {
   const allEvents = eventsQ.data ?? [];
   const upcomingEvents = allEvents.filter(isUpcoming);
   const pastEvents = allEvents.filter((e) => !isUpcoming(e));
+
 
 
   return (
@@ -131,6 +129,31 @@ function AppHome() {
           {/* Community Feed – realtime */}
           <CommunityFeedMobile />
 
+          {/* Quick Access (dynamic from DB) */}
+          {quickItems.length > 0 && (
+            <section className="px-4 mt-4">
+              <div className="grid grid-cols-4 gap-3">
+                {quickItems.map((item) => {
+                  const meta = QUICK_ICONS[item.menu_key] ?? { icon: Sparkles, color: "bg-gray-100 text-gray-600" };
+                  const Icon = meta.icon;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={item.route}
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${meta.color} active:scale-95 transition`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[11px] text-gray-700 text-center leading-tight">
+                        {item.label}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* Cửa hàng gần bạn */}
           <SectionHeader
@@ -138,8 +161,15 @@ function AppHome() {
             action={<span className="text-xs text-brand-primary">Xem bản đồ</span>}
           />
           <div className="px-4 flex flex-col gap-3">
-            {STORES.map((s) => (
-              <StoreCard key={s.name} {...s} />
+            {stores.map((s) => (
+              <StoreCard
+                key={s.id}
+                image={s.main_image ?? s.images?.[0] ?? "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png"}
+                name={s.name}
+                rating={4.8}
+                address={s.address ?? ""}
+                distance={s.open_hours ?? ""}
+              />
             ))}
           </div>
 
@@ -148,6 +178,7 @@ function AppHome() {
     </div>
   );
 }
+
 
 function EventList({
   title,

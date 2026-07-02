@@ -1,103 +1,114 @@
-## Mục tiêu
+# Epic Update — 4 Modules
 
-Khi bất kỳ khách hàng nào chia sẻ link (bài viết, sản phẩm, dịch vụ, sự kiện…) kèm mã giới thiệu (`?ref=A7K2QX`), người bấm vào sẽ:
-
-1. Được ghi nhận ref **im lặng** khi vào trang (không popup làm phiền).
-2. Khi thực hiện hành động cần đăng nhập (đặt lịch, mua hàng, bình luận, đăng ký voucher…) → hiện popup **"Bạn cần đăng nhập"** với 3 lựa chọn: Đăng nhập Zalo / Đăng ký / Đăng nhập email.
-3. Sau khi đăng ký/đăng nhập Zalo lần đầu → ref được **gán vĩnh viễn** vào tài khoản (`customers.referred_by`). Mọi đơn hàng, booking sau này của khách đó đều sinh hoa hồng cho người ref (**lifetime**).
-4. Nếu khách tắt popup không đăng ký → ref vẫn giữ **30 ngày** trên trình duyệt (localStorage). Lần sau quay lại đăng ký/đăng nhập vẫn được tính.
+Triển khai tuần tự theo thứ tự dưới. Không sửa các component đang chạy ngoài phạm vi đã liệt kê.
 
 ---
 
-## 1. Database
+## MODULE 1 — Quản lý Cửa hàng (Stores)
 
-Migration mới:
+### 1.1 Database (migration)
+Tạo bảng `public.stores`:
+- `id uuid pk`, `name text`, `images text[]`, `main_image text`, `address text`, `phone text`, `hotline text`, `email text`, `open_hours text`, `is_active bool default true`, `sort_order int default 0`, `created_at/updated_at`
+- GRANT: `SELECT` cho `anon` + `authenticated` (public list); `INSERT/UPDATE/DELETE` cho `authenticated` (siết bằng RLS admin/manager)
+- RLS: public read khi `is_active=true`; write chỉ admin/manager (dùng `has_role`)
+- Trigger `updated_at`
+- Storage bucket `store-images` (public) cho upload ảnh
+- Seed 3 cơ sở đang hiện ở homepage (VITA Premium Hà Nội, VITA Signature Đà Nẵng, VITA Flagship TP.HCM) từ mockdata trong migration
 
-- **`customers`**:
-  - `ref_code TEXT UNIQUE` — mã 6 ký tự sinh tự động (VD: `A7K2QX`), dùng làm `?ref=`.
-  - `referred_by UUID REFERENCES customers(id)` — người đã giới thiệu (nullable, set 1 lần, không đổi được sau khi set).
-  - `referred_at TIMESTAMPTZ` — thời điểm gán ref.
-  - Trigger: khi INSERT customer, nếu `ref_code` NULL thì tự sinh code ngẫu nhiên 6 ký tự (kiểm tra unique, retry nếu trùng).
-  - Backfill: cấp `ref_code` cho toàn bộ customers hiện có.
+### 1.2 Admin UI — `/admin/stores`
+- Route mới `src/routes/admin.stores.tsx`, thêm sidebar link "Cửa hàng"
+- Table: ảnh chính, tên, địa chỉ, hotline, trạng thái, actions
+- Nút "Thêm mới" & "Chỉnh sửa" mở **Centered Modal** (Dialog) — tái sử dụng pattern từ `/admin/products` (KHÔNG Drawer)
+- Form: name, address, phone, hotline, email, open_hours, images (multi upload → bucket `store-images`), chọn 1 làm main_image, toggle `is_active`
+- Delete confirm
 
-- **`referral_clicks`** (mới, để đo funnel — optional nhưng nên có):
-  - `id, ref_code, landing_path, ip_hash, user_agent, session_id, created_at, converted_customer_id`.
-  - RLS: chỉ admin/manager đọc; INSERT bằng server function public.
-
-- **`commissions`**: giữ nguyên schema; thêm `commission_type = 'affiliate_order'` khi đơn hàng của khách được ref chuyển sang `paid`.
-
-- **Trigger `orders_after_paid_affiliate`**: khi `orders.status` chuyển sang `paid`, tra `customers.referred_by` của `orders.customer_id` — nếu có, tạo record `commissions` với `staff_id = referred_by`, `commission_type = 'affiliate_order'`, `amount = orders.total * affiliate_configs.commission_percent / 100`, `reference_id = orders.id`, `status = 'pending'`.
-
----
-
-## 2. Ref tracking phía client (không popup khi lướt)
-
-- **Hook `useRefTracker()`** đặt trong `_public.tsx` layout (chạy trên mọi trang public):
-  - Đọc `?ref=` từ URL. Nếu có → lưu vào `localStorage` (`vitath_ref_v2 = { code, savedAt }`) và gọi API `/api/public/ref/click` để log analytics.
-  - Nếu localStorage đã có ref cũ **và** ref cũ chưa quá 30 ngày → giữ nguyên (**first-touch attribution**, không đè). Sau 30 ngày mới cho phép ghi đè.
-  - Xoá `?ref=` khỏi URL bằng `router.navigate({ replace: true, search: (s) => ({...s, ref: undefined}) })` để link trông sạch sau lần đầu.
-
-- **Helper `getStoredRef()`**: đọc ref còn hạn từ localStorage, trả về `code` hoặc `null`. Dùng ở mọi submit form.
+### 1.3 Client Sync
+- `/app` (`src/layouts/AppLayout.tsx` hoặc component render danh sách cửa hàng): thay mockdata → `useQuery` fetch stores `is_active=true` sort theo `sort_order`
+- `/app/store` (`src/routes/app.store.tsx`): Dropdown chọn cơ sở fetch từ `stores` (id + name), xoá hardcode
+- Homepage section "HỆ THỐNG CƠ SỞ SPA & CLINIC" cũng fetch từ `stores` (đồng bộ 1 nguồn)
 
 ---
 
-## 3. Popup "Cần đăng nhập" (chỉ hiện khi action)
+## MODULE 2 — Hồ sơ cá nhân (`/app/account`)
 
-- **`<RequireAuthDialog>`** component chung, thay cho các dòng "Vui lòng đăng nhập" hiện tại.
-  - 3 nút: **Đăng nhập bằng Zalo** (nhanh nhất, nhấn mạnh), **Đăng ký tài khoản mới**, **Đăng nhập email**.
-  - Nhận prop `intent` (booking / order / comment / voucher) để hiển thị context câu chữ.
-  - Sau khi login xong, tự quay lại action đang dở (dùng `sessionStorage.pending_action`).
+Refactor `src/routes/app.account.tsx` thành form Luxury responsive với phân quyền:
 
-- Wrap các nút hành động: "Đặt lịch ngay", "Mua ngay", "Gửi bình luận", "Nhận voucher"… → nếu chưa auth thì mở dialog thay vì submit.
+### Nhân viên/Quản lý (role staff/manager/admin)
+- Sửa được: avatar, full_name, phone
+- Read-only: `department` (chỉ admin cao nhất — kiểm tra `has_role('admin')` — mới sửa được)
+- Hiện khu "Đổi mật khẩu"
 
-- Trang tự bật popup **KHÔNG** làm. Ref đã được lưu ngầm ở bước 2.
+### Khách hàng (customer, gồm login Zalo)
+- Sửa được: avatar, full_name (override tên Zalo), phone, birthday, address
+- **Bắt buộc** hiện khu "Đổi mật khẩu" (để đặt password thay mặc định SĐT)
 
----
-
-## 4. Gán ref khi đăng ký / đăng nhập Zalo lần đầu
-
-Cập nhật `zalo-auth.functions.ts` (`zaloExchangeAndSignIn`):
-
-- Nhận thêm input `refCode?: string` (client đọc từ `getStoredRef()` gửi lên khi callback).
-- Trong nhánh **create user** (khách mới):
-  - Tra `customers` theo `ref_code = refCode` → lấy `referrer_id`.
-  - INSERT customer mới với `referred_by = referrer_id`, `referred_at = now()`.
-  - Không cho tự ref bản thân.
-- Trong nhánh **user đã tồn tại**: KHÔNG đè `referred_by` (đã set 1 lần là vĩnh viễn).
-
-Tương tự cho flow đăng ký email (`/dang-ky`): đọc `getStoredRef()` khi submit, truyền vào server function tạo customer.
-
-Sau khi login/signup thành công → **xoá** ref khỏi localStorage (đã gán vào DB rồi).
+### Logic
+- Update vào `profiles`/`customers`/`users` tương ứng role
+- Avatar upload → bucket `avatars` (tạo nếu chưa có)
+- Password: `supabase.auth.updateUser({ password })`
+- Toast (sonner) cho mọi trạng thái
 
 ---
 
-## 5. AffiliateCard (portal) — dùng ref_code mới
+## MODULE 3 — Omni Searchbar (Header homepage)
 
-- Đổi `refCode = customer.ref_code` (thay vì `uid`).
-- Link ref: `${origin}/?ref=${ref_code}` (landing trang chủ), có thể thêm helper "chia sẻ trang này" trên từng trang sản phẩm/bài viết để link ra `/products/xxx?ref=...`.
-- Query "Đã giới thiệu": `count(customers where referred_by = <my_customer_id>)`.
-- Query "Hoa hồng": `sum(commissions.amount where staff_id = <my_customer_id> and commission_type = 'affiliate_order')`.
+### UI (`src/components/Header.tsx`)
+- Thêm ô search vào header desktop (thay/bổ sung vị trí phù hợp, responsive)
+- Style Luxury: rounded-full, border mảnh, `focus-within:shadow-md`, tone gold/brown/white hài hoà với brand xanh hiện tại
+- Placeholder: "Bạn đang tìm kiếm gì?"
+- Dropdown Filter (shadcn Select) ở rìa trái/phải: Tất cả | Dịch vụ | Sản phẩm | Tin tức | Sự kiện
+- Icon lúp bên phải
+- Mobile: giữ trong drawer (đã có sẵn ô search) — mở rộng thêm filter
 
----
-
-## 6. Admin
-
-- `/admin/commissions`: thêm filter theo `commission_type = 'affiliate_order'`, cột "Từ đơn hàng", "Người giới thiệu", "Khách mua".
-- `/admin/settings` → tab affiliate: đã có `affiliate_configs` — chỉ cần đảm bảo có ít nhất 1 config `active = true` với `commission_percent` mặc định (VD 5%). Trigger đọc config này để tính.
-
----
-
-## Câu trả lời cho 2 lo lắng của bạn
-
-- **"Trường hợp khách đăng ký/đăng nhập Zalo sẽ được tính là ref ngay"** → Đúng, bước 4 gán `referred_by` ngay trong lần tạo tài khoản.
-- **"Trường hợp khách tắt popup thì link ref vẫn được tính đúng chứ"** → Đúng, ref đã lưu vào localStorage ở bước 2 ngay khi vào trang (trước cả khi popup xuất hiện), giữ 30 ngày. Bất kỳ lúc nào trong 30 ngày đó khách quay lại và đăng ký → ref vẫn được gán. Chỉ mất khi khách xoá cookies/localStorage hoặc quá 30 ngày.
+### Logic
+- Debounced query (250ms), min 2 ký tự
+- Server function `searchOmni({ q, type })`:
+  - Dịch vụ/Sản phẩm → `services` ILIKE name
+  - Tin tức → `news` ILIKE title
+  - Sự kiện → `events` ILIKE title
+  - "Tất cả" → chạy song song 4 nguồn, gộp
+- Kết quả: Popover instant search ngay dưới ô search, group theo loại, click → điều hướng route detail
 
 ---
 
-## Chi tiết kỹ thuật
+## MODULE 4 — Dynamic Navigation Menu
 
-- **Ref code generator**: `substring(md5(random()::text || clock_timestamp()::text), 1, 6)` viết hoa, kiểm tra unique.
-- **Attribution model**: first-touch (ref đầu tiên trong 30 ngày thắng), lifetime (mọi đơn của khách được ref đều sinh hoa hồng, không hết hạn).
-- **Chống self-referral**: check `referrer_id != new_customer_id` trong trigger.
-- **Chống fraud cơ bản**: không tạo hoa hồng nếu đơn `refunded/cancelled`; hoa hồng ở status `pending` → admin duyệt manual sang `approved/paid` trong `/admin/commissions`.
-- **File sẽ đụng**: migration mới; `src/lib/refTracker.ts` (mới); `src/routes/_public.tsx` (mount hook); `src/components/RequireAuthDialog.tsx` (mới); `src/lib/zalo-auth.functions.ts` (nhận refCode); `src/routes/auth.zalo.callback.tsx` (truyền refCode); `src/routes/dang-ky.tsx` (truyền refCode); `src/components/portal/dashboard/AffiliateCard.tsx` (dùng ref_code); `src/routes/admin.commissions.tsx` (filter mới); các nút action ở booking/order/comment (wrap `<RequireAuthDialog>`).
+### 4.1 Database
+Bảng `public.navigation_items`:
+- `id uuid`, `platform text check in ('homepage','app')`, `menu_key text`, `label text`, `route text`, `is_visible bool default true`, `sort_order int`, `updated_at`
+- Unique (`platform`, `menu_key`)
+- GRANT: SELECT anon+authenticated; write chỉ admin
+- RLS tương ứng
+- Seed:
+  - `homepage`: Trang chủ, Giới thiệu, Sản phẩm, Dịch vụ, Sự kiện, Cộng đồng, Tin tức, Liên hệ
+  - `app` (Quick Access — KHÔNG bao gồm bottom nav): Soi da AI, Cửa hàng, Đặt lịch, Quét QR, Ví VITA, Ưu đãi
+
+### 4.2 Admin — `/admin/navigation` (label sidebar: "Quản lý Trang chủ")
+- 2 Tabs (shadcn Tabs): "Website PC" | "Mobile App"
+- Mỗi tab: list `[Label] | [Route] | [Toggle Switch]`
+- Toggle → update `is_visible` → toast
+- TUYỆT ĐỐI không đụng Bottom Nav
+
+### 4.3 Client Sync
+- `src/components/Header.tsx`: fetch `platform='homepage'` `.filter(is_visible)` thay `navLinks` cứng (giữ fallback nếu fetch fail)
+- `/app` Quick Access cluster (component tương ứng trong `CustomerHomeContent` hoặc `AppLayout`): fetch `platform='app'` filter render
+- Bottom Nav mobile: giữ nguyên hardcode — không đọc DB
+
+---
+
+## Thứ tự thực thi
+1. Migration M1 (stores) + M4 (navigation_items) gộp 1 migration (để user duyệt 1 lần)
+2. Bucket storage `store-images` + `avatars`
+3. Admin UI: `/admin/stores` → `/admin/navigation`
+4. Client sync: homepage stores + Header nav + `/app` stores + quick access + `/app/store` dropdown
+5. Module 2: refactor `/app/account`
+6. Module 3: Omni Search (Header + serverFn)
+
+## Ràng buộc bắt buộc
+- Modal `/admin/stores` = Centered Dialog, y hệt `/admin/products` (không Drawer)
+- Không đổi Bottom Nav mobile
+- Không sửa các file auto-gen supabase
+- Server fn có auth (`requireSupabaseAuth`) cho admin write; public read qua supabase client trực tiếp là được (có RLS)
+- Toast dùng sonner đang có
+
+Xin duyệt plan để tôi bắt đầu.

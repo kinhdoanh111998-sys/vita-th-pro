@@ -36,12 +36,14 @@ import { Route as AppAccountRouteImport } from './routes/app.account'
 import { Route as AdminVoucherRouteImport } from './routes/admin.voucher'
 import { Route as AdminTreatmentsRouteImport } from './routes/admin.treatments'
 import { Route as AdminToursRouteImport } from './routes/admin.tours'
+import { Route as AdminStoresRouteImport } from './routes/admin.stores'
 import { Route as AdminShiftsRouteImport } from './routes/admin.shifts'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
+import { Route as AdminNavigationRouteImport } from './routes/admin.navigation'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
@@ -225,6 +227,11 @@ const AdminToursRoute = AdminToursRouteImport.update({
   path: '/tours',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStoresRoute = AdminStoresRouteImport.update({
+  id: '/stores',
+  path: '/stores',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminShiftsRoute = AdminShiftsRouteImport.update({
   id: '/shifts',
   path: '/shifts',
@@ -253,6 +260,11 @@ const AdminOrdersRoute = AdminOrdersRouteImport.update({
 const AdminNewsRoute = AdminNewsRouteImport.update({
   id: '/news',
   path: '/news',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNavigationRoute = AdminNavigationRouteImport.update({
+  id: '/navigation',
+  path: '/navigation',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
@@ -529,12 +541,14 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shifts': typeof AdminShiftsRoute
+  '/admin/stores': typeof AdminStoresRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -604,12 +618,14 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shifts': typeof AdminShiftsRoute
+  '/admin/stores': typeof AdminStoresRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -688,12 +704,14 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/products': typeof AdminProductsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/shifts': typeof AdminShiftsRoute
+  '/admin/stores': typeof AdminStoresRoute
   '/admin/tours': typeof AdminToursRoute
   '/admin/treatments': typeof AdminTreatmentsRoute
   '/admin/voucher': typeof AdminVoucherRoute
@@ -773,12 +791,14 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
     | '/admin/shifts'
+    | '/admin/stores'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -848,12 +868,14 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
     | '/admin/shifts'
+    | '/admin/stores'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -931,12 +953,14 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
     | '/admin/products'
     | '/admin/services'
     | '/admin/settings'
     | '/admin/shifts'
+    | '/admin/stores'
     | '/admin/tours'
     | '/admin/treatments'
     | '/admin/voucher'
@@ -1197,6 +1221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminToursRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/stores': {
+      id: '/admin/stores'
+      path: '/stores'
+      fullPath: '/admin/stores'
+      preLoaderRoute: typeof AdminStoresRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/shifts': {
       id: '/admin/shifts'
       path: '/shifts'
@@ -1237,6 +1268,13 @@ declare module '@tanstack/react-router' {
       path: '/news'
       fullPath: '/admin/news'
       preLoaderRoute: typeof AdminNewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/navigation': {
+      id: '/admin/navigation'
+      path: '/navigation'
+      fullPath: '/admin/navigation'
+      preLoaderRoute: typeof AdminNavigationRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events': {
@@ -1706,12 +1744,14 @@ interface AdminRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminNavigationRoute: typeof AdminNavigationRoute
   AdminNewsRoute: typeof AdminNewsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminProductsRoute: typeof AdminProductsRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminShiftsRoute: typeof AdminShiftsRoute
+  AdminStoresRoute: typeof AdminStoresRoute
   AdminToursRoute: typeof AdminToursRoute
   AdminTreatmentsRoute: typeof AdminTreatmentsRoute
   AdminVoucherRoute: typeof AdminVoucherRoute
@@ -1727,12 +1767,14 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminNavigationRoute: AdminNavigationRoute,
   AdminNewsRoute: AdminNewsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminProductsRoute: AdminProductsRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminShiftsRoute: AdminShiftsRoute,
+  AdminStoresRoute: AdminStoresRoute,
   AdminToursRoute: AdminToursRoute,
   AdminTreatmentsRoute: AdminTreatmentsRoute,
   AdminVoucherRoute: AdminVoucherRoute,
