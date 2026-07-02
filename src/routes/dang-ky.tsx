@@ -44,8 +44,9 @@ function RegisterPage() {
       toast.error("Số điện thoại không hợp lệ (VD: 09xxxxxxxx)");
       return;
     }
-    if (password.length < 6) {
-      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+    // Cho phép mật khẩu bất kỳ (kể cả trùng số điện thoại). Chỉ cần khớp xác nhận.
+    if (!password) {
+      toast.error("Vui lòng nhập mật khẩu");
       return;
     }
     if (password !== confirmPassword) {
@@ -101,7 +102,6 @@ function RegisterPage() {
       const { error: userError } = await supabase.from("users").insert({
         id: data.user.id,
         email: virtualEmail,
-        phone: phoneClean,
         full_name: nameClean,
         role: "customer",
       });

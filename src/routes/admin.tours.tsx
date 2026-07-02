@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useDroppable } from "@dnd-kit/core";
 import { toast } from "sonner";
+import { Search, X, User as UserIcon } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
@@ -11,14 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import { DraggableStaff, DroppableTarget, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { DraggableStaff, type StaffMember } from "@/components/StaffDragDropBoard";
 import { AssignDndProvider } from "@/components/AssignDndProvider";
-import { Input as UIInput } from "@/components/ui/input";
-import { Search } from "lucide-react";
-
 
 export const Route = createFileRoute("/admin/tours")({
   component: ToursPage,
@@ -28,9 +25,9 @@ type Customer = { id: string; name: string | null; phone: string | null };
 type UserRow = { id: string; full_name: string | null; role: string | null };
 type Treatment = {
   id: string; order_id: string; customer_id: string; session_number: number;
-  status: string; service_id: string | null; created_at: string;
+  status: string; service_id: string | null;
 };
-type Service = { id: string; name: string };
+type Service = { id: string; name: string; price: number | null };
 type Attendance = { employee_id: string; check_in_approved: boolean; check_out_time: string | null };
 type TourRow = {
   id: string; treatment_id: string; customer_id: string; technician_id: string;
@@ -39,6 +36,61 @@ type TourRow = {
 
 const STAFF_ROLES = ["staff", "technician", "sale"];
 const todayISO = () => new Date().toISOString().slice(0, 10);
+const DEFAULT_COMMISSION_RATE = 0.1; // 10% giá dịch vụ
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts.at(-1)?.[0] ?? "")).toUpperCase() || "?";
+}
+
+/** Vùng thả nhân viên — nằm bên dưới input "Nhân viên thực hiện". */
+function StaffDropZone({
+  onDropStaff,
+  currentName,
+  onClear,
+}: {
+  onDropStaff: (id: string) => void;
+  currentName: string | null;
+  onClear: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "tour-staff-dropzone",
+    data: { targetId: "tour-staff-dropzone", onDropStaff },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`mt-2 flex items-center gap-2 rounded-xl border-2 border-dashed p-3 min-h-[54px] transition ${
+        isOver ? "border-brand-primary bg-brand-soft/50" : "border-hairline bg-[#fafcf7]"
+      }`}
+    >
+      {currentName ? (
+        <>
+          <Avatar className="size-8">
+            <AvatarFallback className="bg-brand-soft text-brand-dark text-[11px] font-bold">
+              {initials(currentName)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 text-sm font-bold">{currentName}</div>
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-ink-muted hover:text-rose-600"
+            aria-label="Bỏ chọn"
+          >
+            <X size={16} />
+          </button>
+        </>
+      ) : (
+        <div className="text-xs text-ink-muted italic flex items-center gap-2">
+          <UserIcon size={14} />
+          Kéo thẻ nhân viên từ cột phải thả vào đây, hoặc chọn ở dropdown bên trên.
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ToursPage() {
   const qc = useQueryClient();
@@ -47,7 +99,7 @@ function ToursPage() {
   const customersQ = useQuery({
     queryKey: ["tours2", "customers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("id,name,phone");
+      const { data, error } = await supabase.from("customers").select("id,name,phone").order("name");
       if (error) throw error;
       return (data ?? []) as Customer[];
     },
@@ -61,14 +113,13 @@ function ToursPage() {
     },
   });
   const treatmentsQ = useQuery({
-    queryKey: ["tours2", "treatments-today"],
+    queryKey: ["tours2", "treatments-pending"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("treatments")
-        .select("id,order_id,customer_id,session_number,status,service_id,created_at")
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .limit(60);
+        .select("id,order_id,customer_id,session_number,status,service_id")
+        .in("status", ["pending", "in_progress"])
+        .order("session_number");
       if (error) throw error;
       return (data ?? []) as Treatment[];
     },
@@ -76,7 +127,7 @@ function ToursPage() {
   const servicesQ = useQuery({
     queryKey: ["tours2", "services"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("id,name");
+      const { data, error } = await supabase.from("services").select("id,name,price");
       if (error) throw error;
       return (data ?? []) as Service[];
     },
@@ -105,7 +156,7 @@ function ToursPage() {
   });
 
   const serviceMap = useMemo(
-    () => new Map((servicesQ.data ?? []).map((s) => [s.id, s.name])),
+    () => new Map((servicesQ.data ?? []).map((s) => [s.id, s])),
     [servicesQ.data],
   );
   const customerMap = useMemo(
@@ -122,143 +173,282 @@ function ToursPage() {
     const attMap = new Map((attQ.data ?? []).map((a) => [a.employee_id, a]));
     return (usersQ.data ?? [])
       .filter((u) => u.role && STAFF_ROLES.includes(u.role))
-      .filter((u) => {
+      .map((u) => {
         const a = attMap.get(u.id);
-        return a && a.check_in_approved && !a.check_out_time && !busy.has(u.id);
-      })
-      .map((u) => ({
-        id: u.id,
-        full_name: u.full_name ?? "—",
-        role: u.role ?? "staff",
-        meta: "Sẵn sàng",
-      }));
+        const checkedIn = !!a?.check_in_approved && !a?.check_out_time;
+        const isBusy = busy.has(u.id);
+        return {
+          id: u.id,
+          full_name: u.full_name ?? "—",
+          role: u.role ?? "staff",
+          meta: isBusy ? "Đang thực hiện" : checkedIn ? "Sẵn sàng" : "Chưa check-in",
+        };
+      });
   }, [usersQ.data, attQ.data, activeToursQ.data]);
 
-  const targets: DropTarget[] = useMemo(() => {
-    return (treatmentsQ.data ?? []).map((t) => {
-      const cust = customerMap.get(t.customer_id);
-      const svcName = t.service_id ? serviceMap.get(t.service_id) ?? "—" : "—";
-      return {
-        id: t.id,
-        title: `${cust?.name ?? "Khách"} · Buổi #${t.session_number}`,
-        subtitle: `${svcName}${cust?.phone ? ` · ${cust.phone}` : ""}`,
-        badge: "PENDING",
-        assigneeId: null,
-        assigneeName: null,
-      };
-    });
-  }, [treatmentsQ.data, customerMap, serviceMap]);
+  /* -------- Form state -------- */
+  const [customerId, setCustomerId] = useState("");
+  const [treatmentId, setTreatmentId] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [notes, setNotes] = useState("");
+  const [commissionAmount, setCommissionAmount] = useState<string>("");
+  const [commissionEdited, setCommissionEdited] = useState(false);
+  const [staffQ, setStaffQ] = useState("");
 
-  // Confirm dialog
-  const [pending, setPending] = useState<{ staffId: string; treatmentId: string } | null>(null);
+  const treatmentsForCustomer = useMemo(
+    () => (treatmentsQ.data ?? []).filter((t) => !customerId || t.customer_id === customerId),
+    [treatmentsQ.data, customerId],
+  );
 
-  const assign = useMutation({
-    mutationFn: async (v: { staffId: string; treatmentId: string }) => {
-      const t = (treatmentsQ.data ?? []).find((x) => x.id === v.treatmentId);
-      if (!t) throw new Error("Không tìm thấy buổi liệu trình.");
+  const selectedTreatment = treatmentsForCustomer.find((t) => t.id === treatmentId) ?? null;
+  const selectedService = selectedTreatment?.service_id
+    ? serviceMap.get(selectedTreatment.service_id) ?? null
+    : null;
+
+  // Tự động điền hoa hồng mặc định = 10% giá dịch vụ, admin có thể sửa lại
+  useEffect(() => {
+    if (commissionEdited) return;
+    if (selectedService?.price) {
+      const suggested = Math.round(Number(selectedService.price) * DEFAULT_COMMISSION_RATE);
+      setCommissionAmount(String(suggested));
+    } else {
+      setCommissionAmount("20000");
+    }
+  }, [selectedService, commissionEdited]);
+
+  const resetForm = () => {
+    setCustomerId("");
+    setTreatmentId("");
+    setTechnicianId("");
+    setNotes("");
+    setCommissionAmount("");
+    setCommissionEdited(false);
+  };
+
+  const filteredStaff = availableStaff.filter((s) =>
+    !staffQ.trim() ? true : s.full_name.toLowerCase().includes(staffQ.trim().toLowerCase()),
+  );
+
+  const complete = useMutation({
+    mutationFn: async () => {
+      if (!customerId || !treatmentId || !technicianId) {
+        throw new Error("Chọn đủ khách, buổi và nhân viên.");
+      }
+      const commission = Number(commissionAmount || 0);
       const now = new Date().toISOString();
-      const { error: tErr } = await supabase.from("tours").insert({
-        treatment_id: t.id,
-        customer_id: t.customer_id,
-        technician_id: v.staffId,
-        status: "in_progress",
+      const { data: tour, error: tErr } = await supabase.from("tours").insert({
+        treatment_id: treatmentId,
+        customer_id: customerId,
+        technician_id: technicianId,
+        notes: notes.trim() || null,
+        commission_amount: commission,
+        status: "completed",
         start_time: now,
-      });
+        end_time: now,
+      }).select().single();
       if (tErr) throw tErr;
-      const { error: uErr } = await supabase.from("treatments").update({ status: "in_progress" }).eq("id", t.id);
+
+      const { error: uErr } = await supabase
+        .from("treatments")
+        .update({ status: "completed" })
+        .eq("id", treatmentId);
       if (uErr) throw uErr;
 
-      // Log notification cho nhân viên được gán
+      if (commission > 0) {
+        await supabase.from("commissions").insert({
+          staff_id: technicianId,
+          commission_type: "tour_service",
+          reference_id: tour.id,
+          amount: commission,
+          status: "pending",
+        });
+      }
+
+      // Ghi log thông báo cho NV
       await supabase.from("notifications").insert({
-        recipient_id: v.staffId,
-        type: "tour_assigned",
-        title: "Bạn được gán 1 ca mới",
-        body: `${customerMap.get(t.customer_id)?.name ?? "Khách"} · Buổi #${t.session_number}`,
-        ref_type: "treatment",
-        ref_id: t.id,
+        recipient_id: technicianId,
+        type: "tour_completed",
+        title: "Bạn vừa hoàn thành 1 ca làm",
+        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}`,
+        ref_type: "tour",
+        ref_id: tour.id,
       });
     },
     onSuccess: () => {
-      toast.success("Đã bắt đầu ca làm");
-      setPending(null);
+      toast.success("Đã hoàn thành ca làm & ghi nhận hoa hồng.");
+      resetForm();
       qc.invalidateQueries({ queryKey: ["tours2"] });
     },
-    onError: (e: Error) => {
-      toast.error(e.message);
-      setPending(null);
-    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const pendingStaff = pending ? userMap.get(pending.staffId) : null;
-  const pendingTreat = pending ? (treatmentsQ.data ?? []).find((t) => t.id === pending.treatmentId) : null;
-  const pendingCust = pendingTreat ? customerMap.get(pendingTreat.customer_id) : null;
-
-  const [staffQ, setStaffQ] = useState("");
-  const filteredStaff = availableStaff.filter((s) =>
-    !staffQ.trim()
-      ? true
-      : s.full_name.toLowerCase().includes(staffQ.trim().toLowerCase()),
-  );
+  const summaryCust = customerId ? customerMap.get(customerId) : null;
+  const summaryUser = technicianId ? userMap.get(technicianId) : null;
 
   return (
     <>
-
       <AdminTopbar
         title="Quản lý Ca làm (Tours)"
-        subtitle="Kéo thẻ nhân viên khả dụng thả vào buổi liệu trình cần thực hiện."
+        subtitle="Chia buổi liệu trình cho nhân viên — tự động trừ buổi & ghi nhận hoa hồng."
       />
 
       <AssignDndProvider
         staff={availableStaff}
-        onAssign={(staffId, treatmentId) => setPending({ staffId, treatmentId })}
+        onAssign={(staffId, targetId) => {
+          if (targetId === "tour-staff-dropzone") setTechnicianId(staffId);
+        }}
       >
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
-          {/* CỘT TRÁI/GIỮA: Card liệu trình = drop zones */}
+          {/* ============ Cột trái: Form Ghi nhận ca làm ============ */}
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-black text-sm">
-                Liệu trình cần làm{" "}
-                <span className="text-ink-muted font-semibold">
-                  ({targets.length})
-                </span>
-              </h3>
+            <div className="bg-white border border-hairline rounded-2xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="size-10 rounded-full bg-brand-soft text-brand-dark grid place-items-center font-black">
+                  T
+                </div>
+                <div>
+                  <h3 className="font-black text-lg">Ghi nhận ca làm</h3>
+                  <p className="text-xs text-ink-muted">
+                    Chọn khách → buổi liệu trình còn lại → nhân viên thực hiện.
+                  </p>
+                </div>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  complete.mutate();
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-1.5">
+                  <Label>Khách hàng *</Label>
+                  <Select
+                    value={customerId}
+                    onValueChange={(v) => {
+                      setCustomerId(v);
+                      setTreatmentId("");
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Chọn khách" /></SelectTrigger>
+                    <SelectContent>
+                      {(customersQ.data ?? []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}{c.phone ? ` · ${c.phone}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Buổi liệu trình còn lại *</Label>
+                  <Select value={treatmentId} onValueChange={setTreatmentId} disabled={!customerId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={customerId ? "Chọn buổi" : "Chọn khách trước"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {treatmentsForCustomer.map((t) => {
+                        const svc = t.service_id ? serviceMap.get(t.service_id) : null;
+                        return (
+                          <SelectItem key={t.id} value={t.id}>
+                            Buổi #{t.session_number} · {svc?.name ?? "—"}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Nhân viên thực hiện *</Label>
+                    <Select value={technicianId} onValueChange={setTechnicianId}>
+                      <SelectTrigger><SelectValue placeholder="Chọn nhân viên" /></SelectTrigger>
+                      <SelectContent>
+                        {availableStaff.map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.full_name} · {u.meta}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <StaffDropZone
+                      onDropStaff={(id) => setTechnicianId(id)}
+                      currentName={summaryUser?.full_name ?? null}
+                      onClear={() => setTechnicianId("")}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Hoa hồng (₫){" "}
+                      <span className="text-[11px] text-ink-muted font-normal">
+                        (tự điền mặc định — có thể sửa)
+                      </span>
+                    </Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={commissionAmount}
+                      onChange={(e) => {
+                        setCommissionAmount(e.target.value);
+                        setCommissionEdited(true);
+                      }}
+                      placeholder="VD: 50000"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Ghi chú</Label>
+                  <Textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Tình trạng, phản hồi, lưu ý buổi sau…"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="text-sm font-bold text-ink-muted hover:text-brand-dark"
+                  >
+                    Làm mới
+                  </button>
+                  <Button type="submit" disabled={complete.isPending}>
+                    {complete.isPending ? "Đang xử lý…" : "✓ Hoàn thành Ca làm"}
+                  </Button>
+                </div>
+              </form>
             </div>
-            {targets.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-hairline bg-white p-10 text-center text-ink-muted text-sm">
-                Không có buổi liệu trình nào đang chờ.
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 gap-3">
-                {targets.map((t) => (
-                  <DroppableTarget key={t.id} t={t} activeStaffId={null} />
-                ))}
-              </div>
-            )}
           </section>
 
-          {/* CỘT PHẢI: Tóm tắt + Staff Pool compact */}
+          {/* ============ Cột phải: Tóm tắt + Nhân viên khả dụng ============ */}
           <aside className="space-y-4 lg:sticky lg:top-4 h-fit">
             <div className="bg-white border border-hairline rounded-2xl p-4">
               <h4 className="font-black text-sm mb-3">Tóm tắt</h4>
               <dl className="text-xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <dt className="text-ink-muted">Liệu trình chờ</dt>
-                  <dd className="font-bold text-brand-dark">{targets.length}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-ink-muted">Nhân viên rảnh</dt>
-                  <dd className="font-bold text-brand-dark">{availableStaff.length}</dd>
-                </div>
-                <div className="flex items-center justify-between">
-                  <dt className="text-ink-muted">Đang thực hiện</dt>
-                  <dd className="font-bold text-amber-700">
-                    {activeToursQ.data?.length ?? 0}
-                  </dd>
-                </div>
+                <Row label="Khách">{summaryCust?.name ?? "—"}</Row>
+                <Row label="Buổi">
+                  {selectedTreatment
+                    ? `#${selectedTreatment.session_number} · ${
+                        selectedService?.name ?? "—"
+                      }`
+                    : "—"}
+                </Row>
+                <Row label="Nhân viên">{summaryUser?.full_name ?? "—"}</Row>
+                <Row label="Hoa hồng">
+                  {commissionAmount
+                    ? Number(commissionAmount).toLocaleString("vi-VN") + " ₫"
+                    : "—"}
+                </Row>
               </dl>
               <p className="mt-3 text-[11px] text-ink-muted leading-relaxed">
-                Kéo thẻ nhân viên bên dưới thả vào một card liệu trình để tạo Tour
-                <i> in_progress</i> và gửi thông báo.
+                Bấm <b>Hoàn thành</b>: tạo Tour, chuyển buổi liệu trình sang{" "}
+                <i>completed</i>, ghi nhận hoa hồng nhân viên (trạng thái{" "}
+                <i>pending</i>) và gửi thông báo cho NV.
               </p>
             </div>
 
@@ -273,7 +463,7 @@ function ToursPage() {
               </div>
               <div className="relative mb-2">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted" />
-                <UIInput
+                <Input
                   value={staffQ}
                   onChange={(e) => setStaffQ(e.target.value)}
                   placeholder="Tìm nhân viên…"
@@ -282,7 +472,7 @@ function ToursPage() {
               </div>
               {filteredStaff.length === 0 ? (
                 <div className="text-[11px] text-ink-muted italic text-center py-4">
-                  Không có nhân viên đã check-in/rảnh.
+                  Không có nhân viên phù hợp.
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-1.5 max-h-[420px] overflow-y-auto pr-0.5">
@@ -296,165 +486,29 @@ function ToursPage() {
         </div>
       </AssignDndProvider>
 
-
-      <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Xác nhận bắt đầu ca</DialogTitle>
-            <DialogDescription>
-              Gán <b>{pendingStaff?.full_name ?? "—"}</b> thực hiện buổi{" "}
-              <b>#{pendingTreat?.session_number}</b> cho khách <b>{pendingCust?.name ?? "—"}</b>?
-              Hệ thống sẽ tạo Tour trạng thái <i>in_progress</i> và chuyển buổi liệu trình sang <i>in_progress</i>.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setPending(null)}>Huỷ</Button>
-            <Button onClick={() => pending && assign.mutate(pending)} disabled={assign.isPending}>
-              {assign.isPending ? "Đang xử lý…" : "Bắt đầu"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <ToursHistory />
-      <ManualTourForm />
     </>
   );
 }
 
-/* ------------------ Manual form (giữ lại chức năng hoàn thành thủ công) ------------------ */
-
-function ManualTourForm() {
-  const qc = useQueryClient();
-  const customersQ = useQuery({
-    queryKey: ["tour-manual", "customers"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("customers").select("id,name,phone").order("name");
-      if (error) throw error;
-      return (data ?? []) as Customer[];
-    },
-  });
-  const usersQ = useQuery({
-    queryKey: ["tour-manual", "users"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("users").select("id,full_name,role");
-      if (error) throw error;
-      return (data ?? []) as UserRow[];
-    },
-  });
-  const treatmentsQ = useQuery({
-    queryKey: ["tour-manual", "treatments"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("treatments")
-        .select("id,customer_id,session_number,status")
-        .in("status", ["pending", "in_progress"]).order("session_number");
-      if (error) throw error;
-      return (data ?? []) as { id: string; customer_id: string; session_number: number; status: string }[];
-    },
-  });
-
-  const [customerId, setCustomerId] = useState("");
-  const [treatmentId, setTreatmentId] = useState("");
-  const [technicianId, setTechnicianId] = useState("");
-  const [notes, setNotes] = useState("");
-  const [commissionAmount, setCommissionAmount] = useState("");
-
-  const list = (treatmentsQ.data ?? []).filter((t) => !customerId || t.customer_id === customerId);
-
-  const complete = useMutation({
-    mutationFn: async () => {
-      if (!customerId || !treatmentId || !technicianId) throw new Error("Chọn đủ khách, buổi và nhân viên.");
-      const commission = Number(commissionAmount || 0);
-      const now = new Date().toISOString();
-      const { data: tour, error: tErr } = await supabase.from("tours").insert({
-        treatment_id: treatmentId, customer_id: customerId, technician_id: technicianId,
-        notes: notes.trim() || null, commission_amount: commission, status: "completed",
-        start_time: now, end_time: now,
-      }).select().single();
-      if (tErr) throw tErr;
-      const { error: uErr } = await supabase.from("treatments").update({ status: "completed" }).eq("id", treatmentId);
-      if (uErr) throw uErr;
-      if (commission > 0) {
-        await supabase.from("commissions").insert({
-          staff_id: technicianId, commission_type: "tour_service",
-          reference_id: tour.id, amount: commission, status: "pending",
-        });
-      }
-    },
-    onSuccess: () => {
-      toast.success("Đã hoàn thành ca làm.");
-      setTreatmentId(""); setNotes(""); setCommissionAmount("");
-      qc.invalidateQueries({ queryKey: ["tours2"] });
-      qc.invalidateQueries({ queryKey: ["tour-manual"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <section className="mt-8">
-      <h3 className="font-black text-lg mb-3">Hoàn thành buổi (thủ công)</h3>
-      <form
-        onSubmit={(e) => { e.preventDefault(); complete.mutate(); }}
-        className="bg-white border border-hairline rounded-2xl p-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <div className="space-y-1.5">
-          <Label>Khách hàng</Label>
-          <Select value={customerId} onValueChange={(v) => { setCustomerId(v); setTreatmentId(""); }}>
-            <SelectTrigger><SelectValue placeholder="Chọn khách" /></SelectTrigger>
-            <SelectContent>
-              {(customersQ.data ?? []).map((c) => (
-                <SelectItem key={c.id} value={c.id}>{c.name}{c.phone ? ` · ${c.phone}` : ""}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Buổi liệu trình</Label>
-          <Select value={treatmentId} onValueChange={setTreatmentId} disabled={!customerId}>
-            <SelectTrigger><SelectValue placeholder="Chọn buổi" /></SelectTrigger>
-            <SelectContent>
-              {list.map((t) => (
-                <SelectItem key={t.id} value={t.id}>Buổi #{t.session_number} · {t.status}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Nhân viên</Label>
-          <Select value={technicianId} onValueChange={setTechnicianId}>
-            <SelectTrigger><SelectValue placeholder="Chọn NV" /></SelectTrigger>
-            <SelectContent>
-              {(usersQ.data ?? []).map((u) => (
-                <SelectItem key={u.id} value={u.id}>{u.full_name ?? "—"} · {u.role}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label>Hoa hồng (₫)</Label>
-          <Input type="number" min={0} value={commissionAmount} onChange={(e) => setCommissionAmount(e.target.value)} />
-        </div>
-        <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
-          <Label>Ghi chú</Label>
-          <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </div>
-        <div className="sm:col-span-2 lg:col-span-1 flex items-end">
-          <Button type="submit" className="w-full" disabled={complete.isPending}>
-            {complete.isPending ? "Đang xử lý…" : "✓ Hoàn thành"}
-          </Button>
-        </div>
-      </form>
-    </section>
+    <div className="flex items-center justify-between gap-3">
+      <dt className="text-ink-muted">{label}</dt>
+      <dd className="font-bold text-brand-dark text-right truncate max-w-[180px]">{children}</dd>
+    </div>
   );
 }
-
-/* ------------------ Lịch sử ca làm ------------------ */
 
 function ToursHistory() {
   const toursQ = useQuery({
     queryKey: ["tours2", "history"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("tours").select("*").order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await supabase
+        .from("tours")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
       if (error) throw error;
       return (data ?? []) as TourRow[];
     },
@@ -481,12 +535,12 @@ function ToursHistory() {
 
   return (
     <section className="mt-8">
-      <h3 className="font-black text-lg mb-3">Lịch sử ca làm gần nhất</h3>
+      <h3 className="font-black text-lg mb-3">Danh sách ca làm gần nhất</h3>
       <div className="overflow-auto bg-white border border-hairline rounded-2xl">
         <table className="w-full min-w-[760px] border-collapse">
           <thead>
             <tr>
-              {["Thời gian", "Khách", "Nhân viên", "Trạng thái", "Hoa hồng"].map((h) => (
+              {["Thời gian", "Khách hàng", "Nhân viên", "Hoa hồng", "Trạng thái"].map((h) => (
                 <th key={h} className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">{h}</th>
               ))}
             </tr>
@@ -497,15 +551,15 @@ function ToursHistory() {
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{new Date(t.created_at).toLocaleString("vi-VN")}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-semibold">{cname(t.customer_id)}</td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{uname(t.technician_id)}</td>
+                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-brand-dark">
+                  {t.commission_amount ? Number(t.commission_amount).toLocaleString("vi-VN") + " ₫" : "—"}
+                </td>
                 <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
                   <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
                     t.status === "in_progress" ? "bg-amber-100 text-amber-800" :
                     t.status === "cancelled" ? "bg-rose-100 text-rose-800" :
                     "bg-emerald-100 text-emerald-800"
                   }`}>{t.status}</span>
-                </td>
-                <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-bold text-brand-dark">
-                  {t.commission_amount ? Number(t.commission_amount).toLocaleString("vi-VN") + " ₫" : "—"}
                 </td>
               </tr>
             ))}
