@@ -5,6 +5,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { getStoredRef, clearRef } from "@/lib/refTracker";
 import logo from "@/assets/vita-th-pro-logo.png";
 
 export const Route = createFileRoute("/dang-ky")({
@@ -21,14 +22,15 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Capture affiliate referrer: prefer localStorage (set globally on any page),
-  // fallback to current URL query param ?ref=...
-  const referredBy = useMemo(() => {
+  // Ref code (6 ký tự) từ localStorage do PublicLayout đã lưu, hoặc từ URL.
+  const refCode = useMemo(() => {
     if (typeof window === "undefined") return "";
-    const fromStorage = localStorage.getItem("affiliate_ref");
-    const fromUrl = new URLSearchParams(window.location.search).get("ref");
-    return fromStorage || fromUrl || "";
+    const stored = getStoredRef();
+    if (stored) return stored;
+    const url = new URLSearchParams(window.location.search).get("ref");
+    return (url || "").trim().toUpperCase();
   }, []);
+
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
