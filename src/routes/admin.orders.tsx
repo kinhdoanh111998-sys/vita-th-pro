@@ -372,7 +372,7 @@ function CreateOrderDrawer({
         finalCustomerId = newCus.id as string;
       }
 
-      // 2) Insert order
+      // 2) Insert order với status='pending' để tránh AFTER INSERT trigger fire khi chưa có order_items
       const { data: order, error: oErr } = await supabase.from("orders").insert({
         customer_id: finalCustomerId,
         subtotal_amount: subtotal,
@@ -381,7 +381,7 @@ function CreateOrderDrawer({
         voucher_id: appliedVoucher?.id ?? null,
         sales_staff_id: values.sales_staff_id || null,
         commission_rate: Number(values.commission_rate) || 5,
-        status: "paid",
+        status: "pending",
       }).select("id,order_code").single();
       if (oErr) throw oErr;
 
@@ -401,12 +401,18 @@ function CreateOrderDrawer({
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // 4) Increment voucher usage (best-effort; not race-safe)
+      // 4) Chuyển status → paid để UPDATE trigger sinh treatments cho các dòng service
+      const { error: uErr } = await supabase.from("orders")
+        .update({ status: "paid" }).eq("id", order.id);
+      if (uErr) throw uErr;
+
+      // 5) Increment voucher usage (best-effort; not race-safe)
       if (appliedVoucher) {
         await supabase.from("vouchers").update({
           used_count: (Number((appliedVoucher as unknown as { used_count?: number }).used_count) || 0) + 1,
         }).eq("id", appliedVoucher.id);
       }
+
 
 
       toast.success(`Đã tạo đơn ${order.order_code ?? ""}`, {
