@@ -111,7 +111,7 @@ export function StaffMonthCalendar() {
         <div>
           <h3 className="font-black text-lg">Lịch Tháng · Toàn nhân viên</h3>
           <p className="text-xs text-ink-muted">
-            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} lượt đăng ký`}
+            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} ca đã duyệt`}
           </p>
         </div>
         <div className="flex items-center gap-2">
