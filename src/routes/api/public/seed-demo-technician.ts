@@ -78,12 +78,17 @@ export const Route = createFileRoute("/api/public/seed-demo-technician")({
           (s.name as string).toLowerCase().includes("chiều"),
         );
 
-        const regs: Array<Record<string, unknown>> = [];
+        const regs: Array<{
+          employee_id: string;
+          shift_id: string;
+          date: string;
+          status: "approved";
+        }> = [];
         for (const s of [morning, afternoon]) {
           if (!s) continue;
           regs.push({
             employee_id: uid,
-            shift_id: s.id,
+            shift_id: s.id as string,
             date: today,
             status: "approved",
           });
@@ -93,6 +98,7 @@ export const Route = createFileRoute("/api/public/seed-demo-technician")({
             .from("shift_registrations")
             .upsert(regs, { onConflict: "employee_id,shift_id,date" });
         }
+
 
         // 4) Check-in 08:00 sáng nay (VN → UTC)
         // 08:00 VN = 01:00 UTC

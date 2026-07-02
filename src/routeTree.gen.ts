@@ -68,6 +68,7 @@ import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkou
 import { Route as AppStoreProductIdRouteImport } from './routes/app.store.$productId'
 import { Route as AppNewsIdRouteImport } from './routes/app.news.$id'
 import { Route as AppEventsIdRouteImport } from './routes/app.events.$id'
+import { Route as ApiPublicSeedDemoTechnicianRouteImport } from './routes/api/public/seed-demo-technician'
 import { Route as ApiPublicSeedDemoEmployeesRouteImport } from './routes/api/public/seed-demo-employees'
 import { Route as ApiPublicSeedDemoCustomerRouteImport } from './routes/api/public/seed-demo-customer'
 import { Route as ApiPublicLookupTreatmentsRouteImport } from './routes/api/public/lookup-treatments'
@@ -381,6 +382,12 @@ const AppEventsIdRoute = AppEventsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppEventsRoute,
 } as any)
+const ApiPublicSeedDemoTechnicianRoute =
+  ApiPublicSeedDemoTechnicianRouteImport.update({
+    id: '/api/public/seed-demo-technician',
+    path: '/api/public/seed-demo-technician',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicSeedDemoEmployeesRoute =
   ApiPublicSeedDemoEmployeesRouteImport.update({
     id: '/api/public/seed-demo-employees',
@@ -547,6 +554,7 @@ export interface FileRoutesByFullPath {
   '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
+  '/api/public/seed-demo-technician': typeof ApiPublicSeedDemoTechnicianRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
@@ -619,6 +627,7 @@ export interface FileRoutesByTo {
   '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
+  '/api/public/seed-demo-technician': typeof ApiPublicSeedDemoTechnicianRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
@@ -699,6 +708,7 @@ export interface FileRoutesById {
   '/api/public/lookup-treatments': typeof ApiPublicLookupTreatmentsRoute
   '/api/public/seed-demo-customer': typeof ApiPublicSeedDemoCustomerRoute
   '/api/public/seed-demo-employees': typeof ApiPublicSeedDemoEmployeesRoute
+  '/api/public/seed-demo-technician': typeof ApiPublicSeedDemoTechnicianRoute
   '/app/events/$id': typeof AppEventsIdRoute
   '/app/news/$id': typeof AppNewsIdRoute
   '/app/store/$productId': typeof AppStoreProductIdRoute
@@ -779,6 +789,7 @@ export interface FileRouteTypes {
     | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
+    | '/api/public/seed-demo-technician'
     | '/app/events/$id'
     | '/app/news/$id'
     | '/app/store/$productId'
@@ -851,6 +862,7 @@ export interface FileRouteTypes {
     | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
+    | '/api/public/seed-demo-technician'
     | '/app/events/$id'
     | '/app/news/$id'
     | '/app/store/$productId'
@@ -930,6 +942,7 @@ export interface FileRouteTypes {
     | '/api/public/lookup-treatments'
     | '/api/public/seed-demo-customer'
     | '/api/public/seed-demo-employees'
+    | '/api/public/seed-demo-technician'
     | '/app/events/$id'
     | '/app/news/$id'
     | '/app/store/$productId'
@@ -951,6 +964,7 @@ export interface RootRouteChildren {
   ApiPublicLookupTreatmentsRoute: typeof ApiPublicLookupTreatmentsRoute
   ApiPublicSeedDemoCustomerRoute: typeof ApiPublicSeedDemoCustomerRoute
   ApiPublicSeedDemoEmployeesRoute: typeof ApiPublicSeedDemoEmployeesRoute
+  ApiPublicSeedDemoTechnicianRoute: typeof ApiPublicSeedDemoTechnicianRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1368,6 +1382,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppEventsIdRouteImport
       parentRoute: typeof AppEventsRoute
     }
+    '/api/public/seed-demo-technician': {
+      id: '/api/public/seed-demo-technician'
+      path: '/api/public/seed-demo-technician'
+      fullPath: '/api/public/seed-demo-technician'
+      preLoaderRoute: typeof ApiPublicSeedDemoTechnicianRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/seed-demo-employees': {
       id: '/api/public/seed-demo-employees'
       path: '/api/public/seed-demo-employees'
@@ -1765,6 +1786,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicLookupTreatmentsRoute: ApiPublicLookupTreatmentsRoute,
   ApiPublicSeedDemoCustomerRoute: ApiPublicSeedDemoCustomerRoute,
   ApiPublicSeedDemoEmployeesRoute: ApiPublicSeedDemoEmployeesRoute,
+  ApiPublicSeedDemoTechnicianRoute: ApiPublicSeedDemoTechnicianRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
