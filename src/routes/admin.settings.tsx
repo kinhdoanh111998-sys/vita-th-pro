@@ -29,21 +29,37 @@ const FIELDS: { name: keyof Settings; label: string; type?: "textarea" }[] = [
 
 const EXPORT_TABLES: { table: string; label: string; columns: { key: string; label: string }[] }[] = [
   {
-    table: "customers", label: "Khách hàng",
+    table: "services", label: "Kho Sản phẩm / Dịch vụ",
     columns: [
-      { key: "id", label: "ID" }, { key: "name", label: "Họ tên" },
-      { key: "phone", label: "SĐT" }, { key: "source", label: "Nguồn" },
-      { key: "status", label: "Trạng thái" }, { key: "note", label: "Ghi chú" },
-      { key: "created_at", label: "Ngày tạo" },
+      { key: "id", label: "ID" }, { key: "sku", label: "Mã SKU" },
+      { key: "name", label: "Tên" }, { key: "type", label: "Loại" },
+      { key: "category", label: "Danh mục" },
+      { key: "price", label: "Giá bán" }, { key: "sale_price", label: "Giá KM" },
+      { key: "cost_price", label: "Giá nhập" },
+      { key: "stock_quantity", label: "Tồn kho" },
+      { key: "default_sessions", label: "Số buổi" },
+      { key: "is_hidden", label: "Ẩn" }, { key: "created_at", label: "Ngày tạo" },
     ],
   },
   {
-    table: "orders", label: "Đơn hàng",
+    table: "orders", label: "Giao dịch / Đơn hàng",
     columns: [
-      { key: "id", label: "ID" }, { key: "customer_id", label: "Khách hàng ID" },
-      { key: "staff_id", label: "Nhân viên ID" }, { key: "package_name", label: "Tên gói" },
-      { key: "total_sessions", label: "Số buổi" }, { key: "total_price", label: "Tổng tiền" },
-      { key: "status", label: "Trạng thái" }, { key: "created_at", label: "Ngày tạo" },
+      { key: "order_code", label: "Mã đơn" }, { key: "customer_id", label: "Khách hàng ID" },
+      { key: "sales_staff_id", label: "NV bán" },
+      { key: "subtotal_amount", label: "Tạm tính" },
+      { key: "discount_amount", label: "Giảm giá" },
+      { key: "total_amount", label: "Tổng tiền" },
+      { key: "commission_rate", label: "% Hoa hồng" },
+      { key: "status", label: "Trạng thái" }, { key: "created_at", label: "Ngày mua" },
+    ],
+  },
+  {
+    table: "customers", label: "Khách hàng",
+    columns: [
+      { key: "id", label: "ID" }, { key: "name", label: "Họ tên" },
+      { key: "phone", label: "SĐT" }, { key: "email", label: "Email" },
+      { key: "source", label: "Nguồn" }, { key: "status", label: "Trạng thái" },
+      { key: "note", label: "Ghi chú" }, { key: "created_at", label: "Ngày tạo" },
     ],
   },
   {
