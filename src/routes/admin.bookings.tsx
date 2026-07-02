@@ -13,9 +13,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
-} from "@/components/ui/sheet";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
@@ -232,13 +229,14 @@ function BookingsAdmin() {
         onCancel={(id) => cancel.mutate(id)}
       />
 
-      <CreateBookingSheet
+      <CreateBookingDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         customers={customersQ.data ?? []}
         services={servicesQ.data ?? []}
         onCreated={() => qc.invalidateQueries({ queryKey: ["bookings2"] })}
       />
+
 
       <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <DialogContent>
@@ -262,12 +260,13 @@ function BookingsAdmin() {
 
 /* ------------------ Create Booking Sheet ------------------ */
 
-function CreateBookingSheet({
+function CreateBookingDialog({
   open, onOpenChange, customers, services, onCreated,
 }: {
   open: boolean; onOpenChange: (v: boolean) => void;
   customers: Customer[]; services: Service[]; onCreated: () => void;
 }) {
+
   const [customerId, setCustomerId] = useState<string>("__new");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -330,12 +329,12 @@ function CreateBookingSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Tạo Lịch hẹn mới</SheetTitle>
-          <SheetDescription>Chọn khách sẵn có hoặc tạo khách ẩn ngay khi lưu.</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+        <DialogHeader>
+          <DialogTitle>Tạo Lịch hẹn mới</DialogTitle>
+          <DialogDescription>Chọn khách sẵn có hoặc tạo khách ẩn ngay khi lưu.</DialogDescription>
+        </DialogHeader>
 
         <div className="space-y-4 mt-4">
           <div className="space-y-1.5">
@@ -389,8 +388,8 @@ function CreateBookingSheet({
             <Button onClick={submit} disabled={saving}>{saving ? "Đang lưu…" : "Lưu lịch hẹn"}</Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
