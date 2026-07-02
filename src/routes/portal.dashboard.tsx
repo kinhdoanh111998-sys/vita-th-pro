@@ -3,10 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Users2, ClipboardList } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
+import { AttendanceWidget, ShiftRegistrationPanel } from "@/components/AttendanceWidget";
 
 export const Route = createFileRoute("/portal/dashboard")({
   component: PortalDashboard,
 });
+
 
 function todayRange() {
   const start = new Date();
