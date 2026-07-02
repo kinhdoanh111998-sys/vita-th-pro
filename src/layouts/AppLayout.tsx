@@ -2,6 +2,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Home, Store, QrCode, Bell, User, LogIn } from "lucide-react";
 import type { ComponentType } from "react";
 import logo from "@/assets/vita-th-pro-logo.png";
+import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
   to: "/app" | "/app/store" | "/app/scan" | "/app/notifications" | "/app/account";
