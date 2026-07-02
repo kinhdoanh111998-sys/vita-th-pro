@@ -4,6 +4,7 @@ import { CalendarDays, Users2, ClipboardList } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { AttendanceWidget, ShiftRegistrationPanel } from "@/components/AttendanceWidget";
+import { StaffScheduleRegistration } from "@/components/StaffScheduleRegistration";
 
 export const Route = createFileRoute("/portal/dashboard")({
   component: PortalDashboard,
