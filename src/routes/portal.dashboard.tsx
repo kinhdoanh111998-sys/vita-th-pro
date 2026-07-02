@@ -73,7 +73,14 @@ function PortalDashboard() {
         </p>
       </div>
 
+      {/* ==== KHỐI CHẤM CÔNG & ĐĂNG KÝ CA (Mobile-first) ==== */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AttendanceWidget />
+        <ShiftRegistrationPanel />
+      </div>
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
         <StatCard
           icon={<CalendarDays className="size-5" />}
           label="Lịch hẹn hôm nay"
