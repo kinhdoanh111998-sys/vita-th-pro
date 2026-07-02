@@ -175,13 +175,15 @@ function OrdersPage() {
                 <th className="px-4 py-3 font-bold text-right">Giảm</th>
                 <th className="px-4 py-3 font-bold text-right">Tổng</th>
                 <th className="px-4 py-3 font-bold">Trạng thái</th>
+                <th className="px-4 py-3 font-bold text-right">Thao tác</th>
               </tr>
             </thead>
+
             <tbody>
               {ordersQ.isLoading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-ink-muted">Đang tải...</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-ink-muted">Đang tải...</td></tr>
               ) : filteredOrders.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-ink-muted">
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-ink-muted">
                   <ShoppingCart className="mx-auto size-8 mb-2 opacity-50" />
                   Chưa có đơn hàng nào.
                 </td></tr>
@@ -209,13 +211,24 @@ function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-brand-dark">{fmt(Number(o.total_amount))}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-brand-soft text-brand-dark">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                        o.status === "paid" ? "bg-emerald-100 text-emerald-700"
+                        : o.status === "cancelled" ? "bg-red-100 text-red-700"
+                        : "bg-amber-100 text-amber-700"
+                      }`}>
                         {o.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button type="button" onClick={() => setViewOrderId(o.id)}
+                        className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
+                        <Eye className="size-3.5" /> Xem
+                      </button>
                     </td>
                   </tr>
                 );
               })}
+
             </tbody>
           </table>
         </div>
