@@ -21,12 +21,14 @@ import {
   Phone,
 } from "lucide-react";
 import { CommunityFeedPC } from "@/components/CommunityFeed";
+import { OmniSearch } from "@/components/OmniSearch";
 import { useSettings } from "@/lib/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+
 
 
 type Banner = {
@@ -367,8 +369,14 @@ function CommunityHome() {
 
 
 
+      {/* Hero Search */}
+      <section className="pt-4 md:pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
+        <OmniSearch hero />
+      </section>
+
       {/* Hero Banner Carousel */}
       <HeroCarousel />
+
 
 
       {/* Shortcuts */}
