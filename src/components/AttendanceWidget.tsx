@@ -101,6 +101,49 @@ export function AttendanceWidget() {
   const remaining = endMs ? Math.max(0, endMs - now) : 0;
   const remH = Math.floor(remaining / 3_600_000);
   const remM = Math.floor((remaining % 3_600_000) / 60_000);
+  const remS = Math.floor((remaining % 60_000) / 1000);
+  const shiftEnded = endMs !== null && remaining <= 0;
+
+  const requestEarlyCheckout = async () => {
+    if (!att) return;
+    if (!earlyReason.trim()) { toast.error("Vui lòng nhập lý do"); return; }
+    setEarlySaving(true);
+    try {
+      const { error } = await supabase.from("attendances").update({
+        early_checkout_requested: true,
+        early_checkout_reason: earlyReason.trim(),
+        early_checkout_requested_at: new Date().toISOString(),
+      }).eq("id", att.id);
+      if (error) throw error;
+
+      // Thông báo khẩn cho quản lý
+      try {
+        const { data: ops } = await supabase.from("user_roles")
+          .select("user_id").in("role", ["admin", "manager"] as any);
+        const notifs = (ops ?? []).map((r: any) => ({
+          recipient_id: r.user_id,
+          actor_id: uid ?? null,
+          type: "early_checkout_request",
+          title: "⚠️ Yêu cầu tan ca sớm",
+          body: `Nhân viên xin về sớm · Lý do: ${earlyReason.trim()}`,
+          ref_type: "attendance",
+          ref_id: att.id,
+        }));
+        if (notifs.length) await supabase.from("notifications").insert(notifs);
+      } catch (nerr) { console.warn("[early notify]", nerr); }
+
+      toast.success("Đã gửi yêu cầu tan ca sớm.");
+      setEarlyOpen(false);
+      setEarlyReason("");
+      qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
+    } catch (e: any) {
+      console.error("[earlyCheckout]", e);
+      toast.error(e?.message ?? "Không gửi được yêu cầu");
+    } finally {
+      setEarlySaving(false);
+    }
+  };
+
 
   const doCheckIn = async () => {
     if (!chosenShift) { toast.error("Chọn ca làm việc"); return; }
