@@ -479,7 +479,7 @@ function HeroCarousel() {
   };
 
   return (
-    <section className="pt-6 md:pt-8 max-w-7xl mx-auto w-full">
+    <section className="pt-4 max-w-7xl mx-auto w-full">
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
@@ -491,17 +491,17 @@ function HeroCarousel() {
             <div className="relative rounded-2xl overflow-hidden aspect-[16/9] md:aspect-[21/9] shadow-md bg-gray-100">
               <img src={src} alt={b.title} className="w-full h-full object-cover" />
               {(b.title || b.subtitle) && (
-                <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-black/30 to-black/50 flex flex-col items-center justify-center text-center px-6 md:px-12 py-10 text-white">
-                  <div className="text-xl md:text-4xl font-black tracking-tight drop-shadow-lg max-w-3xl">
+                <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex flex-col justify-end p-5 md:p-8 text-white">
+                  <div className="text-lg md:text-3xl font-black tracking-tight max-w-[70%] drop-shadow-md">
                     {b.title}
                   </div>
                   {b.subtitle && (
-                    <div className="text-sm md:text-lg mt-2 md:mt-3 opacity-90 max-w-2xl line-clamp-2 drop-shadow-md">
+                    <div className="text-xs md:text-base mt-1 opacity-90 max-w-[70%] line-clamp-2">
                       {b.subtitle}
                     </div>
                   )}
                   {b.cta && (
-                    <span className="mt-4 inline-flex w-fit items-center gap-1.5 px-5 h-10 rounded-full bg-emerald-600 text-white text-sm font-semibold shadow-lg">
+                    <span className="mt-3 inline-flex w-fit items-center gap-1.5 px-4 h-9 rounded-lg bg-emerald-600 text-white text-sm font-semibold">
                       {b.cta}
                     </span>
                   )}
