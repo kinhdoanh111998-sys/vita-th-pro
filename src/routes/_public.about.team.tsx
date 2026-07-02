@@ -32,7 +32,7 @@ function TeamPage() {
           <span className="inline-flex text-xs font-black uppercase tracking-[0.25em] bg-white/15 rounded-full px-3 py-1">
             Con người Vita
           </span>
-          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight">Đội ngũ chuyên gia</h1>
+          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight text-white">Đội ngũ chuyên gia</h1>
           <p className="mt-3 text-white/85 max-w-2xl mx-auto">
             Bác sĩ da liễu, chuyên gia trị liệu và kỹ thuật viên tay nghề cao — trực tiếp thăm khám, thiết kế phác đồ và đồng hành cùng bạn suốt liệu trình.
           </p>
