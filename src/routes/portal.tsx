@@ -10,8 +10,8 @@ function PortalLayout() {
   const { pathname } = useLocation();
   const isCustomerPage = pathname === "/portal/my-treatments" || pathname === "/portal/affiliate";
   const allowedRoles = isCustomerPage
-    ? (["admin", "manager", "staff", "employee", "customer"] as const)
-    : (["admin", "manager", "staff", "employee"] as const);
+    ? (["admin", "manager", "staff", "employee", "sale", "technician", "customer"] as const)
+    : (["admin", "manager", "staff", "employee", "sale", "technician"] as const);
 
   return (
     <AuthGuard allowedRoles={[...allowedRoles]}>
