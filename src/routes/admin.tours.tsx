@@ -168,23 +168,26 @@ function ToursPage() {
     [usersQ.data],
   );
 
+  const busySet = useMemo(
+    () => new Set((activeToursQ.data ?? []).map((t) => t.technician_id)),
+    [activeToursQ.data],
+  );
   const availableStaff: StaffMember[] = useMemo(() => {
-    const busy = new Set((activeToursQ.data ?? []).map((t) => t.technician_id));
     const attMap = new Map((attQ.data ?? []).map((a) => [a.employee_id, a]));
     return (usersQ.data ?? [])
       .filter((u) => u.role && STAFF_ROLES.includes(u.role))
+      .filter((u) => !busySet.has(u.id)) // Ẩn NV đang thực hiện ca khác
       .map((u) => {
         const a = attMap.get(u.id);
         const checkedIn = !!a?.check_in_approved && !a?.check_out_time;
-        const isBusy = busy.has(u.id);
         return {
           id: u.id,
           full_name: u.full_name ?? "—",
           role: u.role ?? "staff",
-          meta: isBusy ? "Đang thực hiện" : checkedIn ? "Sẵn sàng" : "Chưa check-in",
+          meta: checkedIn ? "Sẵn sàng" : "Chưa check-in",
         };
       });
-  }, [usersQ.data, attQ.data, activeToursQ.data]);
+  }, [usersQ.data, attQ.data, busySet]);
 
   /* -------- Form state -------- */
   const [customerId, setCustomerId] = useState("");
