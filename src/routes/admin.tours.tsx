@@ -14,7 +14,11 @@ import {
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { DraggableStaff, DroppableTarget, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { AssignDndProvider } from "@/components/AssignDndProvider";
+import { Input as UIInput } from "@/components/ui/input";
+import { Search } from "lucide-react";
+
 
 export const Route = createFileRoute("/admin/tours")({
   component: ToursPage,
@@ -189,22 +193,109 @@ function ToursPage() {
   const pendingTreat = pending ? (treatmentsQ.data ?? []).find((t) => t.id === pending.treatmentId) : null;
   const pendingCust = pendingTreat ? customerMap.get(pendingTreat.customer_id) : null;
 
+  const [staffQ, setStaffQ] = useState("");
+  const filteredStaff = availableStaff.filter((s) =>
+    !staffQ.trim()
+      ? true
+      : s.full_name.toLowerCase().includes(staffQ.trim().toLowerCase()),
+  );
+
   return (
     <>
+
       <AdminTopbar
         title="Quản lý Ca làm (Tours)"
         subtitle="Kéo thẻ nhân viên khả dụng thả vào buổi liệu trình cần thực hiện."
       />
 
-      <StaffDragDropBoard
+      <AssignDndProvider
         staff={availableStaff}
-        targets={targets}
         onAssign={(staffId, treatmentId) => setPending({ staffId, treatmentId })}
-        leftTitle="Nhân viên khả dụng"
-        rightTitle="Liệu trình cần làm (pending)"
-        emptyStaffText="Không có nhân viên đã check-in/rảnh."
-        emptyTargetsText="Không có buổi liệu trình nào đang chờ."
-      />
+      >
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          {/* CỘT TRÁI/GIỮA: Card liệu trình = drop zones */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-black text-sm">
+                Liệu trình cần làm{" "}
+                <span className="text-ink-muted font-semibold">
+                  ({targets.length})
+                </span>
+              </h3>
+            </div>
+            {targets.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-hairline bg-white p-10 text-center text-ink-muted text-sm">
+                Không có buổi liệu trình nào đang chờ.
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-3">
+                {targets.map((t) => (
+                  <DroppableTarget key={t.id} t={t} activeStaffId={null} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* CỘT PHẢI: Tóm tắt + Staff Pool compact */}
+          <aside className="space-y-4 lg:sticky lg:top-4 h-fit">
+            <div className="bg-white border border-hairline rounded-2xl p-4">
+              <h4 className="font-black text-sm mb-3">Tóm tắt</h4>
+              <dl className="text-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <dt className="text-ink-muted">Liệu trình chờ</dt>
+                  <dd className="font-bold text-brand-dark">{targets.length}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-ink-muted">Nhân viên rảnh</dt>
+                  <dd className="font-bold text-brand-dark">{availableStaff.length}</dd>
+                </div>
+                <div className="flex items-center justify-between">
+                  <dt className="text-ink-muted">Đang thực hiện</dt>
+                  <dd className="font-bold text-amber-700">
+                    {activeToursQ.data?.length ?? 0}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-3 text-[11px] text-ink-muted leading-relaxed">
+                Kéo thẻ nhân viên bên dưới thả vào một card liệu trình để tạo Tour
+                <i> in_progress</i> và gửi thông báo.
+              </p>
+            </div>
+
+            <div className="bg-white border border-hairline rounded-2xl p-3">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <h4 className="font-black text-sm">
+                  Nhân viên khả dụng{" "}
+                  <span className="text-ink-muted font-semibold">
+                    ({filteredStaff.length})
+                  </span>
+                </h4>
+              </div>
+              <div className="relative mb-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted" />
+                <UIInput
+                  value={staffQ}
+                  onChange={(e) => setStaffQ(e.target.value)}
+                  placeholder="Tìm nhân viên…"
+                  className="pl-8 h-8 text-xs"
+                />
+              </div>
+              {filteredStaff.length === 0 ? (
+                <div className="text-[11px] text-ink-muted italic text-center py-4">
+                  Không có nhân viên đã check-in/rảnh.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5 max-h-[420px] overflow-y-auto pr-0.5">
+                  {filteredStaff.map((s) => (
+                    <DraggableStaff key={s.id} s={s} compact />
+                  ))}
+                </div>
+              )}
+            </div>
+          </aside>
+        </div>
+      </AssignDndProvider>
+
 
       <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <DialogContent>
