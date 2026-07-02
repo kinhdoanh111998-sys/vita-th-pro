@@ -420,7 +420,7 @@ function ToursPage() {
                     Làm mới
                   </button>
                   <Button type="submit" disabled={complete.isPending}>
-                    {complete.isPending ? "Đang xử lý…" : "✓ Hoàn thành Ca làm"}
+                    {complete.isPending ? "Đang xử lý…" : "▶ Bắt đầu Ca làm"}
                   </Button>
                 </div>
               </form>
