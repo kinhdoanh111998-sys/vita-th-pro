@@ -140,7 +140,68 @@ export function BatchApprovalTab() {
 
   const rows = requestsQ.data ?? [];
 
+  /* ============ Yêu cầu đổi lịch lẻ (sau khi đã chốt) ============ */
+  type SingleReq = { id: string; staff_id: string; date: string; shift_type: string; status: string; created_at: string };
+  const singleQ = useQuery({
+    queryKey: ["single-shift-change-requests", "pending"],
+    queryFn: async (): Promise<SingleReq[]> => {
+      try {
+        const { data, error } = await supabase
+          .from("staff_shifts")
+          .select("id,staff_id,date,shift_type,status,created_at")
+          .eq("status", "pending")
+          .is("request_batch_id", null)
+          .order("date", { ascending: true });
+        if (error) throw error;
+        return (data ?? []) as SingleReq[];
+      } catch (e) { console.error("[single change reqs]", e); return []; }
+    },
+  });
+
+  const singleStaffIds = Array.from(new Set(singleQ.data?.map((r) => r.staff_id) ?? []));
+  const singleUsersQ = useQuery({
+    queryKey: ["single-change-users", singleStaffIds.join(",")],
+    enabled: singleStaffIds.length > 0,
+    queryFn: async (): Promise<Record<string, UserInfo>> => {
+      const { data, error } = await supabase.from("users")
+        .select("id,full_name,email,role").in("id", singleStaffIds);
+      if (error) throw error;
+      const m: Record<string, UserInfo> = {};
+      (data ?? []).forEach((u: any) => { m[u.id] = u; });
+      return m;
+    },
+  });
+
+  const decideSingle = async (r: SingleReq, next: "approved" | "rejected") => {
+    setBusy(r.id);
+    try {
+      const uid = session?.user.id ?? null;
+      const { error } = await supabase.from("staff_shifts")
+        .update({ status: next }).eq("id", r.id);
+      if (error) throw error;
+      try {
+        await supabase.from("notifications").insert({
+          recipient_id: r.staff_id,
+          actor_id: uid,
+          type: next === "approved" ? "shift_change_approved" : "shift_change_rejected",
+          title: next === "approved" ? "Yêu cầu đổi lịch được duyệt" : "Yêu cầu đổi lịch bị từ chối",
+          body: `Ngày ${r.date} (${shiftShort(r.shift_type)})`,
+          ref_type: "staff_shift",
+          ref_id: r.id,
+        });
+      } catch (nerr) { console.warn("[notify single]", nerr); }
+      toast.success(next === "approved" ? "Đã duyệt thay đổi" : "Đã từ chối thay đổi");
+      await qc.invalidateQueries({ queryKey: ["single-shift-change-requests"] });
+      await qc.invalidateQueries({ queryKey: ["staff-shifts-month"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Không cập nhật được");
+    } finally { setBusy(null); }
+  };
+
+  const singleRows = singleQ.data ?? [];
+
   return (
+    <div className="space-y-5">
     <section className="bg-white border border-hairline rounded-2xl shadow-sm">
       <div className="p-5 border-b border-hairline flex items-center gap-3">
         <div>
@@ -199,5 +260,48 @@ export function BatchApprovalTab() {
         </div>
       )}
     </section>
+
+    <section className="bg-white border border-hairline rounded-2xl shadow-sm">
+      <div className="p-5 border-b border-hairline">
+        <h3 className="font-black text-lg flex items-center gap-2">
+          <CalendarIcon className="size-5" /> Yêu cầu đổi lịch lẻ (sau khi đã chốt)
+        </h3>
+        <p className="text-xs text-ink-muted">
+          {singleQ.isLoading ? "Đang tải..." : `${singleRows.length} yêu cầu đang chờ`}
+        </p>
+      </div>
+      {singleRows.length === 0 ? (
+        <div className="p-8 text-center text-ink-muted text-sm">Không có yêu cầu đổi lịch lẻ.</div>
+      ) : (
+        <div className="divide-y divide-hairline">
+          {singleRows.map((r) => {
+            const u = singleUsersQ.data?.[r.staff_id];
+            return (
+              <div key={r.id} className="p-4 flex flex-wrap items-center gap-3">
+                <div className="min-w-[180px]">
+                  <div className="font-bold text-brand-dark">
+                    {u?.full_name ?? u?.email ?? r.staff_id.slice(0, 8)}
+                  </div>
+                  <div className="text-xs text-ink-muted">{u?.role ?? "—"}</div>
+                </div>
+                <div className="text-sm">
+                  <b>{r.date}</b> · Ca: <b>{shiftShort(r.shift_type)}</b>
+                </div>
+                <Badge className="bg-amber-500 text-white">Chờ duyệt</Badge>
+                <div className="ml-auto flex gap-2">
+                  <Button size="sm" onClick={() => decideSingle(r, "approved")} disabled={busy === r.id}>
+                    <Check className="size-3.5 mr-1 inline" /> Duyệt
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => decideSingle(r, "rejected")} disabled={busy === r.id}>
+                    <X className="size-3.5 mr-1 inline" /> Từ chối
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+    </div>
   );
 }

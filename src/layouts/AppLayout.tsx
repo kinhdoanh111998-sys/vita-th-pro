@@ -2,6 +2,7 @@ import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { Home, Store, QrCode, Bell, User, LogIn } from "lucide-react";
 import type { ComponentType } from "react";
 import logo from "@/assets/vita-th-pro-logo.png";
+import { useAuth } from "@/lib/AuthContext";
 
 type NavItem = {
   to: "/app" | "/app/store" | "/app/scan" | "/app/notifications" | "/app/account";
@@ -20,19 +21,20 @@ const NAV: NavItem[] = [
 
 export default function AppLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { session } = useAuth();
 
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* Desktop top nav — replaces bottom nav on md+ */}
-      <header className="hidden md:block sticky top-0 z-40 bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto flex items-center gap-4 px-6 h-16">
+      <header className="hidden md:block sticky top-0 z-40 bg-white border-b border-gray-100 w-full">
+        <div className="w-full flex items-center gap-3 px-6 h-16 flex-nowrap">
           <Link to="/app" className="flex items-center gap-2 shrink-0">
             <img src={logo} alt="VITA" className="h-9 w-auto" />
-            <span className="font-heading font-black text-emerald-700">
+            <span className="font-heading font-black text-emerald-700 whitespace-nowrap">
               VITA Community
             </span>
           </Link>
-          <nav className="flex items-center gap-1 ml-6">
+          <nav className="flex items-center gap-1 ml-4 flex-nowrap min-w-0 overflow-x-auto">
             {NAV.map((item) => {
               const active =
                 item.to === "/app"
@@ -44,7 +46,7 @@ export default function AppLayout() {
                   key={item.to}
                   to={item.to}
                   className={
-                    "inline-flex items-center gap-2 px-3 h-10 rounded-lg text-sm font-semibold transition-colors " +
+                    "inline-flex items-center gap-2 px-3 h-10 rounded-lg text-sm font-semibold whitespace-nowrap shrink-0 transition-colors " +
                     (active
                       ? "bg-emerald-50 text-emerald-700"
                       : "text-gray-600 hover:bg-gray-50")
@@ -56,26 +58,28 @@ export default function AppLayout() {
               );
             })}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 shrink-0 flex-nowrap">
             <Link
               to="/lookup"
-              className="hidden lg:inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold text-gray-700 border border-gray-200 hover:border-emerald-500 hover:text-emerald-700"
+              className="hidden lg:inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-gray-700 border border-gray-200 hover:border-emerald-500 hover:text-emerald-700"
             >
               Tra cứu liệu trình
             </Link>
             <Link
               to="/booking"
-              className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700"
+              className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-white bg-emerald-600 hover:bg-emerald-700"
             >
               Đặt lịch
             </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm font-semibold border border-emerald-600 text-emerald-700 hover:bg-emerald-50"
-            >
-              <LogIn className="w-4 h-4" />
-              Đăng nhập
-            </Link>
+            {!session && (
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap border border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+              >
+                <LogIn className="w-4 h-4" />
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </div>
       </header>

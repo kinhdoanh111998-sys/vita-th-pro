@@ -1,10 +1,12 @@
 import { Outlet, createFileRoute, Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import { toast } from "sonner";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useAuth } from "@/lib/AuthContext";
 import { supabase } from "@/lib/supabaseClient";
 import { useQueryClient } from "@tanstack/react-query";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/portal")({
   component: PortalLayout,
@@ -127,8 +129,22 @@ function PortalShell() {
   return (
     <div className="min-h-screen bg-[#f3f7f3] flex flex-col">
       <header className="bg-[#112218] text-white">
-        <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-3 px-5 py-3">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto max-w-[1180px] flex items-center justify-between gap-3 px-4 sm:px-5 py-3">
+          {/* Mobile: hamburger + brand */}
+          <div className="flex items-center gap-3 md:hidden min-w-0">
+            <MobilePortalMenu
+              nav={NAV}
+              homeTo={homeTo}
+              role={role}
+              onSignOut={handleSignOut}
+            />
+            <Link to={homeTo} className="font-black text-base truncate">
+              {role === "customer" ? "Khu vực Khách hàng" : "Khu vực Quản lý"}
+            </Link>
+          </div>
+
+          {/* Desktop: original layout untouched */}
+          <div className="hidden md:flex items-center gap-4">
             <Link to={homeTo} className="font-black text-lg">
               {role === "customer" ? "Khu vực Khách hàng" : "Khu vực Quản lý"}
             </Link>
@@ -145,17 +161,17 @@ function PortalShell() {
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3 text-sm">
+          <div className="hidden md:flex items-center gap-3 text-sm">
             <Link
               to="/app/account"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
               title="Hồ sơ của tôi"
             >
               👤 Hồ sơ
             </Link>
             <Link
               to="/"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1.5 text-xs font-extrabold hover:bg-white/20"
             >
               🏠 Trở về Trang chủ
             </Link>
@@ -172,11 +188,92 @@ function PortalShell() {
               Đăng xuất
             </button>
           </div>
+
+          {/* Mobile: compact identity */}
+          <div className="md:hidden text-right leading-tight text-xs min-w-0">
+            <div className="font-bold truncate max-w-[140px]">{fullName ?? email}</div>
+            <div className="text-[10px] uppercase tracking-wider text-white/70">{role}</div>
+          </div>
         </div>
       </header>
-      <main className="flex-1 p-5 lg:p-7">
+      <main className="flex-1 p-4 lg:p-7">
         <Outlet />
       </main>
     </div>
+  );
+}
+
+function MobilePortalMenu({
+  nav,
+  homeTo,
+  role,
+  onSignOut,
+}: {
+  nav: ReadonlyArray<{ to: string; label: string }>;
+  homeTo: string;
+  role: string | null;
+  onSignOut: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <button
+          aria-label="Mở menu"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[86%] max-w-[320px] bg-[#112218] text-white border-0 p-0">
+        <div className="p-4 border-b border-white/10">
+          <div className="font-black text-lg">
+            {role === "customer" ? "Khu vực Khách hàng" : "Khu vực Quản lý"}
+          </div>
+        </div>
+        <nav className="p-3 flex flex-col gap-1">
+          {nav.map((n) => (
+            <Link
+              key={n.to}
+              to={n.to}
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-bold hover:bg-white/10"
+              activeProps={{ className: "bg-white/15" }}
+            >
+              {n.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-3 mt-2 border-t border-white/10 space-y-2">
+          <Link
+            to="/app/account"
+            onClick={() => setOpen(false)}
+            className="block text-center rounded-full bg-white/10 border border-white/20 px-3 py-2 text-xs font-extrabold hover:bg-white/20"
+          >
+            👤 Hồ sơ của tôi
+          </Link>
+          <Link
+            to={homeTo}
+            onClick={() => setOpen(false)}
+            className="block text-center rounded-full bg-white/10 border border-white/20 px-3 py-2 text-xs font-extrabold hover:bg-white/20"
+          >
+            📊 Dashboard
+          </Link>
+          <Link
+            to="/"
+            onClick={() => setOpen(false)}
+            className="block text-center rounded-full bg-white/10 border border-white/20 px-3 py-2 text-xs font-extrabold hover:bg-white/20"
+          >
+            🏠 Trở về Trang chủ
+          </Link>
+          <button
+            onClick={() => { setOpen(false); onSignOut(); }}
+            className="block w-full text-center rounded-full bg-white text-[#112218] px-3 py-2 text-xs font-extrabold hover:bg-white/90"
+          >
+            Đăng xuất
+          </button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
