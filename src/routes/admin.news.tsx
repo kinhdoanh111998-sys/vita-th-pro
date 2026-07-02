@@ -475,13 +475,15 @@ function ModerationDrawer({ onClose }: { onClose: () => void }) {
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;
-      type Row = NewsComment & {
+      type Row = {
+        id: string; news_id: string; full_name: string; content: string;
+        status: string; created_at: string;
         news: { title: string } | null;
-        contact: { contact_info: string | null }[] | { contact_info: string | null } | null;
+        contact: { contact_info: string | null } | { contact_info: string | null }[] | null;
       };
-      return (data ?? []).map((r: Row) => {
+      return ((data ?? []) as Row[]).map((r) => {
         const c = Array.isArray(r.contact) ? r.contact[0] : r.contact;
-        return { ...r, contact_info: c?.contact_info ?? null };
+        return { ...r, status: r.status as NewsComment["status"], contact_info: c?.contact_info ?? null };
       }) as (NewsComment & { news: { title: string } | null })[];
     },
   });
