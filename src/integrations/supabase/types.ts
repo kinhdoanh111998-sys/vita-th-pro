@@ -421,33 +421,92 @@ export type Database = {
           },
         ]
       }
-      orders: {
+      order_items: {
         Row: {
           created_at: string
-          customer_id: string
           id: string
+          item_id: string
+          item_type: Database["public"]["Enums"]["order_item_type"]
+          order_id: string
           quantity: number
-          service_id: string
-          status: string
-          total_amount: number
+          total_price: number
+          unit_price: number
         }
         Insert: {
           created_at?: string
-          customer_id: string
           id?: string
-          quantity?: number
-          service_id: string
-          status?: string
-          total_amount?: number
+          item_id: string
+          item_type: Database["public"]["Enums"]["order_item_type"]
+          order_id: string
+          quantity: number
+          total_price: number
+          unit_price: number
         }
         Update: {
           created_at?: string
-          customer_id?: string
           id?: string
+          item_id?: string
+          item_type?: Database["public"]["Enums"]["order_item_type"]
+          order_id?: string
           quantity?: number
-          service_id?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          commission_rate: number
+          created_at: string
+          customer_id: string
+          discount_amount: number
+          id: string
+          order_code: string | null
+          quantity: number | null
+          sales_staff_id: string | null
+          service_id: string | null
+          status: string
+          subtotal_amount: number
+          total_amount: number
+          voucher_id: string | null
+        }
+        Insert: {
+          commission_rate?: number
+          created_at?: string
+          customer_id: string
+          discount_amount?: number
+          id?: string
+          order_code?: string | null
+          quantity?: number | null
+          sales_staff_id?: string | null
+          service_id?: string | null
           status?: string
+          subtotal_amount?: number
           total_amount?: number
+          voucher_id?: string | null
+        }
+        Update: {
+          commission_rate?: number
+          created_at?: string
+          customer_id?: string
+          discount_amount?: number
+          id?: string
+          order_code?: string | null
+          quantity?: number | null
+          sales_staff_id?: string | null
+          service_id?: string | null
+          status?: string
+          subtotal_amount?: number
+          total_amount?: number
+          voucher_id?: string | null
         }
         Relationships: [
           {
@@ -455,6 +514,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_sales_staff_id_fkey"
+            columns: ["sales_staff_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -469,6 +535,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
             referencedColumns: ["id"]
           },
         ]
@@ -646,6 +719,7 @@ export type Database = {
           id: string
           order_id: string
           qr_code_id: string
+          service_id: string | null
           session_number: number
           status: string
         }
@@ -655,6 +729,7 @@ export type Database = {
           id?: string
           order_id: string
           qr_code_id?: string
+          service_id?: string | null
           session_number: number
           status?: string
         }
@@ -664,6 +739,7 @@ export type Database = {
           id?: string
           order_id?: string
           qr_code_id?: string
+          service_id?: string | null
           session_number?: number
           status?: string
         }
@@ -680,6 +756,20 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public"
             referencedColumns: ["id"]
           },
         ]
@@ -726,6 +816,125 @@ export type Database = {
           full_name?: string | null
           id?: string
           role?: string
+        }
+        Relationships: []
+      }
+      voucher_conditions: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: Database["public"]["Enums"]["order_item_type"]
+          voucher_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: Database["public"]["Enums"]["order_item_type"]
+          voucher_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: Database["public"]["Enums"]["order_item_type"]
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_conditions_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_customers: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          voucher_id: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          voucher_id: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          voucher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_customers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_customers_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "vouchers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vouchers: {
+        Row: {
+          code: string
+          cover_image: string | null
+          created_at: string
+          discount_type: Database["public"]["Enums"]["voucher_discount_type"]
+          discount_value: number
+          headline: string | null
+          id: string
+          is_active: boolean
+          sub_headline: string | null
+          updated_at: string
+          usage_limit: number | null
+          used_count: number
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          code: string
+          cover_image?: string | null
+          created_at?: string
+          discount_type?: Database["public"]["Enums"]["voucher_discount_type"]
+          discount_value: number
+          headline?: string | null
+          id?: string
+          is_active?: boolean
+          sub_headline?: string | null
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          code?: string
+          cover_image?: string | null
+          created_at?: string
+          discount_type?: Database["public"]["Enums"]["voucher_discount_type"]
+          discount_value?: number
+          headline?: string | null
+          id?: string
+          is_active?: boolean
+          sub_headline?: string | null
+          updated_at?: string
+          usage_limit?: number | null
+          used_count?: number
+          valid_from?: string | null
+          valid_to?: string | null
         }
         Relationships: []
       }
@@ -814,6 +1023,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "staff" | "customer" | "manager"
+      order_item_type: "product" | "service"
+      voucher_discount_type: "percent" | "fixed_amount"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -942,6 +1153,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "staff", "customer", "manager"],
+      order_item_type: ["product", "service"],
+      voucher_discount_type: ["percent", "fixed_amount"],
     },
   },
 } as const
