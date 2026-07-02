@@ -38,7 +38,7 @@ function TestimonialsPage() {
           <span className="inline-flex text-xs font-black uppercase tracking-[0.25em] bg-white/15 rounded-full px-3 py-1">
             Cảm nhận khách hàng
           </span>
-          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight">Khách hàng nói về chúng tôi</h1>
+          <h1 className="mt-4 text-3xl md:text-5xl font-black leading-tight text-white">Khách hàng nói về chúng tôi</h1>
           <p className="mt-3 text-white/85 max-w-2xl mx-auto">
             Những chia sẻ thật từ khách hàng đã đồng hành cùng Vita TH Pro — cột mốc niềm tin và động lực để chúng tôi tiếp tục hoàn thiện.
           </p>
