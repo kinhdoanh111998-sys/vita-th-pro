@@ -15,7 +15,7 @@ export type NewsComment = {
   id: string;
   news_id: string;
   full_name: string;
-  contact_info: string | null;
+  contact_info?: string | null;
   content: string;
   status: "pending" | "approved" | "hidden";
   created_at: string;

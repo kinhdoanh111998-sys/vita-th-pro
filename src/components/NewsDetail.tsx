@@ -43,14 +43,21 @@ export function NewsDetail({ id, variant = "desktop", backTo }: Props) {
     mutationFn: async () => {
       if (form.full_name.trim().length < 2) throw new Error("Vui lòng nhập họ tên");
       if (form.content.trim().length < 2) throw new Error("Vui lòng nhập nội dung bình luận");
-      const { error } = await supabase.from("news_comments").insert({
+      const { data: inserted, error } = await supabase.from("news_comments").insert({
         news_id: id,
         full_name: form.full_name.trim(),
-        contact_info: form.contact_info.trim() || null,
         content: form.content.trim(),
         status: "pending",
-      });
+      }).select("id").single();
       if (error) throw error;
+      const contact = form.contact_info.trim();
+      if (contact && inserted?.id) {
+        // Lưu thông tin liên hệ vào bảng riêng chỉ admin/staff đọc được
+        await supabase.from("news_comment_contacts").insert({
+          comment_id: inserted.id,
+          contact_info: contact,
+        });
+      }
     },
     onSuccess: () => {
       toast.success("Bình luận của bạn đã được gửi và đang chờ quản trị viên kiểm duyệt!");

@@ -513,9 +513,34 @@ export type Database = {
         }
         Relationships: []
       }
+      news_comment_contacts: {
+        Row: {
+          comment_id: string
+          contact_info: string
+          created_at: string
+        }
+        Insert: {
+          comment_id: string
+          contact_info: string
+          created_at?: string
+        }
+        Update: {
+          comment_id?: string
+          contact_info?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_comment_contacts_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: true
+            referencedRelation: "news_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news_comments: {
         Row: {
-          contact_info: string | null
           content: string
           created_at: string
           full_name: string
@@ -524,7 +549,6 @@ export type Database = {
           status: string
         }
         Insert: {
-          contact_info?: string | null
           content: string
           created_at?: string
           full_name: string
@@ -533,7 +557,6 @@ export type Database = {
           status?: string
         }
         Update: {
-          contact_info?: string | null
           content?: string
           created_at?: string
           full_name?: string
