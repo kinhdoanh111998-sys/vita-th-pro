@@ -55,10 +55,16 @@ export const Route = createFileRoute("/api/public/seed-demo-customer")({
         );
 
         // Đồng bộ hồ sơ vào bảng customers (nếu chưa có).
-        await supabaseAdmin.from("customers").upsert(
-          { user_id: uid, email, full_name, name: full_name },
-          { onConflict: "user_id" },
-        );
+        const existingCustomer = await supabaseAdmin
+          .from("customers")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+        if (!existingCustomer.data?.id) {
+          await supabaseAdmin
+            .from("customers")
+            .insert({ email, full_name, name: full_name });
+        }
 
         return new Response(
           JSON.stringify({ status: "ok", id: uid, email }, null, 2),
