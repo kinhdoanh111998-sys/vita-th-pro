@@ -116,11 +116,25 @@ function KhachHangPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, service_id, quantity, total_price, status, created_at, order_code")
+        .select("id, service_id, quantity, total_amount, status, created_at, order_code")
         .eq("customer_id", customerId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Order[];
+    },
+  });
+
+  const orderIdsForItems = (ordersQ.data ?? []).map((o) => o.id);
+  const orderItemsQ = useQuery({
+    queryKey: ["kh-order-items", orderIdsForItems.join(",")],
+    enabled: orderIdsForItems.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("order_id, item_type, item_id, name, quantity, unit_price")
+        .in("order_id", orderIdsForItems);
+      if (error) throw error;
+      return (data ?? []) as OrderItem[];
     },
   });
 
