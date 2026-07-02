@@ -148,47 +148,91 @@ export type Database = {
       bookings: {
         Row: {
           affiliate_ref: string | null
+          assigned_staff_id: string | null
+          booking_at: string | null
           booking_date: string | null
           booking_time: string | null
           created_at: string
+          customer_id: string | null
           customer_name: string
           id: string
           note: string | null
+          notes: string | null
           phone: string
           referrer_phone: string | null
           service: string | null
+          service_id: string | null
           status: string
           updated_at: string
         }
         Insert: {
           affiliate_ref?: string | null
+          assigned_staff_id?: string | null
+          booking_at?: string | null
           booking_date?: string | null
           booking_time?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name: string
           id?: string
           note?: string | null
+          notes?: string | null
           phone: string
           referrer_phone?: string | null
           service?: string | null
+          service_id?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           affiliate_ref?: string | null
+          assigned_staff_id?: string | null
+          booking_at?: string | null
           booking_date?: string | null
           booking_time?: string | null
           created_at?: string
+          customer_id?: string | null
           customer_name?: string
           id?: string
           note?: string | null
+          notes?: string | null
           phone?: string
           referrer_phone?: string | null
           service?: string | null
+          service_id?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_assigned_staff_id_fkey"
+            columns: ["assigned_staff_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       commissions: {
         Row: {
@@ -503,6 +547,60 @@ export type Database = {
             columns: ["news_id"]
             isOneToOne: false
             referencedRelation: "news"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          recipient_id: string | null
+          ref_id: string | null
+          ref_type: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          recipient_id?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          actor_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          recipient_id?: string | null
+          ref_id?: string | null
+          ref_type?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -842,8 +940,10 @@ export type Database = {
           commission_amount: number
           created_at: string
           customer_id: string
+          end_time: string | null
           id: string
           notes: string | null
+          start_time: string | null
           status: string
           technician_id: string
           treatment_id: string
@@ -852,8 +952,10 @@ export type Database = {
           commission_amount?: number
           created_at?: string
           customer_id: string
+          end_time?: string | null
           id?: string
           notes?: string | null
+          start_time?: string | null
           status?: string
           technician_id: string
           treatment_id: string
@@ -862,8 +964,10 @@ export type Database = {
           commission_amount?: number
           created_at?: string
           customer_id?: string
+          end_time?: string | null
           id?: string
           notes?: string | null
+          start_time?: string | null
           status?: string
           technician_id?: string
           treatment_id?: string
