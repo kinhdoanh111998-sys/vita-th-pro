@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Clock, LogIn, LogOut, ShieldCheck, CheckCircle2, CalendarPlus } from "lucide-react";
+import { Clock, LogIn, LogOut, ShieldCheck, CheckCircle2, CalendarPlus, AlarmClockOff } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/Button";
@@ -11,6 +11,10 @@ import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 type Shift = { id: string; name: string; start_time: string; end_time: string; is_active: boolean };
 type Registration = { id: string; shift_id: string; date: string; status: "pending" | "approved" | "rejected" };
@@ -18,7 +22,9 @@ type Attendance = {
   id: string; shift_id: string | null;
   check_in_time: string | null; check_out_time: string | null;
   check_in_approved: boolean; ot_hours: number; ot_approved: boolean; notes: string | null;
+  early_checkout_requested?: boolean; early_checkout_reason?: string | null;
 };
+
 
 const todayISO = () => {
   const d = new Date();
