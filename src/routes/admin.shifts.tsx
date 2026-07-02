@@ -17,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
+import { StaffMonthCalendar } from "@/components/StaffMonthCalendar";
 
 export const Route = createFileRoute("/admin/shifts")({
   component: ShiftsPage,
