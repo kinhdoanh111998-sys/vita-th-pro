@@ -56,7 +56,7 @@ export function AffiliateCard() {
   });
 
 
-  // Tổng hoa hồng affiliate (tạm tính) — từ bảng commissions, type = 'affiliate'
+  // Tổng hoa hồng affiliate (tạm tính) — commission_type = 'affiliate_order'
   const commissionQ = useQuery({
     queryKey: ["portal-aff-commission", uid],
     enabled: !!uid,
@@ -66,10 +66,11 @@ export function AffiliateCard() {
           .from("commissions")
           .select("amount")
           .eq("staff_id", uid!)
-          .eq("commission_type", "affiliate");
+          .in("commission_type", ["affiliate_order", "affiliate"]);
         if (error) throw error;
         return (data ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
       } catch (e) {
+
         console.warn("[AffiliateCard] commission error", e);
         return 0;
       }
