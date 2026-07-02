@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { StaffMonthCalendar } from "@/components/StaffMonthCalendar";
+import { BatchApprovalTab } from "@/components/admin/BatchApprovalTab";
 
 export const Route = createFileRoute("/admin/shifts")({
   component: ShiftsPage,
