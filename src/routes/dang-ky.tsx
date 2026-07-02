@@ -102,7 +102,6 @@ function RegisterPage() {
       const { error: userError } = await supabase.from("users").insert({
         id: data.user.id,
         email: virtualEmail,
-        phone: phoneClean,
         full_name: nameClean,
         role: "customer",
       });

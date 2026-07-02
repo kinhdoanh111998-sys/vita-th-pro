@@ -173,7 +173,6 @@ export const createCustomerWithAuth = createServerFn({ method: "POST" })
         {
           id: newUserId,
           email: virtualEmail,
-          phone: data.phone,
           full_name: data.full_name,
           role: "customer",
         },
