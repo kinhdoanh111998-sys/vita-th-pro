@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon, Pencil } from "lucide-react";
+import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon, Pencil, Trash2 } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
