@@ -17,6 +17,14 @@ type Btn = {
 
 const BUTTONS: Btn[] = [
   {
+    key: "booking",
+    label: "Đặt lịch",
+    icon: CalendarCheck,
+    action: "booking",
+    bg: "bg-[#1B9606] text-white",
+    ring: "ring-[#1B9606]/40",
+  },
+  {
     key: "zalo",
     label: "Liên hệ Zalo",
     icon: MessageCircle,
@@ -32,14 +40,6 @@ const BUTTONS: Btn[] = [
     href: "/lookup",
     bg: "bg-white text-[#1B9606] border border-[#1B9606]",
     ring: "ring-[#1B9606]/25",
-  },
-  {
-    key: "booking",
-    label: "Đặt lịch",
-    icon: CalendarCheck,
-    action: "booking",
-    bg: "bg-[#1B9606] text-white",
-    ring: "ring-[#1B9606]/40",
   },
 ];
 
