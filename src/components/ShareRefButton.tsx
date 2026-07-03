@@ -4,7 +4,6 @@ import { Share2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-import { cn } from "@/lib/utils";
 
 interface Props {
   /** Path bắt đầu bằng '/', ví dụ '/products/abc' */
@@ -64,10 +63,10 @@ export function ShareRefButton({ path, iconOnly = false, className = "" }: Props
         type="button"
         onClick={handleShare}
         aria-label="Chia sẻ"
-        className={cn(
-          "w-9 h-9 rounded-full bg-white/95 backdrop-blur border border-gray-200 shadow-md grid place-items-center text-emerald-600 hover:text-emerald-700 hover:bg-white transition",
-          className,
-        )}
+        className={
+          "w-9 h-9 rounded-full bg-white/95 backdrop-blur border border-gray-200 shadow-md grid place-items-center text-emerald-600 hover:text-emerald-700 hover:bg-white transition " +
+          className
+        }
       >
         {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
       </button>
