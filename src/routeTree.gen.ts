@@ -54,6 +54,7 @@ import { Route as AdminBannersRouteImport } from './routes/admin.banners'
 import { Route as AdminPageRouteImport } from './routes/admin.$page'
 import { Route as PublicWalletRouteImport } from './routes/_public.wallet'
 import { Route as PublicServicesRouteImport } from './routes/_public.services'
+import { Route as PublicProjectStatusRouteImport } from './routes/_public.project-status'
 import { Route as PublicProductsRouteImport } from './routes/_public.products'
 import { Route as PublicNewsRouteImport } from './routes/_public.news'
 import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
@@ -317,6 +318,11 @@ const PublicServicesRoute = PublicServicesRouteImport.update({
   path: '/services',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicProjectStatusRoute = PublicProjectStatusRouteImport.update({
+  id: '/project-status',
+  path: '/project-status',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicProductsRoute = PublicProductsRouteImport.update({
   id: '/products',
   path: '/products',
@@ -531,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/lookup': typeof PublicLookupRoute
   '/news': typeof PublicNewsRouteWithChildren
   '/products': typeof PublicProductsRouteWithChildren
+  '/project-status': typeof PublicProjectStatusRoute
   '/services': typeof PublicServicesRouteWithChildren
   '/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
@@ -609,6 +616,7 @@ export interface FileRoutesByTo {
   '/contact': typeof PublicContactRoute
   '/events': typeof PublicEventsRouteWithChildren
   '/lookup': typeof PublicLookupRoute
+  '/project-status': typeof PublicProjectStatusRoute
   '/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
   '/admin/banners': typeof AdminBannersRoute
@@ -694,6 +702,7 @@ export interface FileRoutesById {
   '/_public/lookup': typeof PublicLookupRoute
   '/_public/news': typeof PublicNewsRouteWithChildren
   '/_public/products': typeof PublicProductsRouteWithChildren
+  '/_public/project-status': typeof PublicProjectStatusRoute
   '/_public/services': typeof PublicServicesRouteWithChildren
   '/_public/wallet': typeof PublicWalletRoute
   '/admin/$page': typeof AdminPageRoute
@@ -781,6 +790,7 @@ export interface FileRouteTypes {
     | '/lookup'
     | '/news'
     | '/products'
+    | '/project-status'
     | '/services'
     | '/wallet'
     | '/admin/$page'
@@ -859,6 +869,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/events'
     | '/lookup'
+    | '/project-status'
     | '/wallet'
     | '/admin/$page'
     | '/admin/banners'
@@ -943,6 +954,7 @@ export interface FileRouteTypes {
     | '/_public/lookup'
     | '/_public/news'
     | '/_public/products'
+    | '/_public/project-status'
     | '/_public/services'
     | '/_public/wallet'
     | '/admin/$page'
@@ -1347,6 +1359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicServicesRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/project-status': {
+      id: '/_public/project-status'
+      path: '/project-status'
+      fullPath: '/project-status'
+      preLoaderRoute: typeof PublicProjectStatusRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/products': {
       id: '/_public/products'
       path: '/products'
@@ -1713,6 +1732,7 @@ interface PublicRouteChildren {
   PublicLookupRoute: typeof PublicLookupRoute
   PublicNewsRoute: typeof PublicNewsRouteWithChildren
   PublicProductsRoute: typeof PublicProductsRouteWithChildren
+  PublicProjectStatusRoute: typeof PublicProjectStatusRoute
   PublicServicesRoute: typeof PublicServicesRouteWithChildren
   PublicWalletRoute: typeof PublicWalletRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -1727,6 +1747,7 @@ const PublicRouteChildren: PublicRouteChildren = {
   PublicLookupRoute: PublicLookupRoute,
   PublicNewsRoute: PublicNewsRouteWithChildren,
   PublicProductsRoute: PublicProductsRouteWithChildren,
+  PublicProjectStatusRoute: PublicProjectStatusRoute,
   PublicServicesRoute: PublicServicesRouteWithChildren,
   PublicWalletRoute: PublicWalletRoute,
   PublicIndexRoute: PublicIndexRoute,
