@@ -466,10 +466,8 @@ function CreateOrderDrawer({
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // 4) Chuyển status → paid để UPDATE trigger sinh treatments cho các dòng service
-      const { error: uErr } = await supabase.from("orders")
-        .update({ status: "paid" }).eq("id", order.id);
-      if (uErr) throw uErr;
+      // 4) Đơn hàng mới luôn ở trạng thái 'pending' — chỉ chuyển 'paid' khi admin xác nhận thanh toán
+      //    Trigger sinh treatments sẽ chạy vào thời điểm đó.
 
       // 5) Increment voucher usage (best-effort; not race-safe)
       if (appliedVoucher) {
