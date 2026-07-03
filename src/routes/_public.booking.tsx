@@ -27,7 +27,7 @@ function BookingPage() {
   const { email } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [service, setService] = useState(""); // service.id | OTHER_VALUE | ""
+  const [service, setService] = useState(""); 
   const [otherService, setOtherService] = useState("");
   const [appointmentAt, setAppointmentAt] = useState("");
   const [note, setNote] = useState("");
@@ -108,7 +108,6 @@ function BookingPage() {
         ? `Dịch vụ khác: ${trimmedOther}`
         : selectedService?.name ?? "";
 
-      // Gộp yêu cầu "Dịch vụ khác" vào ghi chú để Admin/portal đọc được
       const mergedNote = [
         isOther ? `Dịch vụ khác yêu cầu: ${trimmedOther}` : null,
         note.trim() || null,
@@ -116,7 +115,10 @@ function BookingPage() {
         .filter(Boolean)
         .join("\n") || null;
 
-      const { data: booking, error } = await supabase.from("bookings").insert({
+      const newBookingId = crypto.randomUUID(); // FIX: Sinh ID trực tiếp lách RLS
+
+      const { error } = await supabase.from("bookings").insert({
+        id: newBookingId,
         customer_id: customerId,
         customer_name: trimmedName,
         phone: trimmedPhone,
@@ -130,14 +132,14 @@ function BookingPage() {
         status: "pending",
         affiliate_ref: refCode,
         referrer_phone: numericRef,
-      }).select("id").single();
+      });
 
-      if (error) throw error;
+      if (error) throw new Error(error.message);
 
       try {
         const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
         await notifyOpsNewBooking({ data: {
-          bookingId: booking.id,
+          bookingId: newBookingId,
           customerName: trimmedName,
           service: serviceLabel,
           when: appointmentDate.toLocaleString("vi-VN"),
@@ -147,7 +149,7 @@ function BookingPage() {
         console.warn("[booking] notify ops failed", nErr);
       }
 
-      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 3000 });
+      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 5000 });
       setName("");
       setPhone("");
       setService("");
@@ -168,8 +170,6 @@ function BookingPage() {
   return (
     <section className="bg-brand-bg py-16">
       <div className="mx-auto max-w-[1200px] px-5 grid gap-10 lg:grid-cols-2 items-start">
-        {/* Cột trái */}
-        {/* Cột trái (mobile), phải (desktop): Nội dung intro */}
         <div className="lg:order-2">
           <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold">
             Đặt Lịch Hẹn Trị Liệu
@@ -210,8 +210,6 @@ function BookingPage() {
           </ul>
         </div>
 
-        {/* Cột phải: Form */}
-        {/* Cột phải (mobile), trái (desktop): Form */}
         <div className="lg:order-1 bg-brand-surface p-6 md:p-8 rounded-card border border-brand-border shadow-sm">
           <h2 className="font-heading text-brand-text text-xl font-semibold mb-1">
             Thông tin đặt lịch
