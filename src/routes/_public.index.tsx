@@ -27,6 +27,9 @@ import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+import { useSystemSettings } from "@/lib/useSystemSettings";
+import { FeaturedCatalogSection } from "@/components/FeaturedCatalogSection";
+
 
 
 
@@ -126,7 +129,11 @@ function CommunityHome() {
 
   const { data: stores = [] } = useActiveStores();
   const { data: appNavItems = [] } = useNavigationItems("app");
+  const { data: sys } = useSystemSettings();
+  const showStoreList = sys?.show_store_list !== false;
   const shortcuts = appNavItems.filter((i) => i.is_visible);
+
+
 
 
   const navLinks: Array<{ label: string; to: string }> = [
