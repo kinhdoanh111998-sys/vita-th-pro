@@ -12,10 +12,27 @@ export function CartButton({ variant = "header", className = "" }: Props) {
   const [open, setOpen] = useState(false);
   const { totalQty } = useCartTotals();
 
-  const base =
-    variant === "floating"
-      ? "fixed top-4 right-4 z-40 w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200"
-      : "relative inline-flex items-center justify-center h-10 w-10 rounded-lg border border-gray-200 hover:border-emerald-500 hover:text-emerald-700 bg-white";
+  const badgeClass =
+    "absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-scaleIn";
+
+  if (variant === "floating") {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Giỏ hàng"
+          className={`fixed top-4 right-4 z-40 w-11 h-11 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center ${className}`}
+        >
+          <ShoppingCart className="w-5 h-5 text-gray-700" />
+          {totalQty > 0 && (
+            <span className={badgeClass}>{totalQty > 99 ? "99+" : totalQty}</span>
+          )}
+        </button>
+        <CartSheet open={open} onOpenChange={setOpen} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -23,16 +40,15 @@ export function CartButton({ variant = "header", className = "" }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Giỏ hàng"
-        className={`${base} ${className}`}
+        className={`relative p-2 flex items-center justify-center ${className}`}
       >
         <ShoppingCart className="w-5 h-5 text-gray-700" />
         {totalQty > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold grid place-items-center border-2 border-white">
-            {totalQty > 99 ? "99+" : totalQty}
-          </span>
+          <span className={badgeClass}>{totalQty > 99 ? "99+" : totalQty}</span>
         )}
       </button>
       <CartSheet open={open} onOpenChange={setOpen} />
     </>
   );
 }
+
