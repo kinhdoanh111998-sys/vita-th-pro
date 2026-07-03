@@ -4,6 +4,8 @@ import type { ComponentType } from "react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useAuth } from "@/lib/AuthContext";
 import { CartButton } from "@/components/cart/CartButton";
+import { BookingActionMenu } from "@/components/BookingActionMenu";
+
 
 
 type NavItem = {
