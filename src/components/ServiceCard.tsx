@@ -130,10 +130,12 @@ export function ServiceCard({
         )}
       </Link>
 
-      {/* Floating share icon on top-right of image */}
-      <div className="absolute top-2 right-2 z-10">
-        <ShareRefButton path={sharePath} iconOnly />
-      </div>
+      {/* Floating share icon on top-right of image — only on desktop/web cards */}
+      {!compact && (
+        <div className="absolute top-2 right-2 z-10">
+          <ShareRefButton path={sharePath} iconOnly />
+        </div>
+      )}
 
       {/* Content */}
       <div className={"flex flex-1 flex-col gap-1.5 " + (compact ? "p-2.5" : "p-4")}>
@@ -175,7 +177,7 @@ export function ServiceCard({
           )}
         </div>
 
-        {/* Dual CTA: [Cart icon] [Mua ngay] */}
+        {/* CTA row: cart + share (mobile app) + buy now */}
         <div className="mt-3 flex items-stretch gap-2">
           <button
             type="button"
@@ -185,6 +187,13 @@ export function ServiceCard({
           >
             <ShoppingCart className="w-4 h-4" />
           </button>
+          {compact && (
+            <ShareRefButton
+              path={sharePath}
+              iconOnly
+              className="shrink-0 w-10 h-10 rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 bg-white shadow-none"
+            />
+          )}
           <button
             type="button"
             onClick={buyNow}
