@@ -283,17 +283,39 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                {items.map((it) => (
-                  <ServiceCard
-                    key={it.id}
-                    item={it}
-                    variant="web"
-                    linkTo="web"
-                  />
-                ))}
+              <div className="space-y-6">
+                {combos.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-heading text-lg md:text-xl font-black text-gray-900">
+                        ✨ Combo đóng gói tiết kiệm
+                      </h2>
+                      <span className="text-xs text-gray-500">
+                        {combos.length} combo
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                      {combos.map((c) => (
+                        <ComboCard key={c.id} combo={c} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {items.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                    {items.map((it) => (
+                      <ServiceCard
+                        key={it.id}
+                        item={it}
+                        variant="web"
+                        linkTo="web"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
           </div>
         </div>
       </div>
