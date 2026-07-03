@@ -472,7 +472,7 @@ function ToursPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label>Người bán (NV tư vấn) *</Label>
+                      <Label>Người bán</Label>
                       <Select value={salesStaffId} onValueChange={setSalesStaffId}>
                         <SelectTrigger><SelectValue placeholder="Chọn người bán" /></SelectTrigger>
                         <SelectContent>
