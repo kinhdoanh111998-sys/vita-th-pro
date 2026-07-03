@@ -149,6 +149,26 @@ function CustomersAdmin() {
     onError: (e: Error) => toast.error(`Không thể lưu khách hàng: ${e.message}`),
   });
 
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (error) throw new Error(error.message || "Không thể xoá khách hàng");
+    },
+    onSuccess: () => {
+      toast.success("Đã xoá khách hàng");
+      qc.invalidateQueries({ queryKey: ["admin", "customers"] });
+      setSelectedId(null);
+    },
+    onError: (e: Error) => toast.error(`Không thể xoá: ${e.message}`),
+  });
+
+  const handleDelete = (c: Customer) => {
+    const name = c.full_name ?? c.name ?? "khách hàng này";
+    if (window.confirm(`Xoá "${name}"?\n\nHành động này sẽ xoá vĩnh viễn khách hàng cùng đơn hàng, liệu trình liên quan. Không thể hoàn tác.`)) {
+      remove.mutate(c.id);
+    }
+  };
+
   const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
