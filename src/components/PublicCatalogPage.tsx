@@ -2,11 +2,14 @@ import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { ServiceCard } from "@/components/ServiceCard";
+import { ComboCard } from "@/components/ComboCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import { usePublicCombos } from "@/lib/useCombos";
 import {
   PRODUCT_CATEGORIES,
   productCategoryLabel,
 } from "@/lib/catalogCategories";
+
 
 type Kind = "product" | "service";
 
@@ -35,11 +38,25 @@ const fmt = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
 
 export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
   const { data = [], isLoading, error } = useServiceCatalog();
+  const { data: allCombos = [] } = usePublicCombos();
+
+  // Combo hiển thị: chỉ-sản-phẩm ở /products, chỉ-dịch-vụ ở /services,
+  // combo hỗn hợp (có cả 2) hiển thị ở cả 2 trang.
+  const combos = useMemo(
+    () =>
+      allCombos.filter((c) => {
+        if (c.items.length === 0) return false;
+        if (kind === "product") return c.hasProduct;
+        return c.hasService;
+      }),
+    [allCombos, kind],
+  );
 
   const source = useMemo(
     () => data.filter((it) => it.type === kind),
     [data, kind],
   );
+
 
   // Price bounds
   const priceBounds = useMemo(() => {
@@ -244,7 +261,7 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                   <SkeletonCard key={i} />
                 ))}
               </div>
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && combos.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                 <p className="text-gray-500 mb-3">
                   Không tìm thấy{" "}
@@ -266,17 +283,39 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-                {items.map((it) => (
-                  <ServiceCard
-                    key={it.id}
-                    item={it}
-                    variant="web"
-                    linkTo="web"
-                  />
-                ))}
+              <div className="space-y-6">
+                {combos.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h2 className="font-heading text-lg md:text-xl font-black text-gray-900">
+                        ✨ Combo đóng gói tiết kiệm
+                      </h2>
+                      <span className="text-xs text-gray-500">
+                        {combos.length} combo
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                      {combos.map((c) => (
+                        <ComboCard key={c.id} combo={c} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {items.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                    {items.map((it) => (
+                      <ServiceCard
+                        key={it.id}
+                        item={it}
+                        variant="web"
+                        linkTo="web"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
+
           </div>
         </div>
       </div>
