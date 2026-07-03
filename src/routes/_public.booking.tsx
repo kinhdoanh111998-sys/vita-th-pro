@@ -147,7 +147,7 @@ function BookingPage() {
         console.warn("[booking] notify ops failed", nErr);
       }
 
-      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.");
+      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 3000 });
       setName("");
       setPhone("");
       setService("");
