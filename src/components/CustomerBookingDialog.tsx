@@ -193,11 +193,13 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
-      <DialogTrigger asChild>
-        <Button className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-full h-11 px-5">
-          <CalendarCheck className="w-4 h-4" /> Đặt lịch ngay
-        </Button>
-      </DialogTrigger>
+      <Button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="gap-2 bg-brand hover:bg-brand-dark text-white font-bold rounded-full h-11 px-5"
+      >
+        <CalendarCheck className="w-4 h-4" /> Đặt lịch ngay
+      </Button>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Đặt lịch hẹn</DialogTitle>
