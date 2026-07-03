@@ -31,6 +31,28 @@ const Ctx = createContext<AuthCtx>({
   signOut: async () => {},
 });
 
+const SESSION_TIMEOUT_MS = 2500;
+const ROLE_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      reject(new Error(`${label} timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    Promise.resolve(promise).then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
@@ -50,30 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await withTimeout(
+          supabase.auth.getSession(),
+          SESSION_TIMEOUT_MS,
+          "auth session bootstrap",
+        );
         const cachedSession = sessionData.session ?? null;
-
-        // Validate cached token against Auth server. Stale/expired tokens
-        // otherwise linger in LocalStorage and trick the app into thinking
-        // the user is signed in.
-        if (cachedSession) {
-          const { data: userData, error: userError } = await supabase.auth.getUser();
-          if (userError || !userData?.user) {
-            console.warn("[auth] stale session detected, clearing:", userError?.message);
-            try {
-              await supabase.auth.signOut();
-            } catch (e) {
-              console.error("[auth] signOut cleanup failed:", e);
-            }
-            if (!active) return;
-            setSession(null);
-            roleEmailRef.current = null;
-            setRole(null);
-            setFullName(null);
-            setRoleLoading(false);
-            return;
-          }
-        }
 
         if (!active) return;
         roleEmailRef.current = null;
@@ -81,6 +85,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setFullName(null);
         setRoleLoading(Boolean(cachedSession));
         setSession(cachedSession);
+
+        // Validate cached token in the background. This keeps admin routes from
+        // hanging behind a slow Auth network call while still cleaning stale sessions.
+        if (cachedSession) {
+          void withTimeout(supabase.auth.getUser(), SESSION_TIMEOUT_MS, "auth user validation")
+            .then(async ({ data: userData, error: userError }) => {
+              if (!active || (!userError && userData?.user)) return;
+              console.warn("[auth] stale session detected, clearing:", userError?.message);
+              try {
+                await supabase.auth.signOut();
+              } catch (e) {
+                console.error("[auth] signOut cleanup failed:", e);
+              }
+            })
+            .catch((err) => {
+              console.warn("[auth] user validation skipped:", err instanceof Error ? err.message : err);
+            });
+        }
       } catch (err) {
         console.error("[auth] session bootstrap failed:", err);
         if (!active) return;
@@ -142,11 +164,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       const isVirtualCustomer = email.toLowerCase().endsWith("@khach.vitath.pro");
       try {
-        const { data, error } = await supabase
-          .from("users")
-          .select("role, full_name")
-          .eq("email", email)
-          .maybeSingle();
+        const { data, error } = await withTimeout(
+          supabase
+            .from("users")
+            .select("role, full_name")
+            .eq("email", email)
+            .maybeSingle(),
+          ROLE_TIMEOUT_MS,
+          "auth role lookup",
+        );
 
         if (!active) return;
 
