@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ export type CustomerLite = { id: string; name: string | null; phone: string | nu
 
 /**
  * Reusable customer picker: chọn khách sẵn có hoặc tạo khách mới ngay tại chỗ.
- * Dùng chung cho /admin/bookings và /admin/tours.
+ * Sau khi tạo khách mới, tự động gán khách đó làm giá trị đang chọn.
  */
 export function CustomerPicker({
   customers,
@@ -30,6 +30,23 @@ export function CustomerPicker({
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [creating, setCreating] = useState(false);
+  // Khách vừa tạo — giữ tạm trong picker để đảm bảo SelectItem tồn tại
+  // ngay lập tức, kể cả khi cache useQuery của parent chưa kịp cập nhật.
+  const [justCreated, setJustCreated] = useState<CustomerLite | null>(null);
+
+  // Khi customers prop đã có khách vừa tạo (parent đã refetch), gỡ khỏi local.
+  useEffect(() => {
+    if (justCreated && customers.some((c) => c.id === justCreated.id)) {
+      setJustCreated(null);
+    }
+  }, [customers, justCreated]);
+
+  // Danh sách hiển thị: gộp khách vừa tạo (nếu có) lên đầu, không trùng.
+  const mergedCustomers = useMemo(() => {
+    if (!justCreated) return customers;
+    if (customers.some((c) => c.id === justCreated.id)) return customers;
+    return [justCreated, ...customers];
+  }, [customers, justCreated]);
 
   const createNew = async () => {
     const name = newName.trim();
@@ -46,13 +63,15 @@ export function CustomerPicker({
         .select("id,name,phone")
         .single();
       if (error) throw error;
+      const created = data as CustomerLite;
       toast.success("Tạo khách mới thành công!", { duration: 3000 });
       setNewName("");
       setNewPhone("");
-      // Notify parent FIRST (to update cache/list) then switch selection so
-      // the Select trigger can render the new customer's label immediately.
-      onCreated?.(data as CustomerLite);
-      onChange(data.id);
+      // Ghim vào picker TRƯỚC, để SelectItem tồn tại ngay khi value đổi
+      // → tránh trường hợp Select rơi về placeholder "+ Khách mới".
+      setJustCreated(created);
+      onCreated?.(created);
+      onChange(created.id);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -67,7 +86,7 @@ export function CustomerPicker({
         <SelectTrigger><SelectValue placeholder="Chọn khách" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="__new">+ Khách mới (nhập tay bên dưới)</SelectItem>
-          {customers.map((c) => (
+          {mergedCustomers.map((c) => (
             <SelectItem key={c.id} value={c.id}>
               {c.name ?? "—"}{c.phone ? ` · ${c.phone}` : ""}
             </SelectItem>
