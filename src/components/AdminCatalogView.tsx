@@ -326,7 +326,7 @@ export function AdminCatalogView({ lockedType, title, subtitle }: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-[1200px]">
+    <div>
       <AdminTopbar
         title={title}
         subtitle={

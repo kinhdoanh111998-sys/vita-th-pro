@@ -8,16 +8,14 @@ type Tab = "services" | "combos";
 function AdminServicesPage() {
   const [tab, setTab] = useState<Tab>("services");
   return (
-    <div>
-      <div className="border-b border-gray-200 bg-white px-4 md:px-6 pt-4">
-        <div className="flex gap-2">
-          <TabBtn active={tab === "services"} onClick={() => setTab("services")}>
-            Dịch vụ & Sản phẩm
-          </TabBtn>
-          <TabBtn active={tab === "combos"} onClick={() => setTab("combos")}>
-            Combo đóng gói
-          </TabBtn>
-        </div>
+    <div className="space-y-4">
+      <div className="flex gap-1 border-b border-brand-border">
+        <TabBtn active={tab === "services"} onClick={() => setTab("services")}>
+          Dịch vụ & Sản phẩm
+        </TabBtn>
+        <TabBtn active={tab === "combos"} onClick={() => setTab("combos")}>
+          Combo đóng gói
+        </TabBtn>
       </div>
       {tab === "services" ? (
         <AdminCatalogView lockedType="service" title="Quản lý Dịch vụ" />
@@ -40,10 +38,10 @@ function TabBtn({
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+      className={`px-4 py-2.5 text-[14px] font-semibold border-b-2 -mb-px transition-colors ${
         active
-          ? "border-emerald-600 text-emerald-700"
-          : "border-transparent text-gray-500 hover:text-gray-800"
+          ? "border-brand-primary text-brand-primary-dark"
+          : "border-transparent text-brand-muted hover:text-brand-text"
       }`}
     >
       {children}
