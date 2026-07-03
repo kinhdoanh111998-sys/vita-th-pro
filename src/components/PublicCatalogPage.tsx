@@ -38,11 +38,25 @@ const fmt = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
 
 export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
   const { data = [], isLoading, error } = useServiceCatalog();
+  const { data: allCombos = [] } = usePublicCombos();
+
+  // Combo hiển thị: chỉ-sản-phẩm ở /products, chỉ-dịch-vụ ở /services,
+  // combo hỗn hợp (có cả 2) hiển thị ở cả 2 trang.
+  const combos = useMemo(
+    () =>
+      allCombos.filter((c) => {
+        if (c.items.length === 0) return false;
+        if (kind === "product") return c.hasProduct;
+        return c.hasService;
+      }),
+    [allCombos, kind],
+  );
 
   const source = useMemo(
     () => data.filter((it) => it.type === kind),
     [data, kind],
   );
+
 
   // Price bounds
   const priceBounds = useMemo(() => {
