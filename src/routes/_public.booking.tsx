@@ -169,7 +169,8 @@ function BookingPage() {
     <section className="bg-brand-bg py-16">
       <div className="mx-auto max-w-[1200px] px-5 grid gap-10 lg:grid-cols-2 items-start">
         {/* Cột trái */}
-        <div>
+        {/* Cột trái (mobile), phải (desktop): Nội dung intro */}
+        <div className="lg:order-2">
           <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold">
             Đặt Lịch Hẹn Trị Liệu
           </h1>
