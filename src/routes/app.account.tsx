@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home, CalendarCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CustomerHomeContent } from "@/components/CustomerHomeContent";
 import { ProfileForm } from "@/components/ProfileForm";
+import { CustomerBookingDialog } from "@/components/CustomerBookingDialog";
 
 export const Route = createFileRoute("/app/account")({
   component: AccountHub,
@@ -126,6 +128,7 @@ function AccountHub() {
         [4] Hồ sơ của tôi (áp chót)
         [5] Đổi mật khẩu (cuối) — cả 4 & 5 do ProfileForm render
       */}
+      {isCustomer && <CustomerBookingCard />}
       {isCustomer && <CustomerHomeContent />}
 
       <ProfileForm />
@@ -138,6 +141,41 @@ function AccountHub() {
         >
           <Home className="w-4 h-4" /> Về trang chủ Vita TH Pro
         </Link>
+      </div>
+    </div>
+  );
+}
+
+function CustomerBookingCard() {
+  const { email } = useAuth();
+  const customerQ = useQuery({
+    queryKey: ["account-booking-customer", email],
+    enabled: !!email,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, name, phone, email")
+        .eq("email", email!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { id: string; name: string | null; phone: string | null; email: string | null } | null;
+    },
+  });
+  return (
+    <div className="rounded-2xl border border-hairline bg-gradient-to-br from-emerald-50 via-white to-white p-5 shadow-sm">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+        <div className="min-w-0 flex items-center gap-3">
+          <div className="w-11 h-11 shrink-0 rounded-xl bg-emerald-100 grid place-items-center text-emerald-700">
+            <CalendarCheck className="w-6 h-6" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-base font-black text-brand-dark truncate">Đặt lịch hẹn</div>
+            <div className="text-xs text-ink-muted truncate">
+              Dùng buổi kế tiếp trong liệu trình hoặc đăng ký dịch vụ mới.
+            </div>
+          </div>
+        </div>
+        <CustomerBookingDialog customer={customerQ.data ?? null} />
       </div>
     </div>
   );

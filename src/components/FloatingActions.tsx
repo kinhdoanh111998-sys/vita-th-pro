@@ -19,7 +19,7 @@ const BUTTONS: Btn[] = [
     icon: MessageCircle,
     href: "https://zalo.me/0988000888",
     external: true,
-    bg: "bg-[#0068FF]",
+    bg: "bg-[#0068FF] text-white",
     ring: "ring-[#0068FF]/30",
   },
   {
@@ -41,11 +41,12 @@ const BUTTONS: Btn[] = [
 ];
 
 /**
- * Floating sticky bottom-right action stack.
- * - Desktop (md+): full pills with icon + label + hover animation.
- * - Mobile: circular FABs; first tap expands to pill, second tap fires action.
- *   Click outside collapses. Zalo (external) opens in new tab.
- * - Hidden on any /app/* route.
+ * Sticky bottom-right stack.
+ * - Desktop (md+): full pills with icon + label, always expanded.
+ * - Mobile: single circular FAB per action. First tap expands the pill (label
+ *   fades in), second tap fires the action. Click outside collapses.
+ * Rendered as ONE element per action — responsive classes drive shape.
+ * Hidden on any /app/* route.
  */
 export function FloatingActions() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -67,7 +68,6 @@ export function FloatingActions() {
     };
   }, [activeKey]);
 
-  // Collapse on route change
   useEffect(() => setActiveKey(null), [pathname]);
 
   if (pathname.startsWith("/app")) return null;
@@ -81,88 +81,69 @@ export function FloatingActions() {
         const Icon = b.icon;
         const expanded = activeKey === b.key;
 
-        const commonCls =
-          "group inline-flex items-center gap-2 shadow-lg ring-4 transition-all duration-300 font-bold";
+        // ONE element per action. Shape controlled by responsive classes.
+        // Mobile default: 48px circle. Expanded on mobile: pill with label.
+        // Desktop (md+): always pill with label.
+        const shape = expanded
+          ? "h-12 w-auto px-4 rounded-full"
+          : "h-12 w-12 md:w-auto md:px-5 rounded-full";
 
-        // Desktop pill (always expanded)
-        const desktopCls =
-          "hidden md:inline-flex h-12 px-5 rounded-full text-[14px] hover:scale-[1.03] hover:shadow-xl";
+        const cls = [
+          "group inline-flex items-center gap-2 shadow-lg ring-4 font-bold transition-all duration-300 justify-center",
+          "text-[13px] md:text-[14px] hover:scale-[1.03] hover:shadow-xl",
+          shape,
+          b.bg,
+          b.ring,
+        ].join(" ");
 
-        // Mobile: circular unless expanded
-        const mobileCls = expanded
-          ? "md:hidden inline-flex h-12 px-4 rounded-full text-[13px]"
-          : "md:hidden inline-flex h-12 w-12 rounded-full justify-center";
-
-        const content = (
-          <>
-            <Icon className="w-5 h-5 shrink-0" />
-            <span
-              className={`whitespace-nowrap ${
-                expanded ? "inline" : "hidden"
-              } md:inline`}
-            >
-              {b.label}
-            </span>
-          </>
+        const label = (
+          <span
+            className={`whitespace-nowrap ${expanded ? "inline" : "hidden"} md:inline`}
+          >
+            {b.label}
+          </span>
         );
 
-        const handleMobileClick = (e: React.MouseEvent) => {
-          // On mobile: first tap expands, second fires. Detect md via matchMedia.
-          if (typeof window !== "undefined" && window.matchMedia("(min-width: 768px)").matches) {
-            return; // desktop: default anchor behaviour
-          }
+        const isDesktop = () =>
+          typeof window !== "undefined" &&
+          window.matchMedia("(min-width: 768px)").matches;
+
+        const handleTap = (e: React.MouseEvent) => {
+          if (isDesktop()) return; // desktop: default navigation
           if (!expanded) {
             e.preventDefault();
             setActiveKey(b.key);
           }
-          // else: allow default navigation
         };
 
         if (b.external) {
           return (
-            <div key={b.key} className="flex flex-col items-end gap-1">
-              <a
-                href={b.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={b.label}
-                onClick={handleMobileClick}
-                className={`${commonCls} ${desktopCls} ${b.bg} ${b.ring} text-white`}
-              >
-                {content}
-              </a>
-              <a
-                href={b.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={b.label}
-                onClick={handleMobileClick}
-                className={`${commonCls} ${mobileCls} ${b.bg} ${b.ring} text-white`}
-              >
-                {content}
-              </a>
-            </div>
+            <a
+              key={b.key}
+              href={b.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={b.label}
+              onClick={handleTap}
+              className={cls}
+            >
+              <Icon className="w-5 h-5 shrink-0" />
+              {label}
+            </a>
           );
         }
 
         return (
-          <div key={b.key} className="flex flex-col items-end gap-1">
-            <Link
-              to={b.href}
-              aria-label={b.label}
-              className={`${commonCls} ${desktopCls} ${b.bg} ${b.ring}`}
-            >
-              {content}
-            </Link>
-            <Link
-              to={b.href}
-              aria-label={b.label}
-              onClick={handleMobileClick}
-              className={`${commonCls} ${mobileCls} ${b.bg} ${b.ring}`}
-            >
-              {content}
-            </Link>
-          </div>
+          <Link
+            key={b.key}
+            to={b.href}
+            aria-label={b.label}
+            onClick={handleTap}
+            className={cls}
+          >
+            <Icon className="w-5 h-5 shrink-0" />
+            {label}
+          </Link>
         );
       })}
     </div>
