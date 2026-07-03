@@ -128,6 +128,7 @@ function AccountHub() {
         [4] Hồ sơ của tôi (áp chót)
         [5] Đổi mật khẩu (cuối) — cả 4 & 5 do ProfileForm render
       */}
+      {isCustomer && <CustomerBookingCard />}
       {isCustomer && <CustomerHomeContent />}
 
       <ProfileForm />
