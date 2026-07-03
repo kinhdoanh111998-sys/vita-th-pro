@@ -47,9 +47,12 @@ function ContactPage() {
 
       const { error } = await supabase.from("contacts").insert({
         name: trimmedName,
+        full_name: trimmedName,
         phone: trimmedPhone,
         content: trimmedContent || null,
+        message: trimmedContent || null,
         affiliate_ref: refCode,
+        status: "pending",
       });
 
       if (error) throw error;
