@@ -1,5 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { setCookie } from "@tanstack/react-start/server";
+import {
+  ZALO_AUTHORIZE_PATH,
+  ZALO_CALLBACK_PATH,
+  ZALO_CANONICAL_ORIGIN,
+  ZALO_FALLBACK_ORIGIN,
+} from "@/lib/zalo-auth.constants";
+
+function getZaloOrigin(requestOrigin: string) {
+  if (requestOrigin.includes("localhost") || requestOrigin.includes("127.0.0.1")) {
+    return requestOrigin;
+  }
+  if (requestOrigin === ZALO_CANONICAL_ORIGIN || requestOrigin === ZALO_FALLBACK_ORIGIN) {
+    return requestOrigin;
+  }
+  return ZALO_CANONICAL_ORIGIN;
+}
 
 export const Route = createFileRoute("/api/public/zalo/authorize")({
   server: {
@@ -22,8 +38,15 @@ export const Route = createFileRoute("/api/public/zalo/authorize")({
           const verifier = generateCodeVerifier();
           const challenge = codeChallengeFromVerifier(verifier);
 
-          const origin = new URL(request.url).origin;
-          const redirectUri = `${origin}/auth/zalo/callback`;
+          const requestUrl = new URL(request.url);
+          const origin = getZaloOrigin(requestUrl.origin);
+          if (origin !== requestUrl.origin) {
+            return new Response(null, {
+              status: 302,
+              headers: { Location: `${origin}${ZALO_AUTHORIZE_PATH}` },
+            });
+          }
+          const redirectUri = `${origin}${ZALO_CALLBACK_PATH}`;
 
           // httpOnly cookies, 5 minutes lifetime
           const cookieOpts = {
