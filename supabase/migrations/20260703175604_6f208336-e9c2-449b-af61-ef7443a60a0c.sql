@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.gen_ref_code() TO authenticated;
