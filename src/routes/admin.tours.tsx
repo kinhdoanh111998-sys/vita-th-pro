@@ -129,9 +129,13 @@ function ToursPage() {
   const servicesQ = useQuery({
     queryKey: ["tours2", "services"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("id,name,price");
+      const { data, error } = await supabase
+        .from("services")
+        .select("id,name,price,type,is_hidden")
+        .neq("type", "product") // Ẩn Sản phẩm — ca làm chỉ áp dụng cho Dịch vụ
+        .order("name");
       if (error) throw error;
-      return (data ?? []) as Service[];
+      return ((data ?? []) as Service[]).filter((s) => !s.is_hidden);
     },
   });
   const attQ = useQuery({
