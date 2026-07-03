@@ -174,14 +174,6 @@ export function Header() {
 
               <div className="h-px bg-[#E3E3E3] my-2" />
 
-              <Link
-                to="/dang-ky"
-                onClick={() => setDrawerOpen(false)}
-                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
-                style={{ color: "#484848" }}
-              >
-                Đăng ký
-              </Link>
               {session ? (
                 <>
                   <Link
@@ -202,20 +194,22 @@ export function Header() {
                   </button>
                 </>
               ) : (
-                <Link
-                  to="/login"
-                  onClick={() => setDrawerOpen(false)}
-                  className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
-                  style={{ color: "#484848" }}
-                >
-                  Đăng nhập
-                </Link>
+                <>
+                  <Link
+                    to="/dang-ky"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                    style={{ color: "#484848" }}
+                  >
+                    Đăng ký
+                  </Link>
+                  <Link
+                    to="/login"
+                    onClick={() => setDrawerOpen(false)}
+                    className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
+                    style={{ color: "#484848" }}
+                  >
+                    Đăng nhập
+                  </Link>
+                </>
               )}
-            </nav>
-
-          </aside>
-        </div>
-      )}
-    </>
-  );
-}
