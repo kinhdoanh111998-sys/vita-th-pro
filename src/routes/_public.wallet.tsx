@@ -13,7 +13,7 @@ import {
 export const Route = createFileRoute("/_public/wallet")({
   head: () => ({
     meta: [
-      { title: "Ví VITA & Ưu đãi — VITA TH Pro" },
+      { title: "Ví VITA & Ưu đãi | Vita TH Pro" },
       {
         name: "description",
         content:

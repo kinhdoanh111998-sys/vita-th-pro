@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/AuthContext";
 export const Route = createFileRoute("/_public/booking")({
   head: () => ({
     meta: [
-      { title: "Đặt lịch hẹn trị liệu – VITA" },
+      { title: "Đặt lịch hẹn | Vita TH Pro" },
       {
         name: "description",
         content:

@@ -7,7 +7,7 @@ import { CalendarDays, Clock, Search } from "lucide-react";
 export const Route = createFileRoute("/_public/community")({
   head: () => ({
     meta: [
-      { title: "Cộng đồng VITA — Tin tức & Sự kiện" },
+      { title: "Cộng đồng | Vita TH Pro" },
       {
         name: "description",
         content:

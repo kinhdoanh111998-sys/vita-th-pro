@@ -4,11 +4,13 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { AuthProvider } from "@/lib/AuthContext";
+import { getPageTitle } from "@/lib/pageTitles";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -78,22 +80,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Pixel Perfect UI converts static HTML/CSS designs into interactive React components with Tailwind CSS." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Pixel Perfect UI converts static HTML/CSS designs into interactive React components with Tailwind CSS." },
+      { title: "Vita TH Pro" },
+      { name: "description", content: "Vita TH Pro — Hệ sinh thái Spa & Clinic công nghệ cao: dịch vụ, liệu trình, đào tạo và chuyển giao công nghệ." },
+      { name: "author", content: "Vita TH Pro" },
+      { property: "og:site_name", content: "Vita TH Pro" },
+      { property: "og:title", content: "Vita TH Pro" },
+      { property: "og:description", content: "Hệ sinh thái Spa & Clinic công nghệ cao — dịch vụ, liệu trình, đào tạo và chuyển giao công nghệ." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "Pixel Perfect UI converts static HTML/CSS designs into interactive React components with Tailwind CSS." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b2de5a48-6e9a-42ae-83eb-55af30055da1/id-preview-cba1844a--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app-1782738997603.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b2de5a48-6e9a-42ae-83eb-55af30055da1/id-preview-cba1844a--dca46c99-31ca-4f56-9e9f-8995fba18e1c.lovable.app-1782738997603.png" },
+      { name: "twitter:title", content: "Vita TH Pro" },
+      { name: "twitter:description", content: "Hệ sinh thái Spa & Clinic công nghệ cao — dịch vụ, liệu trình, đào tạo và chuyển giao công nghệ." },
       { property: "zalo-platform-site-verification", content: "QDsO2f7fF2TX_xCAjVyh54NJWpkffLPXCpGn" },
       { name: "zalo-platform-site-verification", content: "QDsO2f7fF2TX_xCAjVyh54NJWpkffLPXCpGn" },
     ],
     links: [
+      {
+        rel: "icon",
+        type: "image/png",
+        href: "/__l5e/assets-v1/3fb8890a-88a3-4e7a-956f-ea6d865893a1/favicon.png",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/__l5e/assets-v1/3fb8890a-88a3-4e7a-956f-ea6d865893a1/favicon.png",
+      },
       {
         rel: "preconnect",
         href: "https://fonts.googleapis.com",
@@ -135,6 +144,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.title = getPageTitle(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -147,6 +162,8 @@ function RootComponent() {
       }
     }
   }, []);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>
