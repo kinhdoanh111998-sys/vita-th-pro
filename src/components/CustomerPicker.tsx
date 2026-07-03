@@ -46,9 +46,11 @@ export function CustomerPicker({
         .select("id,name,phone")
         .single();
       if (error) throw error;
-      toast.success("Đã tạo khách mới");
+      toast.success("Tạo khách mới thành công!", { duration: 3000 });
       setNewName("");
       setNewPhone("");
+      // Notify parent FIRST (to update cache/list) then switch selection so
+      // the Select trigger can render the new customer's label immediately.
       onCreated?.(data as CustomerLite);
       onChange(data.id);
     } catch (e) {
