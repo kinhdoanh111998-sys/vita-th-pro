@@ -261,7 +261,7 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                   <SkeletonCard key={i} />
                 ))}
               </div>
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && combos.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                 <p className="text-gray-500 mb-3">
                   Không tìm thấy{" "}
