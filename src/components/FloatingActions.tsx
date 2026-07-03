@@ -50,7 +50,7 @@ const BUTTONS: Btn[] = [
  */
 export function FloatingActions() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const { data: sys } = useSystemSettings();
   const zaloUrl =
@@ -59,10 +59,10 @@ export function FloatingActions() {
     "https://zalo.me/0988000888";
 
   useEffect(() => {
-    if (!activeKey) return;
+    if (!expanded) return;
     const onDoc = (e: MouseEvent | TouchEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setActiveKey(null);
+        setExpanded(false);
       }
     };
     document.addEventListener("mousedown", onDoc);
@@ -71,11 +71,24 @@ export function FloatingActions() {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("touchstart", onDoc);
     };
-  }, [activeKey]);
+  }, [expanded]);
 
-  useEffect(() => setActiveKey(null), [pathname]);
+  useEffect(() => setExpanded(false), [pathname]);
 
   if (pathname.startsWith("/app")) return null;
+
+  // Mobile-only gate: first tap expands all buttons; second tap performs action.
+  const isMobile = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
+  const gateFirstTap = (e: React.MouseEvent) => {
+    if (isMobile() && !expanded) {
+      e.preventDefault();
+      e.stopPropagation();
+      setExpanded(true);
+    }
+  };
 
   return (
     <div
@@ -84,7 +97,6 @@ export function FloatingActions() {
     >
       {BUTTONS.map((b) => {
         const Icon = b.icon;
-        const expanded = activeKey === b.key;
 
         const shape = expanded
           ? "h-12 w-auto px-4 rounded-full"
@@ -108,6 +120,27 @@ export function FloatingActions() {
 
         // Booking → popover menu 2 lựa chọn
         if (b.action === "booking") {
+          // On mobile before expanded, render a plain button that only expands.
+          if (!expanded) {
+            return (
+              <button
+                key={b.key}
+                type="button"
+                aria-label={b.label}
+                className={cls}
+                onClick={(e) => {
+                  if (isMobile()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setExpanded(true);
+                  }
+                }}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                {label}
+              </button>
+            );
+          }
           return (
             <BookingActionMenu
               key={b.key}
@@ -132,6 +165,7 @@ export function FloatingActions() {
               rel="noopener noreferrer"
               aria-label={b.label}
               className={cls}
+              onClick={gateFirstTap}
             >
               <Icon className="w-5 h-5 shrink-0" />
               {label}
@@ -145,6 +179,7 @@ export function FloatingActions() {
             to={b.href!}
             aria-label={b.label}
             className={cls}
+            onClick={gateFirstTap}
           >
             <Icon className="w-5 h-5 shrink-0" />
             {label}
