@@ -61,6 +61,7 @@ import { Route as PublicLookupRouteImport } from './routes/_public.lookup'
 import { Route as PublicEventsRouteImport } from './routes/_public.events'
 import { Route as PublicContactRouteImport } from './routes/_public.contact'
 import { Route as PublicCommunityRouteImport } from './routes/_public.community'
+import { Route as PublicCheckoutRouteImport } from './routes/_public.checkout'
 import { Route as PublicBookingRouteImport } from './routes/_public.booking'
 import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicServicesIndexRouteImport } from './routes/_public.services.index'
@@ -353,6 +354,11 @@ const PublicCommunityRoute = PublicCommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => PublicRoute,
 } as any)
+const PublicCheckoutRoute = PublicCheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => PublicRoute,
+} as any)
 const PublicBookingRoute = PublicBookingRouteImport.update({
   id: '/booking',
   path: '/booking',
@@ -531,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/portal': typeof PortalRouteWithChildren
   '/about': typeof PublicAboutRouteWithChildren
   '/booking': typeof PublicBookingRoute
+  '/checkout': typeof PublicCheckoutRoute
   '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
   '/events': typeof PublicEventsRouteWithChildren
@@ -612,6 +619,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/portal': typeof PortalRouteWithChildren
   '/booking': typeof PublicBookingRoute
+  '/checkout': typeof PublicCheckoutRoute
   '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
   '/events': typeof PublicEventsRouteWithChildren
@@ -696,6 +704,7 @@ export interface FileRoutesById {
   '/portal': typeof PortalRouteWithChildren
   '/_public/about': typeof PublicAboutRouteWithChildren
   '/_public/booking': typeof PublicBookingRoute
+  '/_public/checkout': typeof PublicCheckoutRoute
   '/_public/community': typeof PublicCommunityRoute
   '/_public/contact': typeof PublicContactRoute
   '/_public/events': typeof PublicEventsRouteWithChildren
@@ -784,6 +793,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/about'
     | '/booking'
+    | '/checkout'
     | '/community'
     | '/contact'
     | '/events'
@@ -865,6 +875,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/portal'
     | '/booking'
+    | '/checkout'
     | '/community'
     | '/contact'
     | '/events'
@@ -948,6 +959,7 @@ export interface FileRouteTypes {
     | '/portal'
     | '/_public/about'
     | '/_public/booking'
+    | '/_public/checkout'
     | '/_public/community'
     | '/_public/contact'
     | '/_public/events'
@@ -1408,6 +1420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicCommunityRouteImport
       parentRoute: typeof PublicRoute
     }
+    '/_public/checkout': {
+      id: '/_public/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof PublicCheckoutRouteImport
+      parentRoute: typeof PublicRoute
+    }
     '/_public/booking': {
       id: '/_public/booking'
       path: '/booking'
@@ -1726,6 +1745,7 @@ const PublicServicesRouteWithChildren = PublicServicesRoute._addFileChildren(
 interface PublicRouteChildren {
   PublicAboutRoute: typeof PublicAboutRouteWithChildren
   PublicBookingRoute: typeof PublicBookingRoute
+  PublicCheckoutRoute: typeof PublicCheckoutRoute
   PublicCommunityRoute: typeof PublicCommunityRoute
   PublicContactRoute: typeof PublicContactRoute
   PublicEventsRoute: typeof PublicEventsRouteWithChildren
@@ -1741,6 +1761,7 @@ interface PublicRouteChildren {
 const PublicRouteChildren: PublicRouteChildren = {
   PublicAboutRoute: PublicAboutRouteWithChildren,
   PublicBookingRoute: PublicBookingRoute,
+  PublicCheckoutRoute: PublicCheckoutRoute,
   PublicCommunityRoute: PublicCommunityRoute,
   PublicContactRoute: PublicContactRoute,
   PublicEventsRoute: PublicEventsRouteWithChildren,
@@ -1917,13 +1938,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

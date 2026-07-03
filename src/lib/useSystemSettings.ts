@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export type SystemSettings = {
@@ -7,6 +7,12 @@ export type SystemSettings = {
   zalo_link: string | null;
   facebook_link: string | null;
   updated_at: string;
+  show_store_list: boolean;
+  zalo_oa_url: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_holder: string | null;
+  bank_bin: string | null;
 };
 
 export const SYSTEM_SETTINGS_KEY = ["system_settings"] as const;
@@ -25,5 +31,33 @@ export function useSystemSettings() {
       return (data ?? null) as SystemSettings | null;
     },
     staleTime: 30_000,
+  });
+}
+
+export function useUpdateSystemSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (patch: Partial<SystemSettings>) => {
+      // Lấy row hiện tại (nếu có), update — nếu chưa có thì insert.
+      const { data: existing } = await supabase
+        .from("system_settings")
+        .select("id")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existing?.id) {
+        const { error } = await supabase
+          .from("system_settings")
+          .update(patch)
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("system_settings")
+          .insert(patch);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: SYSTEM_SETTINGS_KEY }),
   });
 }

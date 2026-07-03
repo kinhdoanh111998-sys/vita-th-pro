@@ -1,19 +1,23 @@
 import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ImageIcon,
   ChevronRight,
-  ArrowLeft,
   ShoppingCart,
   CalendarCheck,
   Package,
   Sparkles,
   Minus,
   Plus,
+  Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { CatalogItem } from "@/lib/useServiceCatalog";
 import { productCategoryLabel } from "@/lib/catalogCategories";
+import { useCartStore } from "@/lib/cart/useCartStore";
+import { ShareRefButton } from "@/components/ShareRefButton";
+
 
 interface Props {
   item: CatalogItem;
@@ -33,8 +37,11 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
 
   const [active, setActive] = useState(0);
   const [qty, setQty] = useState(1);
+  const navigate = useNavigate();
+  const addToCartStore = useCartStore((s) => s.add);
 
   const isService = item.type === "service";
+
   const hasSale =
     typeof item.sale_price === "number" &&
     item.sale_price > 0 &&
@@ -129,9 +136,17 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
               )}
             </div>
 
-            <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-black leading-tight">
-              {item.name}
-            </h1>
+            <div className="flex items-start gap-3">
+              <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-black leading-tight flex-1">
+                {item.name}
+              </h1>
+              <ShareRefButton
+                path={isService ? `/services/${item.id}` : `/products/${item.id}`}
+                iconOnly
+                className="mt-1"
+              />
+            </div>
+
 
             {/* Price */}
             <div className="mt-5 flex items-baseline gap-3 flex-wrap">
@@ -208,26 +223,60 @@ export function CatalogDetailLayout({ item, crumbHref, crumbLabel }: Props) {
                   </button>
                 </div>
               )}
-              <Link
-                to={isService ? "/booking" : "/contact"}
+              <button
+                type="button"
+                onClick={() => {
+                  const price =
+                    (item.sale_price && item.sale_price > 0
+                      ? item.sale_price
+                      : item.price) ?? 0;
+                  if (!price) {
+                    toast.info("Sản phẩm chưa có giá — vui lòng liên hệ.");
+                    return;
+                  }
+                  addToCartStore(
+                    {
+                      id: item.id,
+                      name: item.name,
+                      price,
+                      image: gallery[0] ?? null,
+                      type: isService ? "service" : "product",
+                    },
+                    qty,
+                  );
+                  toast.success("Đã thêm vào giỏ hàng");
+                }}
                 className="h-12 px-6 flex-1 inline-flex items-center justify-center gap-2 rounded-xl text-white font-bold transition-colors bg-brand-primary hover:bg-brand-primary-dark shadow-md"
               >
-                {isService ? (
-                  <>
-                    <CalendarCheck className="w-5 h-5" /> Đặt lịch ngay
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-5 h-5" /> Thêm vào giỏ hàng
-                  </>
-                )}
-              </Link>
-              <Link
-                to={crumbHref}
-                className="h-12 px-6 inline-flex items-center justify-center rounded-xl border border-hairline text-brand-text font-semibold hover:bg-white transition-colors"
+                <ShoppingCart className="w-5 h-5" /> Thêm vào giỏ hàng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const price =
+                    (item.sale_price && item.sale_price > 0
+                      ? item.sale_price
+                      : item.price) ?? 0;
+                  if (!price) {
+                    toast.info("Sản phẩm chưa có giá — vui lòng liên hệ.");
+                    return;
+                  }
+                  addToCartStore(
+                    {
+                      id: item.id,
+                      name: item.name,
+                      price,
+                      image: gallery[0] ?? null,
+                      type: isService ? "service" : "product",
+                    },
+                    qty,
+                  );
+                  navigate({ to: "/checkout" });
+                }}
+                className="h-12 px-6 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-brand-primary bg-white text-brand-primary font-bold hover:bg-brand-primary hover:text-white transition-colors"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" /> {crumbLabel}
-              </Link>
+                <Zap className="w-4 h-4" /> Mua ngay
+              </button>
             </div>
 
             {/* Mô tả ngắn gọn — hiển thị ngay dưới CTA */}
