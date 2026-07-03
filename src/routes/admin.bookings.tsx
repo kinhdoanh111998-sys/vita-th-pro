@@ -312,11 +312,11 @@ function CreateBookingDialog({
         .eq("status", "pending")
         .order("session_number");
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as TreatmentRow[];
     },
   });
   const nextTreatments = useMemo(
-    () => nextInLineTreatments(treatmentsQ.data ?? [], customerId !== "__new" ? customerId : null),
+    () => nextInLineTreatments<TreatmentRow>(treatmentsQ.data ?? [], customerId !== "__new" ? customerId : null),
     [treatmentsQ.data, customerId],
   );
 
