@@ -235,6 +235,7 @@ function ToursPage() {
     setTreatmentId("");
     setNewServiceId("");
     setTechnicianId("");
+    setSalesStaffId("");
     setNotes("");
     setCommissionAmount("");
     setCommissionEdited(false);
