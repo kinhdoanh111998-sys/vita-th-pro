@@ -45,14 +45,14 @@ export function AdminSidebar() {
   };
 
   return (
-    <aside className="bg-[#112218] text-white p-4 lg:sticky lg:top-0 lg:h-screen lg:overflow-auto w-full lg:w-[280px] shrink-0">
-      <div className="flex items-center gap-2.5 mb-4">
-        <img src={logo} alt="" className="h-11 bg-white rounded-[10px] p-1" />
+    <aside className="bg-brand-surface text-brand-text border-r border-brand-border p-4 lg:sticky lg:top-0 lg:h-screen lg:overflow-auto w-full lg:w-[280px] shrink-0">
+      <div className="flex items-center gap-2.5 mb-5 p-3 rounded-[12px] bg-brand-bg">
+        <img src={logo} alt="" className="h-11 bg-white rounded-[10px] p-1 border border-brand-border" />
         <div className="min-w-0">
-          <b className="block truncate">{fullName ?? "Quản trị"}</b>
-          <small className="text-[#bdd7c2] block truncate">{email ?? ""}</small>
+          <b className="block truncate text-[14px] font-heading text-brand-text">{fullName ?? "Quản trị"}</b>
+          <small className="text-brand-muted block truncate text-[12px]">{email ?? ""}</small>
           {role && (
-            <span className="inline-block mt-1 rounded-full bg-white/15 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5">
+            <span className="inline-block mt-1 rounded-full bg-brand-primary-light text-brand-primary-dark text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5">
               {role}
             </span>
           )}
@@ -65,30 +65,30 @@ export function AdminSidebar() {
             key={t.to}
             to={t.to as never}
             activeOptions={{ exact: t.exact ?? false }}
-            className="w-full text-left rounded-xl px-3 py-2.5 font-extrabold text-[#dff5e3] hover:bg-white/10 hover:text-white"
-            activeProps={{ className: "bg-white/15 text-white" }}
+            className="w-full text-left rounded-[8px] px-3 py-2.5 text-[14px] font-medium text-brand-text hover:bg-brand-bg transition-colors"
+            activeProps={{ className: "bg-brand-primary-light text-brand-primary-dark font-semibold" }}
           >
             {t.label}
           </Link>
         ))}
       </nav>
 
-      <div className="mt-5 space-y-2">
+      <div className="mt-5 pt-4 border-t border-brand-border space-y-2">
         <Link
           to="/app/account"
-          className="block text-center rounded-full bg-white/10 text-white border border-white/20 px-3 py-2 text-[13px] font-extrabold hover:bg-white/20"
+          className="block text-center rounded-full bg-brand-bg text-brand-text border border-brand-border px-3 py-2 text-[13px] font-semibold hover:bg-brand-primary-light hover:text-brand-primary-dark transition-colors"
         >
           👤 Hồ sơ của tôi
         </Link>
         <button
           onClick={handleSignOut}
-          className="block w-full text-center rounded-full bg-white/10 text-white border border-white/20 px-3 py-2 text-[13px] font-extrabold hover:bg-white/20"
+          className="block w-full text-center rounded-full bg-brand-bg text-brand-text border border-brand-border px-3 py-2 text-[13px] font-semibold hover:bg-brand-primary-light hover:text-brand-primary-dark transition-colors"
         >
           Đăng xuất
         </button>
         <Link
           to="/"
-          className="block text-center rounded-full bg-white text-brand-dark border border-hairline px-3 py-2 text-[13px] font-extrabold"
+          className="block text-center rounded-full bg-brand-primary text-white border border-brand-primary px-3 py-2 text-[13px] font-semibold hover:bg-brand-primary-dark transition-colors"
         >
           Về trang chủ
         </Link>
