@@ -26,6 +26,8 @@ const NAV: NavItem[] = [
 export default function AppLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { session } = useAuth();
+  const isStore = pathname === "/app/store" || pathname.startsWith("/app/store/");
+
 
   return (
     <div className="min-h-screen bg-brand-bg">
@@ -88,10 +90,13 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* Mobile floating cart */}
-      <div className="md:hidden">
-        <CartButton variant="floating" />
-      </div>
+      {/* Mobile floating cart — hidden on /app/store where the cart lives in the page header */}
+      {!isStore && (
+        <div className="md:hidden">
+          <CartButton variant="floating" />
+        </div>
+      )}
+
 
 
       <main className="mx-auto max-w-[480px] md:max-w-6xl md:px-6 pb-[80px] md:pb-12 md:pt-4">

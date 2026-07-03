@@ -89,51 +89,55 @@ export function ServiceCard({
         (compact ? "" : "")
       }
     >
-      {/* Image → link to detail */}
-      <Link
-        {...detailProps}
-        className="relative aspect-square bg-gradient-to-br from-emerald-50 to-white overflow-hidden block"
-      >
-        {img ? (
-          <img
-            src={img}
-            alt={item.name}
-            loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
-          />
-        ) : (
-          <div className="w-full h-full grid place-items-center text-gray-300">
-            <ImageIcon className="w-10 h-10" />
-          </div>
-        )}
+      {/* Image + share ref wrapped in a positioned parent so the share button stays clipped below nav/header */}
+      <div className="relative overflow-hidden">
+        <Link
+          {...detailProps}
+          className="relative aspect-square bg-gradient-to-br from-emerald-50 to-white overflow-hidden block"
+        >
+          {img ? (
+            <img
+              src={img}
+              alt={item.name}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+            />
+          ) : (
+            <div className="w-full h-full grid place-items-center text-gray-300">
+              <ImageIcon className="w-10 h-10" />
+            </div>
+          )}
 
-        {hasSale && (
-          <span className="absolute top-2 right-14 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
-            -
-            {Math.round(
-              (1 - (item.sale_price as number) / (item.price as number)) * 100,
-            )}
-            %
-          </span>
-        )}
+          {hasSale && (
+            <span className="absolute top-2 right-14 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
+              -
+              {Math.round(
+                (1 - (item.sale_price as number) / (item.price as number)) * 100,
+              )}
+              %
+            </span>
+          )}
 
-        {isService ? (
-          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-sm">
-            <Sparkles className="w-3 h-3" />
-            Liệu trình
-            {item.default_sessions ? `: ${item.default_sessions} buổi` : ""}
-          </span>
-        ) : (
-          <span className="absolute top-2 left-2 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-gray-700 shadow-sm">
-            Sản phẩm
-          </span>
-        )}
-      </Link>
+          {isService ? (
+            <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-sm">
+              <Sparkles className="w-3 h-3" />
+              Liệu trình
+              {item.default_sessions ? `: ${item.default_sessions} buổi` : ""}
+            </span>
+          ) : (
+            <span className="absolute top-2 left-2 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-gray-700 shadow-sm">
+              Sản phẩm
+            </span>
+          )}
+        </Link>
 
-      {/* Floating share icon on top-right of image */}
-      <div className="absolute top-2 right-2 z-10">
-        <ShareRefButton path={sharePath} iconOnly />
+        <ShareRefButton
+          path={sharePath}
+          iconOnly
+          className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full shadow-sm text-gray-600 hover:bg-white hover:text-gray-700 border-0"
+        />
       </div>
+
 
       {/* Content */}
       <div className={"flex flex-1 flex-col gap-1.5 " + (compact ? "p-2.5" : "p-4")}>

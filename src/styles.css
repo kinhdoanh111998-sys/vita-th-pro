@@ -168,6 +168,22 @@
   scrollbar-width: none;
 }
 
+@utility animate-scaleIn {
+  animation: scaleIn 0.2s ease-out forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+
 /* Rich text editor & prose table styling */
 .ProseMirror table,
 .prose table {
