@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon, Pencil } from "lucide-react";
+import { Search, Plus, Eye, Phone, Mail, MapPin, User as UserIcon, Pencil, Trash2 } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
@@ -149,6 +149,26 @@ function CustomersAdmin() {
     onError: (e: Error) => toast.error(`Không thể lưu khách hàng: ${e.message}`),
   });
 
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("customers").delete().eq("id", id);
+      if (error) throw new Error(error.message || "Không thể xoá khách hàng");
+    },
+    onSuccess: () => {
+      toast.success("Đã xoá khách hàng");
+      qc.invalidateQueries({ queryKey: ["admin", "customers"] });
+      setSelectedId(null);
+    },
+    onError: (e: Error) => toast.error(`Không thể xoá: ${e.message}`),
+  });
+
+  const handleDelete = (c: Customer) => {
+    const name = c.full_name ?? c.name ?? "khách hàng này";
+    if (window.confirm(`Xoá "${name}"?\n\nHành động này sẽ xoá vĩnh viễn khách hàng cùng đơn hàng, liệu trình liên quan. Không thể hoàn tác.`)) {
+      remove.mutate(c.id);
+    }
+  };
+
   const selected = rows.find((r) => r.id === selectedId) ?? null;
 
   return (
@@ -196,6 +216,15 @@ function CustomersAdmin() {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => openEditForm(r)}>
                       <Pencil size={14} /> Sửa
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(r)}
+                      disabled={remove.isPending}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} /> Xoá
                     </Button>
                   </div>
                 </td>
