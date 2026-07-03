@@ -15,6 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateTime, isUpcoming, type EventRow } from "@/lib/events";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+import { useSystemSettings } from "@/lib/useSystemSettings";
+import { FeaturedCatalogSection } from "@/components/FeaturedCatalogSection";
+
 
 export const Route = createFileRoute("/app/")({
   component: AppHome,
@@ -46,7 +49,10 @@ function AppHome() {
   const [tab, setTab] = useState("Tất cả");
   const { data: stores = [] } = useActiveStores();
   const { data: appNav = [] } = useNavigationItems("app");
+  const { data: sys } = useSystemSettings();
+  const showStoreList = sys?.show_store_list !== false;
   const quickItems = appNav.filter((i) => i.is_visible);
+
 
   const eventsQ = useQuery({
     queryKey: ["public", "events"],
@@ -126,8 +132,28 @@ function AppHome() {
             </div>
           </section>
 
+          {/* Sản phẩm nổi bật + Dịch vụ nổi bật (trước Feed) */}
+          <FeaturedCatalogSection
+            kind="product"
+            eyebrow="Cửa hàng"
+            title="Sản phẩm nổi bật"
+            viewAllHref="/products"
+            variant="app"
+            limit={4}
+          />
+          <FeaturedCatalogSection
+            kind="service"
+            eyebrow="Liệu trình"
+            title="Dịch vụ nổi bật"
+            viewAllHref="/services"
+            variant="app"
+            limit={4}
+          />
+
           {/* Community Feed – realtime */}
           <CommunityFeedMobile />
+
+
 
           {/* Quick Access (dynamic from DB) */}
           {quickItems.length > 0 && (
@@ -155,23 +181,29 @@ function AppHome() {
             </section>
           )}
 
-          {/* Cửa hàng gần bạn */}
-          <SectionHeader
-            title="Cửa hàng gần bạn"
-            action={<span className="text-xs text-brand-primary">Xem bản đồ</span>}
-          />
-          <div className="px-4 flex flex-col gap-3">
-            {stores.map((s) => (
-              <StoreCard
-                key={s.id}
-                image={s.main_image ?? s.images?.[0] ?? "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png"}
-                name={s.name}
-                rating={4.8}
-                address={s.address ?? ""}
-                distance={s.open_hours ?? ""}
+          {/* Cửa hàng gần bạn — có thể ẩn qua admin.navigation */}
+          {showStoreList && (
+            <>
+              <SectionHeader
+                title="Cửa hàng gần bạn"
+                action={<span className="text-xs text-brand-primary">Xem bản đồ</span>}
               />
-            ))}
-          </div>
+              <div className="px-4 flex flex-col gap-3">
+                {stores.map((s) => (
+                  <StoreCard
+                    key={s.id}
+                    image={s.main_image ?? s.images?.[0] ?? "https://vitath.pro/wp-content/uploads/2025/11/Frame-2-4.png"}
+                    name={s.name}
+                    rating={4.8}
+                    address={s.address ?? ""}
+                    distance={s.open_hours ?? ""}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+
 
         </>
       )}
