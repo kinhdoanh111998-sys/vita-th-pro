@@ -16,6 +16,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { ContactsConsultTable } from "@/components/ContactsConsultTable";
 import { nextInLineTreatments } from "@/lib/nextInLineTreatments";
 
 type TreatmentRow = { id: string; order_id: string; customer_id: string; session_number: number; status: string; service_id: string | null };
@@ -231,6 +232,9 @@ function BookingsAdmin() {
         userMap={userMap}
         onCancel={(id) => cancel.mutate(id)}
       />
+
+      <ContactsConsultTable />
+
 
       <CreateBookingDialog
         open={createOpen}

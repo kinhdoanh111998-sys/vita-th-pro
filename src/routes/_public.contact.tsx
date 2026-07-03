@@ -20,6 +20,7 @@ export const Route = createFileRoute("/_public/contact")({
 function ContactPage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,14 +28,24 @@ function ContactPage() {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedPhone = phone.trim();
+    const trimmedEmail = email.trim();
     const trimmedContent = content.trim();
 
     if (!trimmedName || !trimmedPhone) {
       toast.error("Vui lòng nhập họ tên và số điện thoại.");
       return;
     }
-    if (trimmedName.length > 100 || trimmedPhone.length > 20 || trimmedContent.length > 1000) {
+    if (
+      trimmedName.length > 100 ||
+      trimmedPhone.length > 20 ||
+      trimmedEmail.length > 150 ||
+      trimmedContent.length > 1000
+    ) {
       toast.error("Nội dung vượt quá độ dài cho phép.");
+      return;
+    }
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error("Email không hợp lệ.");
       return;
     }
 
@@ -49,6 +60,7 @@ function ContactPage() {
         name: trimmedName,
         full_name: trimmedName,
         phone: trimmedPhone,
+        email: trimmedEmail || null,
         content: trimmedContent || null,
         message: trimmedContent || null,
         affiliate_ref: refCode,
@@ -60,6 +72,7 @@ function ContactPage() {
       toast.success("Gửi thông tin thành công! Chúng tôi sẽ liên hệ sớm.");
       setName("");
       setPhone("");
+      setEmail("");
       setContent("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Không gửi được";
@@ -68,6 +81,7 @@ function ContactPage() {
       setLoading(false);
     }
   }
+
 
   const infoItems = [
     { icon: "📞", label: "Hotline", value: "1900 6868" },
@@ -130,6 +144,20 @@ function ContactPage() {
                 required
                 className="w-full h-[44px] px-4 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition"
                 placeholder="Nguyễn Văn A"
+              />
+            </div>
+
+            <div>
+              <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                maxLength={150}
+                className="w-full h-[44px] px-4 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition"
+                placeholder="you@example.com (không bắt buộc)"
               />
             </div>
 
