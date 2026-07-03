@@ -75,7 +75,7 @@ export function FloatingActions() {
 
   useEffect(() => setExpanded(false), [pathname]);
 
-  if (pathname.startsWith("/app")) return null;
+  if (pathname.startsWith("/app") || pathname.startsWith("/booking")) return null;
 
   // Mobile-only gate: first tap expands all buttons; second tap performs action.
   const isMobile = () =>
