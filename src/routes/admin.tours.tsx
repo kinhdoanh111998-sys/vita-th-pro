@@ -29,7 +29,7 @@ type Treatment = {
   id: string; order_id: string; customer_id: string; session_number: number;
   status: string; service_id: string | null;
 };
-type Service = { id: string; name: string; price: number | null };
+type Service = { id: string; name: string; price: number | null; type: string | null; is_hidden: boolean | null };
 type Attendance = { employee_id: string; check_in_approved: boolean; check_out_time: string | null };
 type TourRow = {
   id: string; treatment_id: string; customer_id: string; technician_id: string;
@@ -129,9 +129,13 @@ function ToursPage() {
   const servicesQ = useQuery({
     queryKey: ["tours2", "services"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("id,name,price");
+      const { data, error } = await supabase
+        .from("services")
+        .select("id,name,price,type,is_hidden")
+        .neq("type", "product") // Ẩn Sản phẩm — ca làm chỉ áp dụng cho Dịch vụ
+        .order("name");
       if (error) throw error;
-      return (data ?? []) as Service[];
+      return ((data ?? []) as Service[]).filter((s) => !s.is_hidden);
     },
   });
   const attQ = useQuery({
@@ -197,6 +201,7 @@ function ToursPage() {
   const [treatmentId, setTreatmentId] = useState("");
   const [newServiceId, setNewServiceId] = useState("");
   const [technicianId, setTechnicianId] = useState("");
+  const [salesStaffId, setSalesStaffId] = useState<string>(""); // Người bán (chỉ dùng khi mode='new')
   const [notes, setNotes] = useState("");
   const [commissionAmount, setCommissionAmount] = useState<string>("");
   const [commissionEdited, setCommissionEdited] = useState(false);
@@ -230,6 +235,7 @@ function ToursPage() {
     setTreatmentId("");
     setNewServiceId("");
     setTechnicianId("");
+    setSalesStaffId("");
     setNotes("");
     setCommissionAmount("");
     setCommissionEdited(false);
@@ -252,6 +258,7 @@ function ToursPage() {
       if (mode === "new") {
         // Khách chọn "Dịch vụ mới" — tạo order + để trigger auto-generate treatments
         if (!newServiceId) throw new Error("Chọn dịch vụ mới.");
+        if (!salesStaffId) throw new Error("Chọn người bán (nhân viên tư vấn).");
         const svc = serviceMap.get(newServiceId);
         const price = Number(svc?.price ?? 0);
         const { data: order, error: oErr } = await supabase.from("orders").insert({
@@ -262,6 +269,7 @@ function ToursPage() {
           discount_amount: 0,
           total_amount: price,
           status: "paid",
+          sales_staff_id: salesStaffId || null, // Người bán để tính hoa hồng dịch vụ
         }).select("id").single();
         if (oErr) throw oErr;
 
@@ -445,21 +453,42 @@ function ToursPage() {
                     </Select>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    <Label>Dịch vụ mới *</Label>
-                    <Select value={newServiceId} onValueChange={setNewServiceId}>
-                      <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
-                      <SelectContent>
-                        {(servicesQ.data ?? []).map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}{s.price ? ` · ${Number(s.price).toLocaleString("vi-VN")} ₫` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[11px] text-ink-muted italic">
-                      Tự động tạo đơn hàng & buổi #1 khi bấm Bắt đầu.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Dịch vụ mới *</Label>
+                      <Select value={newServiceId} onValueChange={setNewServiceId}>
+                        <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
+                        <SelectContent>
+                          {(servicesQ.data ?? []).map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}{s.price ? ` · ${Number(s.price).toLocaleString("vi-VN")} ₫` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-ink-muted italic">
+                        Chỉ hiển thị Dịch vụ (đã loại Sản phẩm). Tự động tạo đơn hàng & buổi #1 khi bấm Bắt đầu.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label>Người bán (NV tư vấn) *</Label>
+                      <Select value={salesStaffId} onValueChange={setSalesStaffId}>
+                        <SelectTrigger><SelectValue placeholder="Chọn người bán" /></SelectTrigger>
+                        <SelectContent>
+                          {(usersQ.data ?? [])
+                            .filter((u) => u.role && STAFF_ROLES.includes(u.role))
+                            .map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.full_name ?? "—"} · {u.role}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-ink-muted italic">
+                        Người bán được lưu vào đơn hàng để hệ thống tự tính hoa hồng bán dịch vụ.
+                      </p>
+                    </div>
                   </div>
                 )}
 
