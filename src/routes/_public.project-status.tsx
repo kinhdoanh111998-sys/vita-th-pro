@@ -14,13 +14,13 @@ import {
 export const Route = createFileRoute("/_public/project-status")({
   head: () => ({
     meta: [
-      { title: "Theo dõi tiến độ dự án — VitaTH Pro" },
+      { title: "Theo dõi tiến độ dự án | Vita TH Pro" },
       {
         name: "description",
         content:
           "Dashboard tổng hợp BRD, SRS, UI/UX, API, Database và Business Rules cho dự án VitaTH Pro — cập nhật tiến độ 72% hướng đến go-live 20/09/2026.",
       },
-      { property: "og:title", content: "Theo dõi tiến độ dự án — VitaTH Pro" },
+      { property: "og:title", content: "Theo dõi tiến độ dự án | Vita TH Pro" },
       {
         property: "og:description",
         content: "Dashboard tài liệu 6 tab: BRD · SRS · UI/UX · API · Database · Business Rules.",

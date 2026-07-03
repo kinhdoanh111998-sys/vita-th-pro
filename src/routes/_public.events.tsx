@@ -13,7 +13,7 @@ import {
 export const Route = createFileRoute("/_public/events")({
   head: () => ({
     meta: [
-      { title: "Sự kiện — VITA TH Pro" },
+      { title: "Sự kiện | Vita TH Pro" },
       {
         name: "description",
         content:

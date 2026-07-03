@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 export const Route = createFileRoute("/_public/contact")({
   head: () => ({
     meta: [
-      { title: "Liên hệ – Kết nối với VITA" },
+      { title: "Liên hệ | Vita TH Pro" },
       {
         name: "description",
         content:
