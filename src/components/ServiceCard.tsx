@@ -130,10 +130,12 @@ export function ServiceCard({
         )}
       </Link>
 
-      {/* Floating share icon on top-right of image */}
-      <div className="absolute top-2 right-2 z-10">
-        <ShareRefButton path={sharePath} iconOnly />
-      </div>
+      {/* Floating share icon on top-right of image — only on desktop/web cards */}
+      {!compact && (
+        <div className="absolute top-2 right-2 z-10">
+          <ShareRefButton path={sharePath} iconOnly />
+        </div>
+      )}
 
       {/* Content */}
       <div className={"flex flex-1 flex-col gap-1.5 " + (compact ? "p-2.5" : "p-4")}>
