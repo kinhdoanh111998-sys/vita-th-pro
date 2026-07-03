@@ -11,17 +11,17 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-brand text-white shadow-[0_10px_24px_rgba(73,169,66,0.22)] hover:bg-brand-dark",
+    "bg-brand-primary text-white hover:bg-brand-primary-dark shadow-soft",
   secondary:
-    "bg-white text-brand-dark border border-hairline hover:bg-brand-soft",
+    "bg-brand-surface text-brand-text border border-brand-border hover:bg-brand-bg",
   ghost:
-    "bg-transparent text-brand-dark hover:bg-brand-soft border border-transparent",
-  danger: "bg-destructive text-white hover:opacity-90",
+    "bg-transparent text-brand-muted hover:bg-brand-bg hover:text-brand-text border border-transparent",
+  danger: "bg-status-error text-white hover:opacity-90 shadow-soft",
 };
 
 const sizes: Record<Size, string> = {
-  md: "px-4 py-[11px] text-sm",
-  sm: "px-3 py-2 text-[13px]",
+  md: "h-11 px-4 text-[14px]",
+  sm: "h-9 px-3 text-[13px]",
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(
@@ -29,7 +29,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-full font-extrabold transition-colors cursor-pointer",
+        "inline-flex items-center justify-center gap-2 rounded-[8px] font-semibold transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
         variants[variant],
         sizes[size],
         className,

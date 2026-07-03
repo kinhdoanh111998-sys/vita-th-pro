@@ -156,14 +156,14 @@ export function CrudAdminPage({ title, table, fields, columns }: Props) {
         </div>
       )}
 
-      <div className="overflow-auto bg-white border border-hairline rounded-2xl">
+      <div className="overflow-auto bg-brand-surface border border-brand-border rounded-[12px] shadow-soft">
         <table className="w-full min-w-[760px] border-collapse">
           <thead>
-            <tr>
+            <tr className="bg-brand-bg">
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]"
+                  className="text-left px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-brand-muted border-b border-brand-border"
                 >
                   {c.label}
                 </th>
@@ -175,18 +175,21 @@ export function CrudAdminPage({ title, table, fields, columns }: Props) {
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-3.5 py-10 text-center text-ink-muted font-semibold"
+                  className="px-4 py-10 text-center text-brand-muted text-[14px]"
                 >
-                  Chưa có dữ liệu, vui lòng bấm nút <span className="text-brand-dark">Thêm mới</span>.
+                  Chưa có dữ liệu, vui lòng bấm nút <span className="text-brand-primary font-semibold">Thêm mới</span>.
                 </td>
               </tr>
             ) : (
               rows.map((row, i) => (
-                <tr key={(row.id as string) ?? i}>
+                <tr
+                  key={(row.id as string) ?? i}
+                  className="hover:bg-brand-bg transition-colors border-b border-brand-border last:border-b-0"
+                >
                   {columns.map((c) => (
                     <td
                       key={c.key}
-                      className="px-3.5 py-3 text-sm border-b border-[#edf3ed] align-top"
+                      className="px-4 py-3 text-[14px] text-brand-text align-middle"
                     >
                       {c.render ? c.render(row) : String(row[c.key] ?? "")}
                     </td>
@@ -197,6 +200,7 @@ export function CrudAdminPage({ title, table, fields, columns }: Props) {
           </tbody>
         </table>
       </div>
+
     </>
   );
 }

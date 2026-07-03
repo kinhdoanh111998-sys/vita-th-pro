@@ -172,6 +172,10 @@
   animation: scaleIn 0.2s ease-out forwards;
 }
 
+@utility shadow-soft {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 8%), 0 1px 2px -1px rgb(0 0 0 / 8%);
+}
+
 @keyframes scaleIn {
   from {
     transform: scale(0);
