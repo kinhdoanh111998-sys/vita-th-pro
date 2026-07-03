@@ -144,6 +144,12 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.title = getPageTitle(pathname);
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -156,6 +162,8 @@ function RootComponent() {
       }
     }
   }, []);
+
+
 
   return (
     <QueryClientProvider client={queryClient}>
