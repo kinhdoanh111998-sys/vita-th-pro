@@ -86,7 +86,7 @@ function ContactPage() {
   const infoItems = [
     { icon: "📞", label: "Hotline", value: "0988 000 888" },
     { icon: "✉️", label: "Email", value: "hello@vitath.pro" },
-    { icon: "📍", label: "Trụ sở", value: "Tầng 5, VITA Tower, Hà Nội" },
+    { icon: "📍", label: "Trụ sở", value: "433 Kim Ngưu, Vĩnh Tuy, Hà Nội" },
     { icon: "🕘", label: "Giờ làm việc", value: "T2 – CN, 8:00 – 21:00" },
   ];
 
