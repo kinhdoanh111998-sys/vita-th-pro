@@ -21,13 +21,6 @@ type Mode = "existing" | "new";
 
 type Customer = { id: string; name: string | null; phone: string | null; email: string | null } | null;
 
-/**
- * Dialog để khách hàng đã đăng nhập tự đặt lịch trực tiếp trong /app/account.
- * - Mode "existing": chỉ hiển thị buổi next-in-line của mỗi thẻ liệu trình
- *   thuộc đơn hàng có status = 'paid'. Đơn 'pending' hoặc 'cancelled' bị ẩn hoàn toàn.
- * - Mode "new": chỉ hiển thị Services (loại trừ Products).
- * Sau khi lưu → notifyOpsNewBooking (bắn cho admin/manager + khách).
- */
 export function CustomerBookingDialog({ customer }: { customer: Customer }) {
   const { email, fullName, session } = useAuth();
   const [open, setOpen] = useState(false);
@@ -44,7 +37,6 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
   const customerPhone = customer?.phone ?? "";
   const uid = session?.user?.id ?? null;
 
-  // Chỉ services (loại products)
   const servicesQ = useQuery({
     queryKey: ["customer-booking-services"],
     enabled: open && mode === "new",
@@ -61,7 +53,6 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
     },
   });
 
-  // Chỉ liệu trình thuộc đơn 'paid' (join qua orders!inner)
   const treatmentsQ = useQuery({
     queryKey: ["customer-booking-treatments-paid", customerId],
     enabled: open && mode === "existing" && !!customerId,
@@ -81,6 +72,7 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
       .map((t) => t.service_id).filter(Boolean) as string[])),
     [treatmentsQ.data],
   );
+  
   const serviceNamesQ = useQuery({
     queryKey: ["customer-booking-svc-names", treatmentServiceIds.join(",")],
     enabled: treatmentServiceIds.length > 0,
@@ -147,9 +139,12 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
 
     setSubmitting(true);
     try {
-      const { data: inserted, error } = await supabase
+      const newBookingId = crypto.randomUUID(); // Sinh ID thủ công để tránh lỗi RLS .select()
+
+      const { error } = await supabase
         .from("bookings")
         .insert({
+          id: newBookingId,
           customer_id: customerId,
           customer_name: customerName,
           phone: customerPhone || "N/A",
@@ -161,15 +156,14 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
           note: fullNote,
           notes: fullNote,
           status: "pending",
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
+        });
+        
+      if (error) throw new Error(error.message);
 
       try {
         await notifyOpsNewBooking({
           data: {
-            bookingId: inserted!.id as string,
+            bookingId: newBookingId,
             customerName,
             service: chosenServiceName,
             when: `${date} ${time}`,
@@ -191,8 +185,9 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
     }
   }
 
+  // FIX LỖI LIỆT NÚT: Đưa Button ra ngoài, bọc bên cạnh Dialog
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+    <>
       <Button
         type="button"
         onClick={() => setOpen(true)}
@@ -200,97 +195,100 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
       >
         <CalendarCheck className="w-4 h-4" /> Đặt lịch ngay
       </Button>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Đặt lịch hẹn</DialogTitle>
-        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Loại đặt lịch</Label>
-            <Select value={mode} onValueChange={(v) => { setMode(v as Mode); setTreatmentId(""); setServiceId(""); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="existing">Sử dụng liệu trình có sẵn</SelectItem>
-                <SelectItem value="new">Đăng ký dịch vụ mới</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) reset(); }}>
+        <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Đặt lịch hẹn</DialogTitle>
+          </DialogHeader>
 
-          {mode === "existing" && (
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Buổi liệu trình kế tiếp</Label>
-              <Select value={treatmentId} onValueChange={setTreatmentId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={
-                    treatmentsQ.isLoading
-                      ? "Đang tải..."
-                      : nextInLine.length ? "Chọn liệu trình" : "Không có liệu trình khả dụng"
-                  } />
-                </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-2rem)]">
-                  {nextInLine.map((t) => {
-                    const sname = t.service_id ? serviceNamesQ.data?.get(t.service_id) ?? "Liệu trình" : "Liệu trình";
-                    return (
-                      <SelectItem key={t.id} value={t.id} className="max-w-full">
-                        <span className="block truncate max-w-[280px] sm:max-w-[420px]">
-                          {sname} — Buổi #{t.session_number} (còn {t.remaining} buổi)
-                        </span>
+              <Label>Loại đặt lịch</Label>
+              <Select value={mode} onValueChange={(v) => { setMode(v as Mode); setTreatmentId(""); setServiceId(""); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="existing">Sử dụng liệu trình có sẵn</SelectItem>
+                  <SelectItem value="new">Đăng ký dịch vụ mới</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {mode === "existing" && (
+              <div className="space-y-1.5">
+                <Label>Buổi liệu trình kế tiếp</Label>
+                <Select value={treatmentId} onValueChange={setTreatmentId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={
+                      treatmentsQ.isLoading
+                        ? "Đang tải..."
+                        : nextInLine.length ? "Chọn liệu trình" : "Không có liệu trình khả dụng"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
+                    {nextInLine.map((t) => {
+                      const sname = t.service_id ? serviceNamesQ.data?.get(t.service_id) ?? "Liệu trình" : "Liệu trình";
+                      return (
+                        <SelectItem key={t.id} value={t.id} className="max-w-full">
+                          <span className="block truncate max-w-[280px] sm:max-w-[420px]">
+                            {sname} — Buổi #{t.session_number} (còn {t.remaining} buổi)
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {!treatmentsQ.isLoading && nextInLine.length === 0 && (
+                  <p className="text-xs text-ink-muted">
+                    Bạn chưa có liệu trình khả dụng (đơn hàng cần ở trạng thái "đã thanh toán"). Hãy chọn "Đăng ký dịch vụ mới".
+                  </p>
+                )}
+              </div>
+            )}
+
+            {mode === "new" && (
+              <div className="space-y-1.5">
+                <Label>Dịch vụ</Label>
+                <Select value={serviceId} onValueChange={setServiceId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={servicesQ.isLoading ? "Đang tải..." : "Chọn dịch vụ"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)]">
+                    {(servicesQ.data ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.id} className="max-w-full">
+                        <span className="block truncate max-w-[280px] sm:max-w-[420px]">{s.name}</span>
                       </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {!treatmentsQ.isLoading && nextInLine.length === 0 && (
-                <p className="text-xs text-ink-muted">
-                  Bạn chưa có liệu trình khả dụng (đơn hàng cần ở trạng thái "đã thanh toán"). Hãy chọn "Đăng ký dịch vụ mới".
-                </p>
-              )}
-            </div>
-          )}
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-          {mode === "new" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Ngày hẹn</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Giờ hẹn</Label>
+                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
-              <Label>Dịch vụ</Label>
-              <Select value={serviceId} onValueChange={setServiceId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={servicesQ.isLoading ? "Đang tải..." : "Chọn dịch vụ"} />
-                </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-2rem)]">
-                  {(servicesQ.data ?? []).map((s) => (
-                    <SelectItem key={s.id} value={s.id} className="max-w-full">
-                      <span className="block truncate max-w-[280px] sm:max-w-[420px]">{s.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Ghi chú (tuỳ chọn)</Label>
+              <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Ngày hẹn</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Giờ hẹn</Label>
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Ghi chú (tuỳ chọn)</Label>
-            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Huỷ</Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "Đang gửi..." : "Gửi yêu cầu đặt lịch"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Huỷ</Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Đang gửi..." : "Gửi yêu cầu đặt lịch"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
