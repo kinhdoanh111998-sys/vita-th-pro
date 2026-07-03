@@ -63,18 +63,17 @@ export default function AppLayout() {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-2 shrink-0 flex-nowrap">
-            <Link
-              to="/lookup"
-              className="hidden lg:inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-gray-700 border border-gray-200 hover:border-emerald-500 hover:text-emerald-700"
-            >
-              Tra cứu liệu trình
-            </Link>
-            <Link
-              to="/booking"
-              className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-white bg-emerald-600 hover:bg-emerald-700"
-            >
-              Đặt lịch
-            </Link>
+            <BookingActionMenu
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-white bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Đặt lịch
+                </button>
+              }
+            />
+
             {!session && (
               <Link
                 to="/login"
