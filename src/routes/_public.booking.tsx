@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { notifyOpsNewBooking } from "@/lib/booking-notify.functions";
@@ -19,33 +19,67 @@ export const Route = createFileRoute("/_public/booking")({
   component: BookingPage,
 });
 
-const SERVICES = [
-  "Trị liệu cổ vai gáy",
-  "Chăm sóc da chuyên sâu",
-  "Trị liệu cột sống",
-  "Massage thư giãn toàn thân",
-  "Liệu trình detox & phục hồi",
-];
+const OTHER_VALUE = "__other__";
+
+type ServiceOption = { id: string; name: string };
 
 function BookingPage() {
   const { email } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [service, setService] = useState("");
+  const [service, setService] = useState(""); // service.id | OTHER_VALUE | ""
+  const [otherService, setOtherService] = useState("");
   const [appointmentAt, setAppointmentAt] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
+  const [services, setServices] = useState<ServiceOption[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("services")
+        .select("id,name,type,is_hidden")
+        .eq("is_hidden", false)
+        .eq("type", "service")
+        .order("name", { ascending: true });
+      if (error) {
+        console.warn("[booking] load services failed", error);
+        return;
+      }
+      if (mounted) {
+        setServices(
+          (data ?? []).map((s) => ({ id: s.id as string, name: s.name as string })),
+        );
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const isOther = service === OTHER_VALUE;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedPhone = phone.trim();
+    const trimmedOther = otherService.trim();
 
     if (!trimmedName || !trimmedPhone || !service || !appointmentAt) {
       toast.error("Vui lòng điền đầy đủ họ tên, SĐT, dịch vụ và thời gian hẹn.");
       return;
     }
-    if (trimmedName.length > 100 || trimmedPhone.length > 20 || note.length > 1000) {
+    if (isOther && !trimmedOther) {
+      toast.error("Vui lòng nhập dịch vụ hoặc yêu cầu cụ thể của bạn.");
+      return;
+    }
+    if (
+      trimmedName.length > 100 ||
+      trimmedPhone.length > 20 ||
+      note.length > 1000 ||
+      trimmedOther.length > 500
+    ) {
       toast.error("Nội dung vượt quá độ dài cho phép.");
       return;
     }
@@ -62,7 +96,6 @@ function BookingPage() {
       const bookingDate = appointmentDate.toISOString().slice(0, 10);
       const bookingTime = appointmentDate.toTimeString().slice(0, 5);
 
-      // Nếu đã đăng nhập → gán customer_id để đẩy thẳng về /admin/bookings với đầy đủ context
       let customerId: string | null = null;
       if (email) {
         const { data: cust } = await supabase
@@ -70,16 +103,30 @@ function BookingPage() {
         customerId = cust?.id ?? null;
       }
 
+      const selectedService = services.find((s) => s.id === service);
+      const serviceLabel = isOther
+        ? `Dịch vụ khác: ${trimmedOther}`
+        : selectedService?.name ?? "";
+
+      // Gộp yêu cầu "Dịch vụ khác" vào ghi chú để Admin/portal đọc được
+      const mergedNote = [
+        isOther ? `Dịch vụ khác yêu cầu: ${trimmedOther}` : null,
+        note.trim() || null,
+      ]
+        .filter(Boolean)
+        .join("\n") || null;
+
       const { data: booking, error } = await supabase.from("bookings").insert({
         customer_id: customerId,
         customer_name: trimmedName,
         phone: trimmedPhone,
-        service,
+        service: serviceLabel,
+        service_id: isOther ? null : selectedService?.id ?? null,
         booking_date: bookingDate,
         booking_time: bookingTime,
         booking_at: appointmentDate.toISOString(),
-        note: note.trim() || null,
-        notes: note.trim() || null,
+        note: mergedNote,
+        notes: mergedNote,
         status: "pending",
         affiliate_ref: refCode,
         referrer_phone: numericRef,
@@ -87,12 +134,11 @@ function BookingPage() {
 
       if (error) throw error;
 
-      // Bắn notification cho admin + manager (không chặn UX nếu fail)
       try {
         await notifyOpsNewBooking({ data: {
           bookingId: booking.id,
           customerName: trimmedName,
-          service,
+          service: serviceLabel,
           when: appointmentDate.toLocaleString("vi-VN"),
         }});
       } catch (nErr) {
@@ -103,6 +149,7 @@ function BookingPage() {
       setName("");
       setPhone("");
       setService("");
+      setOtherService("");
       setAppointmentAt("");
       setNote("");
     } catch (err) {
@@ -211,12 +258,25 @@ function BookingPage() {
                 className={inputCls}
               >
                 <option value="">-- Chọn dịch vụ --</option>
-                {SERVICES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
+                {services.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
                   </option>
                 ))}
+                <option value={OTHER_VALUE}>Dịch vụ khác</option>
               </select>
+
+              {isOther && (
+                <input
+                  type="text"
+                  value={otherService}
+                  onChange={(e) => setOtherService(e.target.value)}
+                  maxLength={500}
+                  required
+                  className={`${inputCls} mt-3`}
+                  placeholder="Vui lòng nhập dịch vụ hoặc yêu cầu cụ thể của bạn..."
+                />
+              )}
             </div>
 
             <div>
