@@ -201,6 +201,7 @@ function ToursPage() {
   const [treatmentId, setTreatmentId] = useState("");
   const [newServiceId, setNewServiceId] = useState("");
   const [technicianId, setTechnicianId] = useState("");
+  const [salesStaffId, setSalesStaffId] = useState<string>(""); // Người bán (chỉ dùng khi mode='new')
   const [notes, setNotes] = useState("");
   const [commissionAmount, setCommissionAmount] = useState<string>("");
   const [commissionEdited, setCommissionEdited] = useState(false);
