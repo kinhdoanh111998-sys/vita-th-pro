@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
 
 export type CustomerLite = { id: string; name: string | null; phone: string | null };
 
 /**
- * Reusable customer picker: chọn khách sẵn có hoặc tạo khách mới ngay tại chỗ.
- * Sau khi tạo khách mới, tự động gán khách đó làm giá trị đang chọn.
+ * Reusable customer picker: combobox tìm kiếm khách sẵn có + tạo khách mới ngay tại chỗ.
+ * Sau khi tạo, khách mới được gán làm giá trị đang chọn.
  */
 export function CustomerPicker({
   customers,
@@ -27,26 +30,33 @@ export function CustomerPicker({
   onCreated?: (c: CustomerLite) => void;
   label?: string;
 }) {
+  const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [creating, setCreating] = useState(false);
-  // Khách vừa tạo — giữ tạm trong picker để đảm bảo SelectItem tồn tại
-  // ngay lập tức, kể cả khi cache useQuery của parent chưa kịp cập nhật.
   const [justCreated, setJustCreated] = useState<CustomerLite | null>(null);
 
-  // Khi customers prop đã có khách vừa tạo (parent đã refetch), gỡ khỏi local.
   useEffect(() => {
     if (justCreated && customers.some((c) => c.id === justCreated.id)) {
       setJustCreated(null);
     }
   }, [customers, justCreated]);
 
-  // Danh sách hiển thị: gộp khách vừa tạo (nếu có) lên đầu, không trùng.
   const mergedCustomers = useMemo(() => {
     if (!justCreated) return customers;
     if (customers.some((c) => c.id === justCreated.id)) return customers;
     return [justCreated, ...customers];
   }, [customers, justCreated]);
+
+  const selected = value && value !== "__new"
+    ? mergedCustomers.find((c) => c.id === value) ?? null
+    : null;
+
+  const triggerLabel = value === "__new" || !value
+    ? "+ Khách mới (nhập tay bên dưới)"
+    : selected
+      ? `${selected.name ?? "—"}${selected.phone ? ` · ${selected.phone}` : ""}`
+      : "Chọn khách";
 
   const createNew = async () => {
     const name = newName.trim();
@@ -67,8 +77,6 @@ export function CustomerPicker({
       toast.success("Tạo khách mới thành công!", { duration: 3000 });
       setNewName("");
       setNewPhone("");
-      // Ghim vào picker TRƯỚC, để SelectItem tồn tại ngay khi value đổi
-      // → tránh trường hợp Select rơi về placeholder "+ Khách mới".
       setJustCreated(created);
       onCreated?.(created);
       onChange(created.id);
@@ -82,17 +90,64 @@ export function CustomerPicker({
   return (
     <div className="space-y-1.5">
       <Label>{label} *</Label>
-      <Select value={value || "__new"} onValueChange={onChange}>
-        <SelectTrigger><SelectValue placeholder="Chọn khách" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="__new">+ Khách mới (nhập tay bên dưới)</SelectItem>
-          {mergedCustomers.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.name ?? "—"}{c.phone ? ` · ${c.phone}` : ""}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between font-normal"
+          >
+            <span className="flex items-center gap-2 truncate">
+              <Search className="h-4 w-4 text-ink-muted shrink-0" />
+              <span className="truncate">{triggerLabel}</span>
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)]" align="start">
+          <Command
+            filter={(itemValue, search) => {
+              // itemValue = id — dữ liệu tìm kiếm nằm ở CommandItem's `keywords`
+              // (được truyền bên dưới). cmdk sẽ tự match trên keywords.
+              if (!search) return 1;
+              return itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+            }}
+          >
+            <CommandInput placeholder="Tìm theo tên hoặc SĐT..." />
+            <CommandList>
+              <CommandEmpty>Không tìm thấy khách phù hợp.</CommandEmpty>
+              <CommandGroup>
+                <CommandItem
+                  value="__new"
+                  keywords={["khách mới", "them moi", "them khach"]}
+                  onSelect={() => { onChange("__new"); setOpen(false); }}
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === "__new" ? "opacity-100" : "opacity-0")} />
+                  + Khách mới (nhập tay bên dưới)
+                </CommandItem>
+                {mergedCustomers.map((c) => {
+                  const nm = c.name ?? "—";
+                  const ph = c.phone ?? "";
+                  return (
+                    <CommandItem
+                      key={c.id}
+                      value={`${nm} ${ph} ${c.id}`}
+                      keywords={[nm, ph]}
+                      onSelect={() => { onChange(c.id); setOpen(false); }}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", value === c.id ? "opacity-100" : "opacity-0")} />
+                      <span className="truncate">{nm}{ph ? ` · ${ph}` : ""}</span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
 
       {value === "__new" && (
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 pt-2">
