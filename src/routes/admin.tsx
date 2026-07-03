@@ -14,27 +14,27 @@ function AdminLayout() {
   const [open, setOpen] = useState(false);
   return (
     <AuthGuard allowedRoles={["admin", "manager"]} forbiddenPath="/">
-      <div className="min-h-screen bg-[#f3f7f3] flex flex-col lg:flex-row">
+      <div className="min-h-screen bg-brand-bg flex flex-col lg:flex-row">
         {/* Mobile topbar */}
-        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 bg-[#112218] text-white px-4 h-14">
+        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 bg-brand-surface text-brand-text border-b border-brand-border px-4 h-14">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <button
                 aria-label="Mở menu"
-                className="inline-flex items-center justify-center w-10 h-10 rounded-lg hover:bg-white/10"
+                className="inline-flex items-center justify-center w-10 h-10 rounded-[8px] hover:bg-brand-bg text-brand-text"
               >
                 <Menu className="w-5 h-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[86%] max-w-[320px] bg-[#112218] border-0 text-white">
+            <SheetContent side="left" className="p-0 w-[86%] max-w-[320px] bg-brand-surface border-0 text-brand-text">
               <div onClick={() => setOpen(false)}>
                 <AdminSidebar />
               </div>
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <img src={logo} alt="" className="h-8 bg-white rounded-md p-0.5" />
-            <span className="font-black text-sm">Admin</span>
+            <img src={logo} alt="" className="h-8 bg-white rounded-md p-0.5 border border-brand-border" />
+            <span className="font-heading font-semibold text-sm text-brand-text">Admin</span>
           </div>
           <div className="w-10" />
         </header>
