@@ -119,7 +119,7 @@ function EmployeesAdmin() {
   return (
     <>
       <AdminTopbar
-        title="Nhân viên"
+        title="Tài khoản"
         subtitle={loading ? "Đang tải..." : `${users.length} tài khoản · ${roleDefs.length} vai trò`}
       />
 
