@@ -108,14 +108,7 @@ export function CustomerPicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)]" align="start">
-          <Command
-            filter={(itemValue, search) => {
-              // itemValue = id — dữ liệu tìm kiếm nằm ở CommandItem's `keywords`
-              // (được truyền bên dưới). cmdk sẽ tự match trên keywords.
-              if (!search) return 1;
-              return itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-            }}
-          >
+          <Command>
             <CommandInput placeholder="Tìm theo tên hoặc SĐT..." />
             <CommandList>
               <CommandEmpty>Không tìm thấy khách phù hợp.</CommandEmpty>
