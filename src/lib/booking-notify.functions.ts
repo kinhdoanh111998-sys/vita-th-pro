@@ -28,7 +28,15 @@ export const notifyOpsNewBooking = createServerFn({ method: "POST" })
 
     const body = `${data.customerName}${data.service ? ` · ${data.service}` : ""}${data.when ? ` · ${data.when}` : ""}`;
 
-    const rows: Array<Record<string, unknown>> = opsRecipients.map((uid) => ({
+    type NotifRow = {
+      recipient_id: string;
+      type: string;
+      title: string;
+      body: string;
+      ref_type: string;
+      ref_id: string;
+    };
+    const rows: NotifRow[] = opsRecipients.map((uid) => ({
       recipient_id: uid,
       type: "booking_new",
       title: "Có khách đặt lịch mới",
