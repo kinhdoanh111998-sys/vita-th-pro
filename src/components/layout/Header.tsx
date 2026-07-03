@@ -213,3 +213,11 @@ export function Header() {
                   </Link>
                 </>
               )}
+            </nav>
+          </aside>
+        </div>
+      )}
+    </>
+  );
+}
+
