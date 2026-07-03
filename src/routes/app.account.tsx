@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { LogOut, ShieldCheck, Briefcase, ArrowRight, Home, CalendarCheck } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
 import { CustomerHomeContent } from "@/components/CustomerHomeContent";
 import { ProfileForm } from "@/components/ProfileForm";
+import { CustomerBookingDialog } from "@/components/CustomerBookingDialog";
 
 export const Route = createFileRoute("/app/account")({
   component: AccountHub,
