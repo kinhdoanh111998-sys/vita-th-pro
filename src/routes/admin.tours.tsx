@@ -367,9 +367,26 @@ function ToursPage() {
                     setCustomerId(v);
                     setTreatmentId("");
                     setNewServiceId("");
+                    // Khách mới chưa có liệu trình → mặc định chuyển sang "Dịch vụ mới"
+                    if (v && v !== "__new") {
+                      const isNewlyCreated = !(customersQ.data ?? []).some((c) => c.id === v);
+                      if (isNewlyCreated) setMode("new");
+                    }
                   }}
-                  onCreated={() => qc.invalidateQueries({ queryKey: ["tours2", "customers"] })}
+                  onCreated={(c) => {
+                    // Cập nhật cache ngay để Select hiển thị tên khách vừa tạo,
+                    // đồng thời invalidate để đồng bộ với danh sách khách hàng.
+                    qc.setQueryData<Customer[]>(["tours2", "customers"], (prev) => {
+                      const list = prev ?? [];
+                      if (list.some((x) => x.id === c.id)) return list;
+                      return [{ id: c.id, name: c.name, phone: c.phone }, ...list];
+                    });
+                    qc.invalidateQueries({ queryKey: ["tours2", "customers"] });
+                    // Đồng bộ danh sách khách hàng ở trang /admin/customers
+                    qc.invalidateQueries({ queryKey: ["customers"] });
+                  }}
                 />
+
 
                 {/* Mode toggle — chỉ hiện khi đã chọn khách sẵn có */}
                 {customerId && customerId !== "__new" && (
