@@ -519,11 +519,11 @@ function ToursPage() {
               <dl className="text-xs space-y-2">
                 <Row label="Khách">{summaryCust?.name ?? "—"}</Row>
                 <Row label="Buổi">
-                  {selectedTreatment
-                    ? `#${selectedTreatment.session_number} · ${
-                        selectedService?.name ?? "—"
-                      }`
-                    : "—"}
+                  {mode === "new"
+                    ? (selectedService?.name ? `Mới · ${selectedService.name}` : "—")
+                    : selectedTreatment
+                      ? `#${selectedTreatment.session_number} · ${selectedService?.name ?? "—"}`
+                      : "—"}
                 </Row>
                 <Row label="Nhân viên">{summaryUser?.full_name ?? "—"}</Row>
                 <Row label="Hoa hồng">
