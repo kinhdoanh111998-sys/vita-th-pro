@@ -29,7 +29,7 @@ type Treatment = {
   id: string; order_id: string; customer_id: string; session_number: number;
   status: string; service_id: string | null;
 };
-type Service = { id: string; name: string; price: number | null };
+type Service = { id: string; name: string; price: number | null; type: string | null; is_hidden: boolean | null };
 type Attendance = { employee_id: string; check_in_approved: boolean; check_out_time: string | null };
 type TourRow = {
   id: string; treatment_id: string; customer_id: string; technician_id: string;
