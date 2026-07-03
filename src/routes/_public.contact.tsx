@@ -149,6 +149,20 @@ function ContactPage() {
 
             <div>
               <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                maxLength={150}
+                className="w-full h-[44px] px-4 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition"
+                placeholder="you@example.com (không bắt buộc)"
+              />
+            </div>
+
+            <div>
+              <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
                 Số điện thoại <span className="text-status-error">*</span>
               </label>
               <input
