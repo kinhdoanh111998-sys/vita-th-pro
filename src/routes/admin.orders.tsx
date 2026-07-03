@@ -17,9 +17,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
-} from "@/components/ui/sheet";
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 
@@ -770,18 +767,31 @@ function OrderDetailDrawer({
     },
   });
 
+  const [customerId, setCustomerId] = useState("");
+  const [editItems, setEditItems] = useState<ItemLine[]>([]);
   const [salesId, setSalesId] = useState("");
   const [commissionRate, setCommissionRate] = useState<number>(5);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (orderQ.data) {
+      setCustomerId(orderQ.data.customer_id);
       setSalesId(orderQ.data.sales_staff_id ?? "");
       setCommissionRate(Number(orderQ.data.commission_rate ?? 5));
     }
   }, [orderQ.data]);
 
+  useEffect(() => {
+    if (itemsQ.data) {
+      setEditItems(itemsQ.data.map((it) => ({
+        item_type: it.item_type,
+        item_id: it.item_id,
+        quantity: Number(it.quantity),
+      })));
+    }
+  }, [itemsQ.data]);
+
   const order = orderQ.data;
-  const customer = order ? customers.find((c) => c.id === order.customer_id) : null;
   const catMap = useMemo(() => {
     const m = new Map<string, CatalogItem>();
     catalog.forEach((c) => m.set(c.id, c));
@@ -790,70 +800,107 @@ function OrderDetailDrawer({
 
   const isPaid = order?.status === "paid";
   const isCancelled = order?.status === "cancelled";
+  const editable = order?.status === "pending";
 
-  const saveMeta = useMutation({
-    mutationFn: async () => {
-      if (!order) return;
-      const { error } = await supabase.from("orders").update({
+  const subtotal = editItems.reduce((s, it) => {
+    const cat = catMap.get(it.item_id);
+    return s + (cat?.price ?? 0) * (Number(it.quantity) || 0);
+  }, 0);
+  const discountAmount = Number(order?.discount_amount ?? 0);
+  const total = Math.max(0, subtotal - discountAmount);
+
+  const saveAll = async () => {
+    if (!order) return;
+    if (!customerId) { toast.error("Vui lòng chọn khách hàng"); return; }
+    if (editItems.length === 0) { toast.error("Đơn cần ít nhất 1 mặt hàng"); return; }
+    for (const it of editItems) {
+      if (!it.item_id) { toast.error("Có dòng chưa chọn mặt hàng"); return; }
+      if (!it.quantity || it.quantity <= 0) { toast.error("Số lượng phải > 0"); return; }
+    }
+    setSaving(true);
+    try {
+      const { error: uErr } = await supabase.from("orders").update({
+        customer_id: customerId,
         sales_staff_id: salesId || null,
         commission_rate: Number(commissionRate) || 0,
+        subtotal_amount: subtotal,
+        total_amount: total,
       }).eq("id", order.id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success("Đã cập nhật đơn hàng");
-      onChanged();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+      if (uErr) throw uErr;
 
-  const confirmPay = useMutation({
-    mutationFn: async () => {
-      if (!order) return;
+      const { error: dErr } = await supabase.from("order_items").delete().eq("order_id", order.id);
+      if (dErr) throw dErr;
+
+      const rows = editItems.map((it) => {
+        const cat = catMap.get(it.item_id)!;
+        const unit = Number(cat?.price ?? 0);
+        return {
+          order_id: order.id,
+          item_type: it.item_type,
+          item_id: it.item_id,
+          quantity: it.quantity,
+          unit_price: unit,
+          total_price: unit * it.quantity,
+        };
+      });
+      const { error: iErr } = await supabase.from("order_items").insert(rows);
+      if (iErr) throw iErr;
+
+      toast.success("Đã lưu thay đổi đơn hàng");
+      onChanged();
+      orderQ.refetch(); itemsQ.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Không lưu được");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const confirmPay = async () => {
+    if (!order) return;
+    try {
       const { error } = await supabase.from("orders")
-        .update({ status: "paid" }).eq("id", order.id);
+        .update({ status: "paid", payment_status: "paid" }).eq("id", order.id);
       if (error) throw error;
-    },
-    onSuccess: () => {
       toast.success("Đã xác nhận thanh toán. Liệu trình sẽ được tự sinh.");
       onChanged();
       orderQ.refetch(); treatmentsQ.refetch();
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    }
+  };
 
-  const cancelOrder = useMutation({
-    mutationFn: async () => {
-      if (!order) return;
-      if (!window.confirm("Huỷ đơn này? Các liệu trình đã sinh (nếu có) sẽ được giữ lại làm lịch sử.")) {
-        throw new Error("Đã huỷ thao tác");
-      }
+  const cancelOrder = async () => {
+    if (!order) return;
+    if (!window.confirm("Huỷ đơn này?")) return;
+    try {
       const { error } = await supabase.from("orders")
         .update({ status: "cancelled" }).eq("id", order.id);
       if (error) throw error;
-    },
-    onSuccess: () => {
       toast.success("Đã huỷ đơn hàng");
       onChanged();
       orderQ.refetch();
-    },
-    onError: (e: Error) => { if (e.message !== "Đã huỷ thao tác") toast.error(e.message); },
-  });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Lỗi");
+    }
+  };
+
+  const customer = customers.find((c) => c.id === customerId);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto bg-white">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
             <Eye className="size-5 text-brand" /> Chi tiết đơn hàng
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
 
         {orderQ.isLoading || !order ? (
           <div className="py-10 text-center text-ink-muted">Đang tải...</div>
         ) : (
           <div className="mt-5 space-y-4">
-            <section className="rounded-xl border border-hairline p-4 flex items-start justify-between gap-3">
+            <section className="rounded-xl border border-hairline p-4 flex items-start justify-between gap-3 bg-brand-soft/20">
               <div>
                 <div className="text-xs text-ink-muted">Mã đơn</div>
                 <Badge className="bg-brand-dark text-white font-mono text-sm">
@@ -870,52 +917,148 @@ function OrderDetailDrawer({
               }`}>{order.status}</span>
             </section>
 
-            <section className="rounded-xl border border-hairline p-4">
-              <div className="font-bold text-brand-dark flex items-center gap-2 mb-2">
+            {/* Customer */}
+            <section className="rounded-xl border border-hairline p-4 space-y-2">
+              <div className="font-bold text-brand-dark flex items-center gap-2">
                 <User className="size-4" /> Khách hàng
               </div>
-              <div className="font-bold">{customer?.name ?? "—"}</div>
-              <div className="text-xs text-ink-muted">{customer?.phone ?? ""}</div>
+              {editable ? (
+                <Select value={customerId} onValueChange={setCustomerId}>
+                  <SelectTrigger><SelectValue placeholder="Chọn khách hàng" /></SelectTrigger>
+                  <SelectContent>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}{c.phone ? ` · ${c.phone}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <>
+                  <div className="font-bold">{customer?.name ?? "—"}</div>
+                  <div className="text-xs text-ink-muted">{customer?.phone ?? ""}</div>
+                </>
+              )}
             </section>
 
-            <section className="rounded-xl border border-hairline p-4">
-              <div className="font-bold text-brand-dark mb-3">Mặt hàng ({itemsQ.data?.length ?? 0})</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-xs text-ink-muted text-left">
-                    <tr>
-                      <th className="py-2">Tên</th>
-                      <th className="py-2">Loại</th>
-                      <th className="py-2 text-right">Đơn giá</th>
-                      <th className="py-2 text-right">SL</th>
-                      <th className="py-2 text-right">Thành tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(itemsQ.data ?? []).map((it) => {
-                      const cat = catMap.get(it.item_id);
-                      return (
-                        <tr key={it.id} className="border-t border-hairline">
-                          <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
-                          <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
-                          <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
-                          <td className="py-2 text-right">{it.quantity}</td>
-                          <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="mt-3 space-y-1 text-sm border-t border-hairline pt-3">
-                <div className="flex justify-between"><span className="text-ink-muted">Tạm tính</span><span className="font-bold">{fmt(Number(order.subtotal_amount ?? 0))}</span></div>
-                <div className="flex justify-between"><span className="text-ink-muted">Giảm giá</span><span className="font-bold text-red-600">{Number(order.discount_amount) > 0 ? "-" + fmt(Number(order.discount_amount)) : "—"}</span></div>
-                <div className="flex justify-between text-lg pt-1"><span className="font-bold">Tổng</span><span className="font-black text-brand-dark">{fmt(Number(order.total_amount))}</span></div>
-              </div>
-            </section>
-
+            {/* Items */}
             <section className="rounded-xl border border-hairline p-4 space-y-3">
-              <div className="font-bold text-brand-dark">Người bán & Hoa hồng {isPaid && <span className="text-xs font-normal text-ink-muted">(có thể chỉnh sửa)</span>}</div>
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-brand-dark">Mặt hàng ({editItems.length})</div>
+                {editable && (
+                  <Button type="button" variant="secondary" size="sm"
+                    onClick={() => setEditItems((p) => [...p, { item_type: "service", item_id: "", quantity: 1 }])}>
+                    <Plus className="size-4 mr-1" /> Thêm dòng
+                  </Button>
+                )}
+              </div>
+
+              {editable ? (
+                <div className="space-y-2">
+                  {editItems.length === 0 && (
+                    <div className="text-sm text-ink-muted text-center py-6 border border-dashed border-hairline rounded-lg">
+                      Chưa có mặt hàng.
+                    </div>
+                  )}
+                  {editItems.map((line, idx) => {
+                    const cat = catMap.get(line.item_id);
+                    const rowTotal = (cat?.price ?? 0) * (Number(line.quantity) || 0);
+                    const filtered = catalog.filter((c) => c.type === line.item_type);
+                    const update = (patch: Partial<ItemLine>) =>
+                      setEditItems((p) => p.map((x, i) => i === idx ? { ...x, ...patch } : x));
+                    return (
+                      <div key={idx} className="rounded-lg border border-hairline p-3 space-y-2 bg-brand-soft/10">
+                        <div className="grid grid-cols-[110px_1fr_auto] gap-2 items-end">
+                          <div>
+                            <Label className="text-xs">Loại</Label>
+                            <Select value={line.item_type} onValueChange={(v) => update({ item_type: v as "product" | "service", item_id: "" })}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="service">Dịch vụ</SelectItem>
+                                <SelectItem value="product">Sản phẩm</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label className="text-xs">Mặt hàng</Label>
+                            <Select value={line.item_id} onValueChange={(v) => update({ item_id: v })}>
+                              <SelectTrigger><SelectValue placeholder="Chọn..." /></SelectTrigger>
+                              <SelectContent>
+                                {filtered.length === 0 ? (
+                                  <div className="px-3 py-2 text-sm text-ink-muted">Không có mục</div>
+                                ) : filtered.map((c) => (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.name} · {fmt(c.price)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <button type="button"
+                            onClick={() => setEditItems((p) => p.filter((_, i) => i !== idx))}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-md h-10">
+                            <Trash2 className="size-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-xs mr-2">Số lượng</Label>
+                            <button type="button"
+                              onClick={() => update({ quantity: Math.max(1, (Number(line.quantity) || 1) - 1) })}
+                              className="p-1.5 border border-hairline rounded-md hover:bg-white"><Minus className="size-3.5" /></button>
+                            <Input type="number" min={1} className="w-16 text-center"
+                              value={line.quantity}
+                              onChange={(e) => update({ quantity: Number(e.target.value) || 1 })} />
+                            <button type="button"
+                              onClick={() => update({ quantity: (Number(line.quantity) || 1) + 1 })}
+                              className="p-1.5 border border-hairline rounded-md hover:bg-white"><Plus className="size-3.5" /></button>
+                          </div>
+                          <div className="text-sm font-bold text-brand-dark">= {fmt(rowTotal)}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-xs text-ink-muted text-left">
+                      <tr>
+                        <th className="py-2">Tên</th>
+                        <th className="py-2">Loại</th>
+                        <th className="py-2 text-right">Đơn giá</th>
+                        <th className="py-2 text-right">SL</th>
+                        <th className="py-2 text-right">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(itemsQ.data ?? []).map((it) => {
+                        const cat = catMap.get(it.item_id);
+                        return (
+                          <tr key={it.id} className="border-t border-hairline">
+                            <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
+                            <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
+                            <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
+                            <td className="py-2 text-right">{it.quantity}</td>
+                            <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="mt-2 space-y-1 text-sm border-t border-hairline pt-3">
+                <div className="flex justify-between"><span className="text-ink-muted">Tạm tính</span><span className="font-bold">{fmt(editable ? subtotal : Number(order.subtotal_amount ?? 0))}</span></div>
+                <div className="flex justify-between"><span className="text-ink-muted">Giảm giá</span><span className="font-bold text-red-600">{discountAmount > 0 ? "-" + fmt(discountAmount) : "—"}</span></div>
+                <div className="flex justify-between text-lg pt-1"><span className="font-bold">Tổng</span><span className="font-black text-brand-dark">{fmt(editable ? total : Number(order.total_amount))}</span></div>
+              </div>
+            </section>
+
+            {/* Sales & commission */}
+            <section className="rounded-xl border border-hairline p-4 space-y-3">
+              <div className="font-bold text-brand-dark">Người bán & Hoa hồng</div>
               <div className="grid grid-cols-[1fr_140px] gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">Người bán</Label>
@@ -938,9 +1081,6 @@ function OrderDetailDrawer({
                     onChange={(e) => setCommissionRate(Number(e.target.value))} />
                 </div>
               </div>
-              <Button type="button" size="sm" onClick={() => saveMeta.mutate()} disabled={saveMeta.isPending}>
-                <Save className="size-4 mr-1 inline" /> {saveMeta.isPending ? "Đang lưu..." : "Lưu thay đổi"}
-              </Button>
             </section>
 
             {(treatmentsQ.data?.length ?? 0) > 0 && (
@@ -959,25 +1099,29 @@ function OrderDetailDrawer({
               </section>
             )}
 
-            <SheetFooter className="sticky bottom-0 bg-white pt-3 border-t border-hairline flex-wrap gap-2">
-              {order.status === "pending" && (
-                <Button type="button" onClick={() => confirmPay.mutate()} disabled={confirmPay.isPending}>
+            <DialogFooter className="sticky bottom-0 bg-white pt-3 border-t border-hairline flex-wrap gap-2">
+              {editable && (
+                <Button type="button" onClick={saveAll} disabled={saving}>
+                  <Save className="size-4 mr-1 inline" /> {saving ? "Đang lưu..." : "Lưu thay đổi"}
+                </Button>
+              )}
+              {editable && (
+                <Button type="button" variant="secondary" onClick={confirmPay}>
                   <Check className="size-4 mr-1 inline" /> Xác nhận thanh toán
                 </Button>
               )}
-              {!isCancelled && (
-                <Button type="button" variant="ghost" onClick={() => cancelOrder.mutate()}
-                  disabled={cancelOrder.isPending}
+              {!isCancelled && !isPaid && (
+                <Button type="button" variant="ghost" onClick={cancelOrder}
                   className="text-red-600 hover:bg-red-50">
                   <Ban className="size-4 mr-1 inline" /> Huỷ đơn
                 </Button>
               )}
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Đóng</Button>
-            </SheetFooter>
+            </DialogFooter>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 
