@@ -59,10 +59,10 @@ export function DataTable<T extends Record<string, unknown>>({
   };
 
   return (
-    <div className="overflow-auto bg-white border border-hairline rounded-2xl">
+    <div className="overflow-auto bg-brand-surface border border-brand-border rounded-[12px] shadow-soft">
       <table className="w-full min-w-[760px] border-collapse">
         <thead>
-          <tr>
+          <tr className="bg-brand-bg">
             {columns.map((c) => {
               const isActive = sort?.key === String(c.key);
               const Icon = !isActive
@@ -73,14 +73,14 @@ export function DataTable<T extends Record<string, unknown>>({
               return (
                 <th
                   key={String(c.key)}
-                  className="text-left px-3.5 py-3 text-[12px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]"
+                  className="text-left px-4 py-3 text-[12px] font-semibold uppercase tracking-wide text-brand-muted border-b border-brand-border"
                 >
                   {c.sortable ? (
                     <button
                       type="button"
                       onClick={() => cycleSort(String(c.key))}
-                      className={`inline-flex items-center gap-1.5 hover:text-brand-dark transition-colors ${
-                        isActive ? "text-brand-dark" : ""
+                      className={`inline-flex items-center gap-1.5 transition-colors hover:text-brand-primary ${
+                        isActive ? "text-brand-primary" : ""
                       }`}
                       title="Bấm để sắp xếp"
                     >
@@ -100,11 +100,14 @@ export function DataTable<T extends Record<string, unknown>>({
         </thead>
         <tbody>
           {sortedRows.map((row, i) => (
-            <tr key={i}>
+            <tr
+              key={i}
+              className="hover:bg-brand-bg transition-colors border-b border-brand-border last:border-b-0"
+            >
               {columns.map((c) => (
                 <td
                   key={String(c.key)}
-                  className="px-3.5 py-3 text-sm border-b border-[#edf3ed] align-top"
+                  className="px-4 py-3 text-[14px] text-brand-text align-middle"
                 >
                   {c.render ? c.render(row) : String(row[c.key as keyof T] ?? "")}
                 </td>
@@ -116,3 +119,4 @@ export function DataTable<T extends Record<string, unknown>>({
     </div>
   );
 }
+
