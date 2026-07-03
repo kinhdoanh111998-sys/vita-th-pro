@@ -268,6 +268,7 @@ function ToursPage() {
           discount_amount: 0,
           total_amount: price,
           status: "paid",
+          sales_staff_id: salesStaffId || null, // Người bán để tính hoa hồng dịch vụ
         }).select("id").single();
         if (oErr) throw oErr;
 
