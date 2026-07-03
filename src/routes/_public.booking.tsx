@@ -135,11 +135,13 @@ function BookingPage() {
       if (error) throw error;
 
       try {
+        const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
         await notifyOpsNewBooking({ data: {
           bookingId: booking.id,
           customerName: trimmedName,
           service: serviceLabel,
           when: appointmentDate.toLocaleString("vi-VN"),
+          customerUserId: uid,
         }});
       } catch (nErr) {
         console.warn("[booking] notify ops failed", nErr);
