@@ -5,9 +5,11 @@ import { FilterSidebar, type AppStoreFilters } from "@/components/app/FilterSide
 import { ServiceCard } from "@/components/ServiceCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
 import { useActiveStores } from "@/lib/useStores";
+import { useSystemSettings } from "@/lib/useSystemSettings";
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
+
 
 
 
@@ -29,6 +31,8 @@ function StorePage() {
   const [tab, setTab] = useState<(typeof CATEGORIES)[number]["key"]>("all");
   const [search, setSearch] = useState("");
   const { data: stores = [] } = useActiveStores();
+  const { data: sys } = useSystemSettings();
+  const showStoreList = sys?.show_store_list !== false;
   const [branch, setBranch] = useState<string>("");
   useEffect(() => {
     if (!branch && stores.length > 0) setBranch(stores[0].id);
@@ -36,6 +40,7 @@ function StorePage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<AppStoreFilters>(DEFAULT_FILTERS);
   const { data = [], isLoading, error } = useServiceCatalog();
+
 
 
   const serviceCategories = useMemo(() => {
@@ -94,24 +99,26 @@ function StorePage() {
       {/* Search + Filter */}
       <div className="sticky top-0 md:top-16 z-10 bg-gray-50/95 backdrop-blur px-4 md:px-8 pt-3 pb-2">
         <div className="max-w-6xl mx-auto">
-          {/* Branch selector (UI only) */}
-          <div className="mb-2 flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-emerald-600" />
-            <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-              Chọn cơ sở dịch vụ:
-            </label>
-            <Select value={branch} onValueChange={setBranch}>
-              <SelectTrigger className="h-9 rounded-full bg-white border-gray-200 text-sm max-w-[220px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
+          {/* Branch selector — ẩn khi admin tắt danh sách cửa hàng */}
+          {showStoreList && (
+            <div className="mb-2 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-600" />
+              <label className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                Chọn cơ sở dịch vụ:
+              </label>
+              <Select value={branch} onValueChange={setBranch}>
+                <SelectTrigger className="h-9 rounded-full bg-white border-gray-200 text-sm max-w-[220px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center bg-white rounded-full px-4 py-2.5 shadow-sm border border-gray-100">
