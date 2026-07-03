@@ -7,6 +7,8 @@ import { useSystemSettings } from "@/lib/useSystemSettings";
 import { useAuth } from "@/lib/AuthContext";
 import { useNavigationItems } from "@/lib/useNavigationItems";
 import { OmniSearch } from "@/components/OmniSearch";
+import { CartButton } from "@/components/cart/CartButton";
+
 
 const FALLBACK_NAV = [
   { label: "Trang chủ", route: "/" },
@@ -81,7 +83,10 @@ export function Header() {
 
           {/* CTA + Auth cluster */}
           <div className="flex items-center gap-2 ml-auto lg:ml-0 shrink-0">
-            {/* CTA "Tra cứu liệu trình" & "Đặt lịch" chuyển sang FloatingActions (sticky bottom-right) */}
+            {/* Global Cart */}
+            <CartButton variant="header" />
+
+
 
 
             {session ? (

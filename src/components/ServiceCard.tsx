@@ -1,10 +1,13 @@
-import { Link } from "@tanstack/react-router";
-import { ImageIcon, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ImageIcon, Sparkles, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
 import {
   formatVND,
   pickImage,
   type CatalogItem,
 } from "@/lib/useServiceCatalog";
+import { useCartStore } from "@/lib/cart/useCartStore";
+import { ShareRefButton } from "@/components/ShareRefButton";
 
 type Variant = "web" | "app";
 
@@ -20,6 +23,9 @@ export function ServiceCard({
   linkTo = "web",
 }: ServiceCardProps) {
   const img = pickImage(item);
+  const navigate = useNavigate();
+  const add = useCartStore((s) => s.add);
+
   const hasSale =
     typeof item.sale_price === "number" &&
     item.sale_price > 0 &&
@@ -33,27 +39,61 @@ export function ServiceCard({
         : null;
 
   const isService = item.type === "service";
-  const ctaLabel = isService ? "Đăng ký liệu trình" : "Đặt mua ngay";
 
-  const linkProps =
+  const detailProps =
     linkTo === "app"
       ? { to: "/app/store/$productId" as const, params: { productId: item.id } }
       : isService
         ? { to: "/services/$id" as const, params: { id: item.id } }
         : { to: "/products/$id" as const, params: { id: item.id } };
 
+  // Share path — dùng public route (SEO + shareable)
+  const sharePath = isService ? `/services/${item.id}` : `/products/${item.id}`;
+
   const compact = variant === "app";
 
+  const addToCart = () => {
+    if (!showPrice) {
+      toast.info("Sản phẩm chưa có giá — vui lòng liên hệ.");
+      return;
+    }
+    add({
+      id: item.id,
+      name: item.name,
+      price: showPrice,
+      image: img ?? null,
+      type: isService ? "service" : "product",
+    });
+    toast.success("Đã thêm vào giỏ hàng");
+  };
+
+  const buyNow = () => {
+    if (!showPrice) {
+      toast.info("Sản phẩm chưa có giá — vui lòng liên hệ.");
+      return;
+    }
+    add({
+      id: item.id,
+      name: item.name,
+      price: showPrice,
+      image: img ?? null,
+      type: isService ? "service" : "product",
+    });
+    navigate({ to: "/checkout" });
+  };
+
   return (
-    <Link
-      {...linkProps}
+    <div
       className={
         "group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md " +
         (compact ? "" : "")
       }
     >
-      {/* Image */}
-      <div className="relative aspect-square bg-gradient-to-br from-emerald-50 to-white overflow-hidden">
+      {/* Image → link to detail */}
+      <Link
+        {...detailProps}
+        className="relative aspect-square bg-gradient-to-br from-emerald-50 to-white overflow-hidden block"
+      >
         {img ? (
           <img
             src={img}
@@ -67,9 +107,8 @@ export function ServiceCard({
           </div>
         )}
 
-        {/* Sale badge */}
         {hasSale && (
-          <span className="absolute top-2 right-2 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
+          <span className="absolute top-2 right-14 rounded-full bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 shadow">
             -
             {Math.round(
               (1 - (item.sale_price as number) / (item.price as number)) * 100,
@@ -78,7 +117,6 @@ export function ServiceCard({
           </span>
         )}
 
-        {/* Type badge */}
         {isService ? (
           <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-white/95 backdrop-blur px-2 py-0.5 text-[10px] font-semibold text-emerald-700 shadow-sm">
             <Sparkles className="w-3 h-3" />
@@ -90,22 +128,24 @@ export function ServiceCard({
             Sản phẩm
           </span>
         )}
+      </Link>
+
+      {/* Floating share icon on top-right of image */}
+      <div className="absolute top-2 right-2 z-10">
+        <ShareRefButton path={sharePath} iconOnly />
       </div>
 
       {/* Content */}
-      <div
-        className={
-          "flex flex-1 flex-col gap-1.5 " + (compact ? "p-2.5" : "p-4")
-        }
-      >
-        <h3
+      <div className={"flex flex-1 flex-col gap-1.5 " + (compact ? "p-2.5" : "p-4")}>
+        <Link
+          {...detailProps}
           className={
-            "font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-emerald-700 transition-colors " +
+            "font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-emerald-700 transition-colors " +
             (compact ? "text-sm" : "text-[15px]")
           }
         >
           {item.name}
-        </h3>
+        </Link>
 
         {!compact && item.description && (
           <p className="text-xs text-gray-500 line-clamp-2">
@@ -135,12 +175,25 @@ export function ServiceCard({
           )}
         </div>
 
-        {!compact && (
-          <span className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition-colors group-hover:bg-emerald-700">
-            {ctaLabel}
-          </span>
-        )}
+        {/* Dual CTA: [Cart icon] [Mua ngay] */}
+        <div className="mt-3 flex items-stretch gap-2">
+          <button
+            type="button"
+            onClick={addToCart}
+            aria-label="Thêm vào giỏ"
+            className="shrink-0 w-10 h-10 rounded-xl border border-emerald-600 text-emerald-700 hover:bg-emerald-50 grid place-items-center transition-colors"
+          >
+            <ShoppingCart className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={buyNow}
+            className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
+          >
+            Mua ngay
+          </button>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }

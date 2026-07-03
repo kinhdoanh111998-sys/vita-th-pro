@@ -27,6 +27,9 @@ import { useAuth } from "@/lib/AuthContext";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useActiveStores } from "@/lib/useStores";
 import { useNavigationItems } from "@/lib/useNavigationItems";
+import { useSystemSettings } from "@/lib/useSystemSettings";
+import { FeaturedCatalogSection } from "@/components/FeaturedCatalogSection";
+
 
 
 
@@ -126,7 +129,11 @@ function CommunityHome() {
 
   const { data: stores = [] } = useActiveStores();
   const { data: appNavItems = [] } = useNavigationItems("app");
+  const { data: sys } = useSystemSettings();
+  const showStoreList = sys?.show_store_list !== false;
   const shortcuts = appNavItems.filter((i) => i.is_visible);
+
+
 
 
   const navLinks: Array<{ label: string; to: string }> = [
@@ -199,8 +206,10 @@ function CommunityHome() {
 
 
 
-      {/* Hệ thống cơ sở VITA */}
+      {/* Hệ thống cơ sở VITA — có thể ẩn qua admin.navigation */}
+      {showStoreList && (
       <section id="stores" className="pt-10 max-w-7xl mx-auto w-full px-4 md:px-8">
+
         <div className="text-center mb-6 md:mb-8">
           <div className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 mb-2">
             Hệ thống trực thuộc
@@ -275,10 +284,25 @@ function CommunityHome() {
 
         </div>
       </section>
+      )}
 
+      {/* Sản phẩm nổi bật + Dịch vụ nổi bật (đặt trước Feed) */}
+      <FeaturedCatalogSection
+        kind="product"
+        eyebrow="Cửa hàng"
+        title="Sản phẩm nổi bật"
+        viewAllHref="/products"
+      />
+      <FeaturedCatalogSection
+        kind="service"
+        eyebrow="Liệu trình"
+        title="Dịch vụ nổi bật"
+        viewAllHref="/services"
+      />
 
       {/* Community Feed – realtime từ Sự kiện + Tin tức */}
       <CommunityFeedPC />
+
 
 
       {/* Community Feed + Sidebar */}

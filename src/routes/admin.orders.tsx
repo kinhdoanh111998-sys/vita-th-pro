@@ -39,7 +39,11 @@ type OrderRow = {
   subtotal_amount: number; discount_amount: number;
   sales_staff_id: string | null; commission_rate: number;
   voucher_id: string | null;
+  payment_method?: string | null;
+  payment_status?: string | null;
+  order_source?: string | null;
 };
+
 type Voucher = {
   id: string; code: string; discount_type: "percent" | "amount";
   discount_value: number; valid_from: string | null; valid_to: string | null;
@@ -221,13 +225,42 @@ function OrdersPage() {
                       }`}>
                         {o.status}
                       </span>
+                      <div className="mt-1 text-[10px] text-ink-muted uppercase">
+                        {(o.payment_method ?? "cod").toUpperCase()} · {o.payment_status ?? "pending"}
+                        {o.order_source ? ` · ${o.order_source}` : ""}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button type="button" onClick={() => setViewOrderId(o.id)}
-                        className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
-                        <Eye className="size-3.5" /> Xem
-                      </button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        {o.payment_status !== "paid" && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from("orders")
+                                  .update({ payment_status: "paid" })
+                                  .eq("id", o.id);
+                                if (error) throw error;
+                                toast.success("Đã xác nhận thanh toán — treatments được sinh tự động");
+                                qc.invalidateQueries({ queryKey: ["orders"] });
+                                qc.invalidateQueries({ queryKey: ["treatments"] });
+                              } catch (e) {
+                                toast.error(e instanceof Error ? e.message : "Không cập nhật được");
+                              }
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
+                          >
+                            <Check className="size-3.5" /> Đã thanh toán
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setViewOrderId(o.id)}
+                          className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
+                          <Eye className="size-3.5" /> Xem
+                        </button>
+                      </div>
                     </td>
+
                   </tr>
                 );
               })}

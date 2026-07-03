@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { MessageCircle, Search, CalendarCheck } from "lucide-react";
+import { BookingActionMenu } from "@/components/BookingActionMenu";
+import { useSystemSettings } from "@/lib/useSystemSettings";
 
 type Btn = {
   key: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  href: string;
+  href?: string;
   external?: boolean;
+  action?: "booking";
   bg: string;
   ring: string;
 };
@@ -34,7 +37,7 @@ const BUTTONS: Btn[] = [
     key: "booking",
     label: "Đặt lịch",
     icon: CalendarCheck,
-    href: "/booking",
+    action: "booking",
     bg: "bg-[#1B9606] text-white",
     ring: "ring-[#1B9606]/40",
   },
@@ -42,16 +45,18 @@ const BUTTONS: Btn[] = [
 
 /**
  * Sticky bottom-right stack.
- * - Desktop (md+): full pills with icon + label, always expanded.
- * - Mobile: single circular FAB per action. First tap expands the pill (label
- *   fades in), second tap fires the action. Click outside collapses.
- * Rendered as ONE element per action — responsive classes drive shape.
+ * Nút "Đặt lịch" mở BookingActionMenu (Liên hệ Zalo / Tra cứu liệu trình).
  * Hidden on any /app/* route.
  */
 export function FloatingActions() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const { data: sys } = useSystemSettings();
+  const zaloUrl =
+    (sys as { zalo_oa_url?: string | null } | null | undefined)?.zalo_oa_url ||
+    sys?.zalo_link ||
+    "https://zalo.me/0988000888";
 
   useEffect(() => {
     if (!activeKey) return;
@@ -75,15 +80,12 @@ export function FloatingActions() {
   return (
     <div
       ref={wrapRef}
-      className="fixed right-4 md:right-6 bottom-4 md:bottom-6 z-40 flex flex-col items-end gap-3"
+      className="fixed right-4 md:right-6 bottom-24 md:bottom-6 z-40 flex flex-col items-end gap-3"
     >
       {BUTTONS.map((b) => {
         const Icon = b.icon;
         const expanded = activeKey === b.key;
 
-        // ONE element per action. Shape controlled by responsive classes.
-        // Mobile default: 48px circle. Expanded on mobile: pill with label.
-        // Desktop (md+): always pill with label.
         const shape = expanded
           ? "h-12 w-auto px-4 rounded-full"
           : "h-12 w-12 md:w-auto md:px-5 rounded-full";
@@ -104,27 +106,31 @@ export function FloatingActions() {
           </span>
         );
 
-        const isDesktop = () =>
-          typeof window !== "undefined" &&
-          window.matchMedia("(min-width: 768px)").matches;
+        // Booking → popover menu 2 lựa chọn
+        if (b.action === "booking") {
+          return (
+            <BookingActionMenu
+              key={b.key}
+              align="end"
+              trigger={
+                <button type="button" aria-label={b.label} className={cls}>
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {label}
+                </button>
+              }
+            />
+          );
+        }
 
-        const handleTap = (e: React.MouseEvent) => {
-          if (isDesktop()) return; // desktop: default navigation
-          if (!expanded) {
-            e.preventDefault();
-            setActiveKey(b.key);
-          }
-        };
-
-        if (b.external) {
+        if (b.external && b.href) {
+          const href = b.key === "zalo" ? zaloUrl : b.href;
           return (
             <a
               key={b.key}
-              href={b.href}
+              href={href}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={b.label}
-              onClick={handleTap}
               className={cls}
             >
               <Icon className="w-5 h-5 shrink-0" />
@@ -136,9 +142,8 @@ export function FloatingActions() {
         return (
           <Link
             key={b.key}
-            to={b.href}
+            to={b.href!}
             aria-label={b.label}
-            onClick={handleTap}
             className={cls}
           >
             <Icon className="w-5 h-5 shrink-0" />

@@ -808,45 +808,69 @@ export type Database = {
           commission_rate: number
           created_at: string
           customer_id: string
+          customer_name: string | null
+          customer_phone: string | null
           discount_amount: number
           id: string
+          note: string | null
           order_code: string | null
+          order_source: string
+          payment_method: string
+          payment_status: string
           quantity: number | null
           sales_staff_id: string | null
           service_id: string | null
+          shipping_address: string | null
           status: string
           subtotal_amount: number
           total_amount: number
+          voucher_code: string | null
           voucher_id: string | null
         }
         Insert: {
           commission_rate?: number
           created_at?: string
           customer_id: string
+          customer_name?: string | null
+          customer_phone?: string | null
           discount_amount?: number
           id?: string
+          note?: string | null
           order_code?: string | null
+          order_source?: string
+          payment_method?: string
+          payment_status?: string
           quantity?: number | null
           sales_staff_id?: string | null
           service_id?: string | null
+          shipping_address?: string | null
           status?: string
           subtotal_amount?: number
           total_amount?: number
+          voucher_code?: string | null
           voucher_id?: string | null
         }
         Update: {
           commission_rate?: number
           created_at?: string
           customer_id?: string
+          customer_name?: string | null
+          customer_phone?: string | null
           discount_amount?: number
           id?: string
+          note?: string | null
           order_code?: string | null
+          order_source?: string
+          payment_method?: string
+          payment_status?: string
           quantity?: number | null
           sales_staff_id?: string | null
           service_id?: string | null
+          shipping_address?: string | null
           status?: string
           subtotal_amount?: number
           total_amount?: number
+          voucher_code?: string | null
           voucher_id?: string | null
         }
         Relationships: [
@@ -1266,25 +1290,43 @@ export type Database = {
       }
       system_settings: {
         Row: {
+          bank_account_holder: string | null
+          bank_account_number: string | null
+          bank_bin: string | null
+          bank_name: string | null
           facebook_link: string | null
           hotline: string | null
           id: string
+          show_store_list: boolean
           updated_at: string
           zalo_link: string | null
+          zalo_oa_url: string | null
         }
         Insert: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
           facebook_link?: string | null
           hotline?: string | null
           id?: string
+          show_store_list?: boolean
           updated_at?: string
           zalo_link?: string | null
+          zalo_oa_url?: string | null
         }
         Update: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
           facebook_link?: string | null
           hotline?: string | null
           id?: string
+          show_store_list?: boolean
           updated_at?: string
           zalo_link?: string | null
+          zalo_oa_url?: string | null
         }
         Relationships: []
       }

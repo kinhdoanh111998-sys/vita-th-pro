@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Store } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAllNavigationItems, type NavigationItem } from "@/lib/useNavigationItems";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSystemSettings, useUpdateSystemSettings } from "@/lib/useSystemSettings";
+
+
 
 export const Route = createFileRoute("/admin/navigation")({
   component: AdminNavigationPage,
@@ -37,6 +40,8 @@ function AdminNavigationPage() {
   return (
     <div className="space-y-4">
       <AdminTopbar title="Quản lý Trang chủ" subtitle="Bật/tắt các mục menu điều hướng động" />
+
+      <StoreVisibilityCard />
 
       {isLoading ? (
         <div className="rounded-2xl border border-hairline bg-white p-8 text-center text-ink-muted">
@@ -111,6 +116,43 @@ function NavList({
             />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function StoreVisibilityCard() {
+  const { data: sys, isLoading } = useSystemSettings();
+  const update = useUpdateSystemSettings();
+  const checked = sys?.show_store_list ?? true;
+  return (
+    <div className="rounded-2xl border border-hairline bg-white p-4 md:p-5 shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-emerald-50 grid place-items-center text-emerald-700">
+          <Store className="w-5 h-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-ink">Danh sách Cửa hàng</h3>
+          <p className="text-xs text-ink-muted">
+            Hiển thị/ẩn khối danh sách cơ sở trên Trang chủ (PC & Mobile) và trang Cửa hàng.
+          </p>
+        </div>
+        <Switch
+          checked={checked}
+          disabled={isLoading || update.isPending}
+          onCheckedChange={(v) => {
+            update.mutate(
+              { show_store_list: v },
+              {
+                onSuccess: () =>
+                  toast.success(v ? "Đã BẬT hiển thị Cửa hàng" : "Đã TẮT hiển thị Cửa hàng"),
+                onError: (e: unknown) =>
+                  toast.error(e instanceof Error ? e.message : "Không cập nhật được"),
+              },
+            );
+          }}
+          aria-label="Bật/tắt hiển thị Cửa hàng"
+        />
       </div>
     </div>
   );

@@ -3,6 +3,10 @@ import { Home, Store, QrCode, Bell, User, LogIn } from "lucide-react";
 import type { ComponentType } from "react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useAuth } from "@/lib/AuthContext";
+import { CartButton } from "@/components/cart/CartButton";
+import { BookingActionMenu } from "@/components/BookingActionMenu";
+
+
 
 type NavItem = {
   to: "/app" | "/app/store" | "/app/scan" | "/app/notifications" | "/app/account";
@@ -59,18 +63,17 @@ export default function AppLayout() {
             })}
           </nav>
           <div className="ml-auto flex items-center gap-2 shrink-0 flex-nowrap">
-            <Link
-              to="/lookup"
-              className="hidden lg:inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-gray-700 border border-gray-200 hover:border-emerald-500 hover:text-emerald-700"
-            >
-              Tra cứu liệu trình
-            </Link>
-            <Link
-              to="/booking"
-              className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-white bg-emerald-600 hover:bg-emerald-700"
-            >
-              Đặt lịch
-            </Link>
+            <BookingActionMenu
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex items-center h-9 px-3 rounded-lg text-sm font-semibold whitespace-nowrap text-white bg-emerald-600 hover:bg-emerald-700"
+                >
+                  Đặt lịch
+                </button>
+              }
+            />
+
             {!session && (
               <Link
                 to="/login"
@@ -80,9 +83,16 @@ export default function AppLayout() {
                 Đăng nhập
               </Link>
             )}
+            <CartButton variant="header" />
           </div>
         </div>
       </header>
+
+      {/* Mobile floating cart */}
+      <div className="md:hidden">
+        <CartButton variant="floating" />
+      </div>
+
 
       <main className="mx-auto max-w-[480px] md:max-w-6xl md:px-6 pb-[80px] md:pb-12 md:pt-4">
         <Outlet />
