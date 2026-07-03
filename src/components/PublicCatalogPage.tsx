@@ -2,11 +2,14 @@ import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { ServiceCard } from "@/components/ServiceCard";
+import { ComboCard } from "@/components/ComboCard";
 import { useServiceCatalog } from "@/lib/useServiceCatalog";
+import { usePublicCombos } from "@/lib/useCombos";
 import {
   PRODUCT_CATEGORIES,
   productCategoryLabel,
 } from "@/lib/catalogCategories";
+
 
 type Kind = "product" | "service";
 
