@@ -306,6 +306,94 @@ export type Database = {
           },
         ]
       }
+      combo_items: {
+        Row: {
+          combo_id: string
+          created_at: string
+          id: string
+          quantity: number
+          service_id: string
+        }
+        Insert: {
+          combo_id: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_id: string
+        }
+        Update: {
+          combo_id?: string
+          created_at?: string
+          id?: string
+          quantity?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_items_combo_id_fkey"
+            columns: ["combo_id"]
+            isOneToOne: false
+            referencedRelation: "combos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      combos: {
+        Row: {
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          headline: string | null
+          id: string
+          image_url: string | null
+          is_hidden: boolean
+          name: string
+          subtitle: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          is_hidden?: boolean
+          name: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          headline?: string | null
+          id?: string
+          image_url?: string | null
+          is_hidden?: boolean
+          name?: string
+          subtitle?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       commissions: {
         Row: {
           amount: number
