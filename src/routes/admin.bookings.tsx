@@ -233,6 +233,9 @@ function BookingsAdmin() {
         onCancel={(id) => cancel.mutate(id)}
       />
 
+      <ContactsConsultTable />
+
+
       <CreateBookingDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
