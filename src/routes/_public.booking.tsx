@@ -24,12 +24,13 @@ const OTHER_VALUE = "__other__";
 type ServiceOption = { id: string; name: string };
 
 function BookingPage() {
-  const { email } = useAuth();
+  const { session } = useAuth(); // Chỉ lấy session để lấy UID cho notify, không dùng email để ép ID khách nữa
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState(""); 
   const [otherService, setOtherService] = useState("");
-  const [appointmentAt, setAppointmentAt] = useState("");
+  const [date, setDate] = useState(""); // Đã tách Ngày
+  const [time, setTime] = useState(""); // Đã tách Giờ
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<ServiceOption[]>([]);
@@ -66,7 +67,7 @@ function BookingPage() {
     const trimmedPhone = phone.trim();
     const trimmedOther = otherService.trim();
 
-    if (!trimmedName || !trimmedPhone || !service || !appointmentAt) {
+    if (!trimmedName || !trimmedPhone || !service || !date || !time) {
       toast.error("Vui lòng điền đầy đủ họ tên, SĐT, dịch vụ và thời gian hẹn.");
       return;
     }
@@ -92,14 +93,18 @@ function BookingPage() {
           : null;
       const numericRef = refCode && /^\d+$/.test(refCode) ? refCode : null;
 
-      const appointmentDate = new Date(appointmentAt);
-      const bookingDate = appointmentDate.toISOString().slice(0, 10);
-      const bookingTime = appointmentDate.toTimeString().slice(0, 5);
+      // Ghép ngày và giờ lại để lưu
+      const appointmentDate = new Date(`${date}T${time}:00`);
+      const bookingDate = date;
+      const bookingTime = time;
 
       let customerId: string | null = null;
-      if (email) {
+      
+      // FIX LỖI 2: Chỉ lấy ID của khách hàng có Số Điện Thoại khớp với SĐT vừa nhập trên form. 
+      // Không ép ID theo Email đang đăng nhập để có thể đặt lịch hộ người khác.
+      if (trimmedPhone) {
         const { data: cust } = await supabase
-          .from("customers").select("id").eq("email", email).maybeSingle();
+          .from("customers").select("id").eq("phone", trimmedPhone).maybeSingle();
         customerId = cust?.id ?? null;
       }
 
@@ -115,7 +120,7 @@ function BookingPage() {
         .filter(Boolean)
         .join("\n") || null;
 
-      const newBookingId = crypto.randomUUID(); // FIX: Sinh ID trực tiếp lách RLS
+      const newBookingId = crypto.randomUUID(); 
 
       const { error } = await supabase.from("bookings").insert({
         id: newBookingId,
@@ -137,7 +142,7 @@ function BookingPage() {
       if (error) throw new Error(error.message);
 
       try {
-        const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
+        const uid = session?.user?.id ?? null;
         await notifyOpsNewBooking({ data: {
           bookingId: newBookingId,
           customerName: trimmedName,
@@ -154,7 +159,8 @@ function BookingPage() {
       setPhone("");
       setService("");
       setOtherService("");
-      setAppointmentAt("");
+      setDate("");
+      setTime("");
       setNote("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Không gửi được";
@@ -281,17 +287,32 @@ function BookingPage() {
               )}
             </div>
 
-            <div>
-              <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
-                Ngày & giờ hẹn <span className="text-status-error">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={appointmentAt}
-                onChange={(e) => setAppointmentAt(e.target.value)}
-                required
-                className={inputCls}
-              />
+            {/* FIX LỖI 1: Tách ô Ngày và Giờ thành 2 ô riêng biệt để không bị lỗi trên điện thoại */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
+                  Ngày hẹn <span className="text-status-error">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
+                  Giờ hẹn <span className="text-status-error">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                  className={inputCls}
+                />
+              </div>
             </div>
 
             <div>
