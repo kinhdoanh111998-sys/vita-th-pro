@@ -258,6 +258,7 @@ function ToursPage() {
       if (mode === "new") {
         // Khách chọn "Dịch vụ mới" — tạo order + để trigger auto-generate treatments
         if (!newServiceId) throw new Error("Chọn dịch vụ mới.");
+        if (!salesStaffId) throw new Error("Chọn người bán (nhân viên tư vấn).");
         const svc = serviceMap.get(newServiceId);
         const price = Number(svc?.price ?? 0);
         const { data: order, error: oErr } = await supabase.from("orders").insert({
