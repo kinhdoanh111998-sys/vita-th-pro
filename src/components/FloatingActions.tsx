@@ -20,7 +20,7 @@ const BUTTONS: Btn[] = [
     key: "booking",
     label: "Đặt lịch",
     icon: CalendarCheck,
-    action: "booking",
+    href: "/booking",
     bg: "bg-[#1B9606] text-white",
     ring: "ring-[#1B9606]/40",
   },
