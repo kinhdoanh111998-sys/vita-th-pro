@@ -84,7 +84,7 @@ function ContactPage() {
 
 
   const infoItems = [
-    { icon: "📞", label: "Hotline", value: "1900 6868" },
+    { icon: "📞", label: "Hotline", value: "098" },
     { icon: "✉️", label: "Email", value: "hello@vitath.pro" },
     { icon: "📍", label: "Trụ sở", value: "Tầng 5, VITA Tower, Hà Nội" },
     { icon: "🕘", label: "Giờ làm việc", value: "T2 – CN, 8:00 – 21:00" },
