@@ -1,7 +1,8 @@
-import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/Footer";
+import { FloatingActions } from "@/components/FloatingActions";
 import { saveRef, logRefClick } from "@/lib/refTracker";
 
 
@@ -40,6 +41,7 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
+      <FloatingActions />
     </div>
   );
 }

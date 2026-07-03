@@ -16,6 +16,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DraggableStaff, type StaffMember } from "@/components/StaffDragDropBoard";
 import { AssignDndProvider } from "@/components/AssignDndProvider";
+import { CustomerPicker } from "@/components/CustomerPicker";
+import { nextInLineTreatments } from "@/lib/nextInLineTreatments";
 
 export const Route = createFileRoute("/admin/tours")({
   component: ToursPage,
@@ -190,23 +192,26 @@ function ToursPage() {
   }, [usersQ.data, attQ.data, busySet]);
 
   /* -------- Form state -------- */
-  const [customerId, setCustomerId] = useState("");
+  const [customerId, setCustomerId] = useState("__new");
+  const [mode, setMode] = useState<"existing" | "new">("existing");
   const [treatmentId, setTreatmentId] = useState("");
+  const [newServiceId, setNewServiceId] = useState("");
   const [technicianId, setTechnicianId] = useState("");
   const [notes, setNotes] = useState("");
   const [commissionAmount, setCommissionAmount] = useState<string>("");
   const [commissionEdited, setCommissionEdited] = useState(false);
   const [staffQ, setStaffQ] = useState("");
 
+  // Chỉ hiển thị buổi kế tiếp (next-in-line) cho từng thẻ liệu trình
   const treatmentsForCustomer = useMemo(
-    () => (treatmentsQ.data ?? []).filter((t) => !customerId || t.customer_id === customerId),
+    () => nextInLineTreatments(treatmentsQ.data, customerId && customerId !== "__new" ? customerId : null),
     [treatmentsQ.data, customerId],
   );
 
   const selectedTreatment = treatmentsForCustomer.find((t) => t.id === treatmentId) ?? null;
-  const selectedService = selectedTreatment?.service_id
-    ? serviceMap.get(selectedTreatment.service_id) ?? null
-    : null;
+  const selectedService = mode === "new"
+    ? (newServiceId ? serviceMap.get(newServiceId) ?? null : null)
+    : (selectedTreatment?.service_id ? serviceMap.get(selectedTreatment.service_id) ?? null : null);
 
   // Tự động điền hoa hồng mặc định = 10% giá dịch vụ, admin có thể sửa lại
   useEffect(() => {
@@ -220,8 +225,10 @@ function ToursPage() {
   }, [selectedService, commissionEdited]);
 
   const resetForm = () => {
-    setCustomerId("");
+    setCustomerId("__new");
+    setMode("existing");
     setTreatmentId("");
+    setNewServiceId("");
     setTechnicianId("");
     setNotes("");
     setCommissionAmount("");
@@ -234,25 +241,58 @@ function ToursPage() {
 
   const complete = useMutation({
     mutationFn: async () => {
-      if (!customerId || !treatmentId || !technicianId) {
-        throw new Error("Chọn đủ khách, buổi và nhân viên.");
-      }
+      if (!customerId || customerId === "__new") throw new Error("Chọn hoặc tạo khách trước.");
+      if (!technicianId) throw new Error("Chọn nhân viên.");
       if (busySet.has(technicianId)) {
         throw new Error("Nhân viên đang thực hiện ca khác — chưa thể xếp thêm.");
       }
+
+      let finalTreatmentId = treatmentId;
+
+      if (mode === "new") {
+        // Khách chọn "Dịch vụ mới" — tạo order + để trigger auto-generate treatments
+        if (!newServiceId) throw new Error("Chọn dịch vụ mới.");
+        const svc = serviceMap.get(newServiceId);
+        const price = Number(svc?.price ?? 0);
+        const { data: order, error: oErr } = await supabase.from("orders").insert({
+          customer_id: customerId,
+          service_id: newServiceId,
+          quantity: 1,
+          subtotal_amount: price,
+          discount_amount: 0,
+          total_amount: price,
+          status: "paid",
+        }).select("id").single();
+        if (oErr) throw oErr;
+
+        // Lấy treatment #1 vừa được trigger tạo
+        const { data: firstTr, error: tErr } = await supabase
+          .from("treatments")
+          .select("id")
+          .eq("order_id", order.id)
+          .order("session_number", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (tErr) throw tErr;
+        if (!firstTr) throw new Error("Không tạo được buổi liệu trình từ dịch vụ mới.");
+        finalTreatmentId = firstTr.id;
+      } else {
+        if (!treatmentId) throw new Error("Chọn buổi liệu trình.");
+      }
+
       // Chặn xếp trùng cho cùng 1 buổi đang chạy
       const { data: dup } = await supabase
         .from("tours")
         .select("id")
-        .eq("treatment_id", treatmentId)
+        .eq("treatment_id", finalTreatmentId)
         .eq("status", "in_progress")
         .maybeSingle();
       if (dup) throw new Error("Buổi này đang có ca đang chạy.");
 
       const commission = Number(commissionAmount || 0);
       const now = new Date().toISOString();
-      const { data: tour, error: tErr } = await supabase.from("tours").insert({
-        treatment_id: treatmentId,
+      const { data: tour, error: tErr2 } = await supabase.from("tours").insert({
+        treatment_id: finalTreatmentId,
         customer_id: customerId,
         technician_id: technicianId,
         notes: notes.trim() || null,
@@ -261,17 +301,14 @@ function ToursPage() {
         start_time: now,
         end_time: null,
       }).select().single();
-      if (tErr) throw tErr;
-
-      // Đánh dấu buổi đang thực hiện (giữ 'pending' cho luồng QR — chỉ cập nhật ghi chú qua tour)
-      // KHÔNG update treatment ở đây — chờ khách xác nhận qua QR
+      if (tErr2) throw tErr2;
 
       // Ghi log thông báo cho NV
       await supabase.from("notifications").insert({
         recipient_id: technicianId,
         type: "tour_started",
         title: "Bạn được xếp 1 ca làm mới",
-        body: `${customerMap.get(customerId)?.name ?? "Khách"} · Buổi #${selectedTreatment?.session_number ?? "—"}. Quét QR khách khi hoàn tất.`,
+        body: `${customerMap.get(customerId)?.name ?? "Khách"} · ${selectedService?.name ?? "Dịch vụ"}. Quét QR khách khi hoàn tất.`,
         ref_type: "tour",
         ref_id: tour.id,
       });
@@ -323,44 +360,92 @@ function ToursPage() {
                 }}
                 className="space-y-4"
               >
-                <div className="space-y-1.5">
-                  <Label>Khách hàng *</Label>
-                  <Select
-                    value={customerId}
-                    onValueChange={(v) => {
-                      setCustomerId(v);
-                      setTreatmentId("");
-                    }}
-                  >
-                    <SelectTrigger><SelectValue placeholder="Chọn khách" /></SelectTrigger>
-                    <SelectContent>
-                      {(customersQ.data ?? []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.name}{c.phone ? ` · ${c.phone}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <CustomerPicker
+                  customers={customersQ.data ?? []}
+                  value={customerId}
+                  onChange={(v) => {
+                    setCustomerId(v);
+                    setTreatmentId("");
+                    setNewServiceId("");
+                  }}
+                  onCreated={() => qc.invalidateQueries({ queryKey: ["tours2", "customers"] })}
+                />
 
-                <div className="space-y-1.5">
-                  <Label>Buổi liệu trình còn lại *</Label>
-                  <Select value={treatmentId} onValueChange={setTreatmentId} disabled={!customerId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={customerId ? "Chọn buổi" : "Chọn khách trước"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {treatmentsForCustomer.map((t) => {
-                        const svc = t.service_id ? serviceMap.get(t.service_id) : null;
-                        return (
-                          <SelectItem key={t.id} value={t.id}>
-                            Buổi #{t.session_number} · {svc?.name ?? "—"}
+                {/* Mode toggle — chỉ hiện khi đã chọn khách sẵn có */}
+                {customerId && customerId !== "__new" && (
+                  <div className="space-y-1.5">
+                    <Label>Loại buổi *</Label>
+                    <div className="inline-flex rounded-xl border border-hairline bg-[#fafcf7] p-1 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setMode("existing"); setNewServiceId(""); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                          mode === "existing" ? "bg-brand-primary text-white shadow" : "text-ink-muted hover:text-brand-dark"
+                        }`}
+                      >
+                        Liệu trình có sẵn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setMode("new"); setTreatmentId(""); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                          mode === "new" ? "bg-brand-primary text-white shadow" : "text-ink-muted hover:text-brand-dark"
+                        }`}
+                      >
+                        Dịch vụ mới
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {mode === "existing" ? (
+                  <div className="space-y-1.5">
+                    <Label>Buổi liệu trình còn lại *</Label>
+                    <Select
+                      value={treatmentId}
+                      onValueChange={setTreatmentId}
+                      disabled={!customerId || customerId === "__new"}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          !customerId || customerId === "__new"
+                            ? "Chọn khách trước"
+                            : treatmentsForCustomer.length === 0
+                              ? "Khách chưa có liệu trình còn lại — chuyển sang Dịch vụ mới"
+                              : "Chọn buổi"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {treatmentsForCustomer.map((t) => {
+                          const svc = t.service_id ? serviceMap.get(t.service_id) : null;
+                          return (
+                            <SelectItem key={t.id} value={t.id}>
+                              Buổi #{t.session_number} · {svc?.name ?? "—"} · còn {t.remaining} buổi
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <Label>Dịch vụ mới *</Label>
+                    <Select value={newServiceId} onValueChange={setNewServiceId}>
+                      <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
+                      <SelectContent>
+                        {(servicesQ.data ?? []).map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name}{s.price ? ` · ${Number(s.price).toLocaleString("vi-VN")} ₫` : ""}
                           </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-ink-muted italic">
+                      Tự động tạo đơn hàng & buổi #1 khi bấm Bắt đầu.
+                    </p>
+                  </div>
+                )}
+
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
@@ -434,11 +519,11 @@ function ToursPage() {
               <dl className="text-xs space-y-2">
                 <Row label="Khách">{summaryCust?.name ?? "—"}</Row>
                 <Row label="Buổi">
-                  {selectedTreatment
-                    ? `#${selectedTreatment.session_number} · ${
-                        selectedService?.name ?? "—"
-                      }`
-                    : "—"}
+                  {mode === "new"
+                    ? (selectedService?.name ? `Mới · ${selectedService.name}` : "—")
+                    : selectedTreatment
+                      ? `#${selectedTreatment.session_number} · ${selectedService?.name ?? "—"}`
+                      : "—"}
                 </Row>
                 <Row label="Nhân viên">{summaryUser?.full_name ?? "—"}</Row>
                 <Row label="Hoa hồng">

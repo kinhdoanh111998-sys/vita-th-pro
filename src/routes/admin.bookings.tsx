@@ -16,6 +16,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { StaffDragDropBoard, type StaffMember, type DropTarget } from "@/components/StaffDragDropBoard";
+import { nextInLineTreatments } from "@/lib/nextInLineTreatments";
+
+type TreatmentRow = { id: string; order_id: string; customer_id: string; session_number: number; status: string; service_id: string | null };
 
 export const Route = createFileRoute("/admin/bookings")({
   component: BookingsAdmin,
@@ -258,7 +261,9 @@ function BookingsAdmin() {
   );
 }
 
-/* ------------------ Create Booking Sheet ------------------ */
+/* ------------------ Create Booking Dialog ------------------ */
+
+type BookingItemMode = "service" | "product" | "existing_treatment";
 
 function CreateBookingDialog({
   open, onOpenChange, customers, services, onCreated,
@@ -266,14 +271,60 @@ function CreateBookingDialog({
   open: boolean; onOpenChange: (v: boolean) => void;
   customers: Customer[]; services: Service[]; onCreated: () => void;
 }) {
-
   const [customerId, setCustomerId] = useState<string>("__new");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [mode, setMode] = useState<BookingItemMode>("service");
   const [serviceId, setServiceId] = useState<string>("");
+  const [productId, setProductId] = useState<string>("");
+  const [treatmentId, setTreatmentId] = useState<string>("");
   const [bookingAt, setBookingAt] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Dịch vụ vs Sản phẩm — cả 2 nằm cùng bảng "services", phân biệt bằng cột type.
+  const catalogQ = useQuery({
+    queryKey: ["bookings2", "catalog-full"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("services").select("id,name,type").order("name");
+      if (error) throw error;
+      return (data ?? []) as { id: string; name: string; type: string | null }[];
+    },
+  });
+  const serviceItems = useMemo(
+    () => (catalogQ.data ?? []).filter((c) => (c.type ?? "service") !== "product"),
+    [catalogQ.data],
+  );
+  const productItems = useMemo(
+    () => (catalogQ.data ?? []).filter((c) => c.type === "product"),
+    [catalogQ.data],
+  );
+
+  // Treatments của khách sẵn có — dùng next-in-line filter
+  const treatmentsQ = useQuery({
+    queryKey: ["bookings2", "cust-treatments", customerId],
+    enabled: !!customerId && customerId !== "__new",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("treatments")
+        .select("id,order_id,customer_id,session_number,status,service_id")
+        .eq("customer_id", customerId)
+        .eq("status", "pending")
+        .order("session_number");
+      if (error) throw error;
+      return (data ?? []) as TreatmentRow[];
+    },
+  });
+  const nextTreatments = useMemo(
+    () => nextInLineTreatments<TreatmentRow>(treatmentsQ.data ?? [], customerId !== "__new" ? customerId : null),
+    [treatmentsQ.data, customerId],
+  );
+
+  // Reset mode nếu chuyển sang khách mới (không có liệu trình sẵn)
+  useEffect(() => {
+    if (customerId === "__new" && mode === "existing_treatment") setMode("service");
+    setTreatmentId("");
+  }, [customerId, mode]);
 
   async function submit() {
     try {
@@ -300,26 +351,52 @@ function CreateBookingDialog({
       if (!bookingAt) throw new Error("Chọn thời gian hẹn.");
       const iso = new Date(bookingAt).toISOString();
 
-      const svc = services.find((s) => s.id === serviceId);
+      // Xác định service_id + tên hiển thị + note bổ sung theo mode
+      let finalServiceId: string | null = null;
+      let serviceLabel: string | null = null;
+      const extraNoteBits: string[] = [];
+
+      if (mode === "existing_treatment") {
+        if (!treatmentId) throw new Error("Chọn buổi liệu trình tiếp theo.");
+        const t = nextTreatments.find((x) => x.id === treatmentId);
+        const svc = t?.service_id ? services.find((s) => s.id === t.service_id) : null;
+        finalServiceId = t?.service_id ?? null;
+        serviceLabel = svc?.name ?? "Liệu trình";
+        extraNoteBits.push(`Buổi tiếp theo #${t?.session_number ?? "?"} (liệu trình có sẵn)`);
+      } else if (mode === "product") {
+        if (!productId) throw new Error("Chọn sản phẩm.");
+        const p = productItems.find((x) => x.id === productId);
+        finalServiceId = productId;
+        serviceLabel = `SP: ${p?.name ?? ""}`;
+        extraNoteBits.push("Khách quan tâm sản phẩm");
+      } else {
+        if (!serviceId) throw new Error("Chọn dịch vụ.");
+        const s = serviceItems.find((x) => x.id === serviceId) ?? services.find((x) => x.id === serviceId);
+        finalServiceId = serviceId;
+        serviceLabel = s?.name ?? "Dịch vụ";
+      }
+
+      const combinedNote = [notes.trim(), ...extraNoteBits].filter(Boolean).join(" · ") || null;
+
       const { error } = await supabase.from("bookings").insert({
         customer_id: finalCustomerId,
-        service_id: serviceId || null,
+        service_id: finalServiceId,
         booking_at: iso,
-        notes: notes.trim() || null,
+        notes: combinedNote,
         status: "pending",
-        // Legacy columns (NOT NULL) — mirror for compatibility
         customer_name: custName,
         phone: custPhone,
-        service: svc?.name ?? null,
+        service: serviceLabel,
         booking_date: iso.slice(0, 10),
         booking_time: new Date(iso).toTimeString().slice(0, 5),
-        note: notes.trim() || null,
+        note: combinedNote,
       });
       if (error) throw error;
 
       toast.success("Đã tạo lịch hẹn");
       onOpenChange(false);
-      setName(""); setPhone(""); setServiceId(""); setBookingAt(""); setNotes(""); setCustomerId("__new");
+      setName(""); setPhone(""); setServiceId(""); setProductId(""); setTreatmentId("");
+      setBookingAt(""); setNotes(""); setCustomerId("__new"); setMode("service");
       onCreated();
     } catch (e) {
       toast.error((e as Error).message);
@@ -327,6 +404,8 @@ function CreateBookingDialog({
       setSaving(false);
     }
   }
+
+  const hasTreatments = nextTreatments.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -363,15 +442,89 @@ function CreateBookingDialog({
             </div>
           )}
 
+          {/* Mode chooser */}
           <div className="space-y-1.5">
-            <Label>Dịch vụ</Label>
-            <Select value={serviceId} onValueChange={setServiceId}>
-              <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
-              <SelectContent>
-                {services.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label>Nội dung đặt lịch *</Label>
+            <div className="inline-flex flex-wrap rounded-xl border border-hairline bg-[#fafcf7] p-1 gap-1">
+              {customerId !== "__new" && (
+                <button
+                  type="button"
+                  onClick={() => setMode("existing_treatment")}
+                  disabled={!hasTreatments}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    mode === "existing_treatment" ? "bg-brand-primary text-white shadow" : "text-ink-muted hover:text-brand-dark disabled:opacity-40"
+                  }`}
+                >
+                  Liệu trình có sẵn{hasTreatments ? ` (${nextTreatments.length})` : ""}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setMode("service")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  mode === "service" ? "bg-brand-primary text-white shadow" : "text-ink-muted hover:text-brand-dark"
+                }`}
+              >
+                Dịch vụ
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("product")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  mode === "product" ? "bg-brand-primary text-white shadow" : "text-ink-muted hover:text-brand-dark"
+                }`}
+              >
+                Sản phẩm
+              </button>
+            </div>
           </div>
+
+          {mode === "existing_treatment" && (
+            <div className="space-y-1.5">
+              <Label>Buổi tiếp theo *</Label>
+              <Select value={treatmentId} onValueChange={setTreatmentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={hasTreatments ? "Chọn buổi kế tiếp" : "Khách không có liệu trình còn lại"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {nextTreatments.map((t) => {
+                    const svc = t.service_id ? services.find((s) => s.id === t.service_id) : null;
+                    return (
+                      <SelectItem key={t.id} value={t.id}>
+                        Buổi #{t.session_number} · {svc?.name ?? "—"} · còn {t.remaining} buổi
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {mode === "service" && (
+            <div className="space-y-1.5">
+              <Label>Dịch vụ *</Label>
+              <Select value={serviceId} onValueChange={setServiceId}>
+                <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
+                <SelectContent>
+                  {serviceItems.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {mode === "product" && (
+            <div className="space-y-1.5">
+              <Label>Sản phẩm *</Label>
+              <Select value={productId} onValueChange={setProductId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={productItems.length ? "Chọn sản phẩm" : "Chưa có sản phẩm nào"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {productItems.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Thời gian hẹn *</Label>
@@ -392,6 +545,7 @@ function CreateBookingDialog({
     </Dialog>
   );
 }
+
 
 /* ------------------ History table ------------------ */
 
