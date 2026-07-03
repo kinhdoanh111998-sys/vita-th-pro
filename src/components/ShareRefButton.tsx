@@ -4,6 +4,7 @@ import { Share2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
+import { cn } from "@/lib/utils";
 
 interface Props {
   /** Path bắt đầu bằng '/', ví dụ '/products/abc' */
