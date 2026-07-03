@@ -118,11 +118,17 @@ function AccountHub() {
         </div>
       )}
 
-      {/* Profile editor — hiện cho MỌI role */}
-      <ProfileForm />
-
-      {/* Dashboard khách hàng (liệu trình + QR + đơn hàng) */}
+      {/*
+        Thứ tự mới theo yêu cầu:
+        [1] Liệu trình của tôi (available + orders)
+        [2] Tiếp thị liên kết
+        [3] Hoa hồng của tôi + Đổi thưởng
+        [4] Hồ sơ của tôi (áp chót)
+        [5] Đổi mật khẩu (cuối) — cả 4 & 5 do ProfileForm render
+      */}
       {isCustomer && <CustomerHomeContent />}
+
+      <ProfileForm />
 
       {/* Về trang chủ */}
       <div className="pt-2">
