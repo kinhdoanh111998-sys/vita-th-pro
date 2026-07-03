@@ -2,12 +2,15 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/Button";
 import { supabase } from "@/lib/supabaseClient";
+import { notifyOpsNewBooking } from "@/lib/booking-notify.functions";
+import { useAuth } from "@/lib/AuthContext";
 
 type Service = { id: string; name: string };
 
 const REF_STORAGE_KEY = "vitath_ref_phone";
 
 export function BookingForm({ compact = false }: { compact?: boolean }) {
+  const { email } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,21 +58,44 @@ export function BookingForm({ compact = false }: { compact?: boolean }) {
     const referrer =
       refPhone ??
       (typeof window !== "undefined" ? sessionStorage.getItem(REF_STORAGE_KEY) : null);
-    const { error } = await supabase.from("bookings").insert({
+    let customerId: string | null = null;
+    if (email) {
+      const { data: cust } = await supabase
+        .from("customers").select("id").eq("email", email).maybeSingle();
+      customerId = cust?.id ?? null;
+    }
+
+    const { data: booking, error } = await supabase.from("bookings").insert({
+      customer_id: customerId,
       customer_name: customerName,
       phone,
       service,
       booking_date: date,
       booking_time: time,
+      booking_at: `${date}T${time}:00`,
       note: note || null,
+      notes: note || null,
       status: "pending",
       referrer_phone: referrer || null,
-    });
+    }).select("id").single();
     setSubmitting(false);
     if (error) {
       toast.error("Đặt lịch thất bại: " + error.message);
       return;
     }
+
+    // Thông báo admin + manager có khách đặt lịch mới
+    try {
+      await notifyOpsNewBooking({ data: {
+        bookingId: booking.id,
+        customerName,
+        service,
+        when: `${date} ${time}`,
+      }});
+    } catch (nErr) {
+      console.warn("[BookingForm] notify ops failed", nErr);
+    }
+
     toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ sớm.");
     try {
       sessionStorage.removeItem(REF_STORAGE_KEY);

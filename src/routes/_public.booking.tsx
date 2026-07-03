@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
+import { notifyOpsNewBooking } from "@/lib/booking-notify.functions";
+import { useAuth } from "@/lib/AuthContext";
 
 export const Route = createFileRoute("/_public/booking")({
   head: () => ({
@@ -26,6 +28,7 @@ const SERVICES = [
 ];
 
 function BookingPage() {
+  const { email } = useAuth();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState("");
@@ -59,19 +62,42 @@ function BookingPage() {
       const bookingDate = appointmentDate.toISOString().slice(0, 10);
       const bookingTime = appointmentDate.toTimeString().slice(0, 5);
 
-      const { error } = await supabase.from("bookings").insert({
+      // Nếu đã đăng nhập → gán customer_id để đẩy thẳng về /admin/bookings với đầy đủ context
+      let customerId: string | null = null;
+      if (email) {
+        const { data: cust } = await supabase
+          .from("customers").select("id").eq("email", email).maybeSingle();
+        customerId = cust?.id ?? null;
+      }
+
+      const { data: booking, error } = await supabase.from("bookings").insert({
+        customer_id: customerId,
         customer_name: trimmedName,
         phone: trimmedPhone,
         service,
         booking_date: bookingDate,
         booking_time: bookingTime,
+        booking_at: appointmentDate.toISOString(),
         note: note.trim() || null,
+        notes: note.trim() || null,
         status: "pending",
         affiliate_ref: refCode,
         referrer_phone: numericRef,
-      });
+      }).select("id").single();
 
       if (error) throw error;
+
+      // Bắn notification cho admin + manager (không chặn UX nếu fail)
+      try {
+        await notifyOpsNewBooking({ data: {
+          bookingId: booking.id,
+          customerName: trimmedName,
+          service,
+          when: appointmentDate.toLocaleString("vi-VN"),
+        }});
+      } catch (nErr) {
+        console.warn("[booking] notify ops failed", nErr);
+      }
 
       toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.");
       setName("");
