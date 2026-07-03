@@ -301,7 +301,7 @@ export function AdminCombosView() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="font-heading text-xl md:text-2xl font-bold">
