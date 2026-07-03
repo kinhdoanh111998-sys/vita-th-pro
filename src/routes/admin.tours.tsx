@@ -452,21 +452,42 @@ function ToursPage() {
                     </Select>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
-                    <Label>Dịch vụ mới *</Label>
-                    <Select value={newServiceId} onValueChange={setNewServiceId}>
-                      <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
-                      <SelectContent>
-                        {(servicesQ.data ?? []).map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}{s.price ? ` · ${Number(s.price).toLocaleString("vi-VN")} ₫` : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-[11px] text-ink-muted italic">
-                      Tự động tạo đơn hàng & buổi #1 khi bấm Bắt đầu.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label>Dịch vụ mới *</Label>
+                      <Select value={newServiceId} onValueChange={setNewServiceId}>
+                        <SelectTrigger><SelectValue placeholder="Chọn dịch vụ" /></SelectTrigger>
+                        <SelectContent>
+                          {(servicesQ.data ?? []).map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {s.name}{s.price ? ` · ${Number(s.price).toLocaleString("vi-VN")} ₫` : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-ink-muted italic">
+                        Chỉ hiển thị Dịch vụ (đã loại Sản phẩm). Tự động tạo đơn hàng & buổi #1 khi bấm Bắt đầu.
+                      </p>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label>Người bán (NV tư vấn) *</Label>
+                      <Select value={salesStaffId} onValueChange={setSalesStaffId}>
+                        <SelectTrigger><SelectValue placeholder="Chọn người bán" /></SelectTrigger>
+                        <SelectContent>
+                          {(usersQ.data ?? [])
+                            .filter((u) => u.role && STAFF_ROLES.includes(u.role))
+                            .map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.full_name ?? "—"} · {u.role}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-ink-muted italic">
+                        Người bán được lưu vào đơn hàng để hệ thống tự tính hoa hồng bán dịch vụ.
+                      </p>
+                    </div>
                   </div>
                 )}
 
