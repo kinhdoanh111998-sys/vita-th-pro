@@ -217,6 +217,15 @@ function CustomersAdmin() {
                     <Button variant="ghost" size="sm" onClick={() => openEditForm(r)}>
                       <Pencil size={14} /> Sửa
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(r)}
+                      disabled={remove.isPending}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 size={14} /> Xoá
+                    </Button>
                   </div>
                 </td>
               </tr>
