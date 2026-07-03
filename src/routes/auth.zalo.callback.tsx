@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { zaloExchangeAndSignIn } from "@/lib/zalo-auth.functions";
+import { ZALO_AUTHORIZE_PATH } from "@/lib/zalo-auth.constants";
 import { getStoredRef, clearRef } from "@/lib/refTracker";
 
 
@@ -39,8 +40,10 @@ function ZaloCallbackPage() {
     (async () => {
       try {
         if (search.error) {
-          toast.error(search.error_description || "Bạn đã huỷ đăng nhập Zalo");
-          navigate({ to: "/login", replace: true });
+          const zaloError = search.error_description || search.error || "Zalo từ chối đăng nhập";
+          setMessage(`Đăng nhập Zalo thất bại: ${zaloError}`);
+          toast.error(`Đăng nhập Zalo thất bại: ${zaloError}`);
+          setTimeout(() => navigate({ to: "/login", replace: true }), 1800);
           return;
         }
         if (!search.code || !search.state) {
@@ -60,7 +63,7 @@ function ZaloCallbackPage() {
             setMessage("Bạn cần đồng ý chia sẻ số điện thoại. Đang mở lại Zalo...");
             toast.error("Vui lòng đồng ý chia sẻ số điện thoại để đăng nhập");
             setTimeout(() => {
-              window.location.href = "/api/public/zalo/authorize";
+              window.location.href = ZALO_AUTHORIZE_PATH;
             }, 1800);
             return;
           }
