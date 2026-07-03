@@ -355,7 +355,10 @@ export type Database = {
           affiliate_ref: string | null
           content: string | null
           created_at: string
+          email: string | null
+          full_name: string | null
           id: string
+          message: string | null
           name: string
           phone: string
           status: string
@@ -365,7 +368,10 @@ export type Database = {
           affiliate_ref?: string | null
           content?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
+          message?: string | null
           name: string
           phone: string
           status?: string
@@ -375,7 +381,10 @@ export type Database = {
           affiliate_ref?: string | null
           content?: string | null
           created_at?: string
+          email?: string | null
+          full_name?: string | null
           id?: string
+          message?: string | null
           name?: string
           phone?: string
           status?: string
