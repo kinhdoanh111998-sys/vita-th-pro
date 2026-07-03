@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogIn, LogOut, Menu, UserPlus, X, Search, CalendarCheck } from "lucide-react";
+import { LogIn, LogOut, Menu, UserPlus, X } from "lucide-react";
 import logo from "@/assets/vita-th-pro-logo.png";
 import { useSettings } from "@/lib/useSettings";
 import { useSystemSettings } from "@/lib/useSystemSettings";
@@ -81,22 +81,8 @@ export function Header() {
 
           {/* CTA + Auth cluster */}
           <div className="flex items-center gap-2 ml-auto lg:ml-0 shrink-0">
-            <Link
-              to="/lookup"
-              className="hidden xl:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold border transition-colors hover:bg-[#D9F0D6] hover:border-[#1B9606] hover:text-[#147805]"
-              style={{ borderColor: "#1B9606", color: "#1B9606" }}
-            >
-              <Search className="w-4 h-4" />
-              <span>Tra cứu liệu trình</span>
-            </Link>
-            <Link
-              to="/booking"
-              className="hidden lg:inline-flex items-center gap-1.5 h-10 px-3 xl:px-4 rounded-lg text-[13px] font-semibold text-white transition-colors hover:opacity-90"
-              style={{ backgroundColor: "#1B9606" }}
-            >
-              <CalendarCheck className="w-4 h-4" />
-              <span>Đặt lịch</span>
-            </Link>
+            {/* CTA "Tra cứu liệu trình" & "Đặt lịch" chuyển sang FloatingActions (sticky bottom-right) */}
+
 
             {session ? (
               <>
@@ -184,14 +170,6 @@ export function Header() {
               <div className="h-px bg-[#E3E3E3] my-2" />
 
               <Link
-                to="/lookup"
-                onClick={() => setDrawerOpen(false)}
-                className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
-                style={{ color: "#484848" }}
-              >
-                Tra cứu liệu trình
-              </Link>
-              <Link
                 to="/dang-ky"
                 onClick={() => setDrawerOpen(false)}
                 className="block px-3 py-3 rounded-lg text-[15px] font-semibold hover:bg-[#D9F0D6]"
@@ -230,16 +208,6 @@ export function Header() {
               )}
             </nav>
 
-            <div className="px-4 py-3 border-t" style={{ borderColor: "#E3E3E3" }}>
-              <Link
-                to="/booking"
-                onClick={() => setDrawerOpen(false)}
-                className="flex items-center justify-center h-11 rounded-lg text-white text-[14px] font-semibold"
-                style={{ backgroundColor: "#1B9606" }}
-              >
-                Đặt lịch ngay
-              </Link>
-            </div>
           </aside>
         </div>
       )}
