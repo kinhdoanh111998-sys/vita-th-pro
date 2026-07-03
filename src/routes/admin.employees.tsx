@@ -217,22 +217,28 @@ function EmployeesAdmin() {
 
       <DataTable
         columns={[
-          { key: "full_name", label: "Họ tên" },
-          { key: "email", label: "Email" },
+          { key: "full_name", label: "Họ tên", sortable: true },
+          { key: "email", label: "Email", sortable: true },
           {
             key: "role",
             label: "Vai trò",
+            sortable: true,
+            sortValue: (row) => roleLabel[String(row.role ?? "")] ?? String(row.role ?? ""),
             render: (row) => roleLabel[String(row.role ?? "")] ?? String(row.role ?? "—"),
           },
           {
             key: "created_at",
             label: "Ngày tạo",
+            sortable: true,
+            sortValue: (row) =>
+              row.created_at ? new Date(String(row.created_at)) : null,
             render: (row) =>
               row.created_at ? new Date(String(row.created_at)).toLocaleDateString("vi-VN") : "—",
           },
         ]}
         rows={users}
       />
+
     </>
   );
 }
