@@ -232,32 +232,39 @@ function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {o.payment_status !== "paid" && (
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const { error } = await supabase
-                                  .from("orders")
-                                  .update({ payment_status: "paid" })
-                                  .eq("id", o.id);
-                                if (error) throw error;
-                                toast.success("Đã xác nhận thanh toán — treatments được sinh tự động");
-                                qc.invalidateQueries({ queryKey: ["orders"] });
-                                qc.invalidateQueries({ queryKey: ["treatments"] });
-                              } catch (e) {
-                                toast.error(e instanceof Error ? e.message : "Không cập nhật được");
-                              }
-                            }}
-                            className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
-                          >
-                            <Check className="size-3.5" /> Đã thanh toán
+                        {o.status === "pending" ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  const { error } = await supabase
+                                    .from("orders")
+                                    .update({ status: "paid", payment_status: "paid" })
+                                    .eq("id", o.id);
+                                  if (error) throw error;
+                                  toast.success("Đã xác nhận thanh toán — treatments được sinh tự động");
+                                  qc.invalidateQueries({ queryKey: ["orders"] });
+                                  qc.invalidateQueries({ queryKey: ["treatments"] });
+                                } catch (e) {
+                                  toast.error(e instanceof Error ? e.message : "Không cập nhật được");
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
+                            >
+                              <Check className="size-3.5" /> Thanh toán
+                            </button>
+                            <button type="button" onClick={() => setViewOrderId(o.id)}
+                              className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
+                              <Save className="size-3.5" /> Sửa
+                            </button>
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => setViewOrderId(o.id)}
+                            className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
+                            <Eye className="size-3.5" /> Xem
                           </button>
                         )}
-                        <button type="button" onClick={() => setViewOrderId(o.id)}
-                          className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
-                          <Eye className="size-3.5" /> Xem
-                        </button>
                       </div>
                     </td>
 
@@ -466,10 +473,8 @@ function CreateOrderDrawer({
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // 4) Chuyển status → paid để UPDATE trigger sinh treatments cho các dòng service
-      const { error: uErr } = await supabase.from("orders")
-        .update({ status: "paid" }).eq("id", order.id);
-      if (uErr) throw uErr;
+      // 4) Đơn hàng mới luôn ở trạng thái 'pending' — chỉ chuyển 'paid' khi admin xác nhận thanh toán
+      //    Trigger sinh treatments sẽ chạy vào thời điểm đó.
 
       // 5) Increment voucher usage (best-effort; not race-safe)
       if (appliedVoucher) {

@@ -135,17 +135,19 @@ function BookingPage() {
       if (error) throw error;
 
       try {
+        const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
         await notifyOpsNewBooking({ data: {
           bookingId: booking.id,
           customerName: trimmedName,
           service: serviceLabel,
           when: appointmentDate.toLocaleString("vi-VN"),
+          customerUserId: uid,
         }});
       } catch (nErr) {
         console.warn("[booking] notify ops failed", nErr);
       }
 
-      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.");
+      toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 3000 });
       setName("");
       setPhone("");
       setService("");
@@ -167,7 +169,8 @@ function BookingPage() {
     <section className="bg-brand-bg py-16">
       <div className="mx-auto max-w-[1200px] px-5 grid gap-10 lg:grid-cols-2 items-start">
         {/* Cột trái */}
-        <div>
+        {/* Cột trái (mobile), phải (desktop): Nội dung intro */}
+        <div className="lg:order-2">
           <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold">
             Đặt Lịch Hẹn Trị Liệu
           </h1>
@@ -208,7 +211,8 @@ function BookingPage() {
         </div>
 
         {/* Cột phải: Form */}
-        <div className="bg-brand-surface p-6 md:p-8 rounded-card border border-brand-border shadow-sm">
+        {/* Cột phải (mobile), trái (desktop): Form */}
+        <div className="lg:order-1 bg-brand-surface p-6 md:p-8 rounded-card border border-brand-border shadow-sm">
           <h2 className="font-heading text-brand-text text-xl font-semibold mb-1">
             Thông tin đặt lịch
           </h2>

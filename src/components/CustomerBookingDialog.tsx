@@ -23,18 +23,17 @@ type Customer = { id: string; name: string | null; phone: string | null; email: 
 
 /**
  * Dialog để khách hàng đã đăng nhập tự đặt lịch trực tiếp trong /app/account.
- * - Mode "existing": chỉ hiển thị buổi next-in-line (session_number nhỏ nhất
- *   status='pending') của mỗi thẻ liệu trình. Ẩn hoàn toàn buổi phía sau.
+ * - Mode "existing": chỉ hiển thị buổi next-in-line của mỗi thẻ liệu trình
+ *   thuộc đơn hàng có status = 'paid'. Đơn 'pending' hoặc 'cancelled' bị ẩn hoàn toàn.
  * - Mode "new": chỉ hiển thị Services (loại trừ Products).
- * Sau khi lưu → notifyOpsNewBooking để bắn thông báo cho admin/manager.
+ * Sau khi lưu → notifyOpsNewBooking (bắn cho admin/manager + khách).
  */
 export function CustomerBookingDialog({ customer }: { customer: Customer }) {
-  const { email, fullName } = useAuth();
+  const { email, fullName, session } = useAuth();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("existing");
   const [treatmentId, setTreatmentId] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
-  const [storeId, setStoreId] = useState<string>("");
   const [date, setDate] = useState<string>("");
   const [time, setTime] = useState<string>("");
   const [note, setNote] = useState<string>("");
@@ -43,6 +42,7 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
   const customerId = customer?.id ?? null;
   const customerName = customer?.name ?? fullName ?? email ?? "Khách hàng";
   const customerPhone = customer?.phone ?? "";
+  const uid = session?.user?.id ?? null;
 
   // Chỉ services (loại products)
   const servicesQ = useQuery({
@@ -61,28 +61,16 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
     },
   });
 
-  const storesQ = useQuery({
-    queryKey: ["customer-booking-stores"],
-    enabled: open,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("id, name, address, is_active")
-        .eq("is_active", true)
-        .order("sort_order");
-      if (error) throw error;
-      return (data ?? []) as { id: string; name: string; address: string | null }[];
-    },
-  });
-
+  // Chỉ liệu trình thuộc đơn 'paid' (join qua orders!inner)
   const treatmentsQ = useQuery({
-    queryKey: ["customer-booking-treatments", customerId],
+    queryKey: ["customer-booking-treatments-paid", customerId],
     enabled: open && mode === "existing" && !!customerId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("treatments")
-        .select("id, order_id, customer_id, session_number, status, service_id")
-        .eq("customer_id", customerId!);
+        .select("id, order_id, customer_id, session_number, status, service_id, orders!inner(status)")
+        .eq("customer_id", customerId!)
+        .eq("orders.status", "paid");
       if (error) throw error;
       return data ?? [];
     },
@@ -117,7 +105,6 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
     setMode("existing");
     setTreatmentId("");
     setServiceId("");
-    setStoreId("");
     setDate("");
     setTime("");
     setNote("");
@@ -131,10 +118,6 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
     }
     if (!date || !time) {
       toast.error("Vui lòng chọn ngày và giờ hẹn");
-      return;
-    }
-    if (!storeId) {
-      toast.error("Vui lòng chọn cơ sở");
       return;
     }
 
@@ -160,12 +143,7 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
       extraNote = "[Đăng ký dịch vụ mới]";
     }
 
-    const store = (storesQ.data ?? []).find((s) => s.id === storeId);
-    const fullNote = [
-      extraNote,
-      store ? `Cơ sở: ${store.name}` : null,
-      note?.trim() || null,
-    ].filter(Boolean).join(" | ");
+    const fullNote = [extraNote, note?.trim() || null].filter(Boolean).join(" | ");
 
     setSubmitting(true);
     try {
@@ -195,13 +173,14 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
             customerName,
             service: chosenServiceName,
             when: `${date} ${time}`,
+            customerUserId: uid,
           },
         });
       } catch (nerr) {
         console.warn("[booking] notify ops failed:", nerr);
       }
 
-      toast.success("Đã gửi yêu cầu đặt lịch. Chúng tôi sẽ xác nhận sớm nhất!");
+      toast.success("Đặt lịch thành công!", { duration: 3000 });
       reset();
       setOpen(false);
     } catch (err) {
@@ -240,19 +219,21 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
             <div className="space-y-1.5">
               <Label>Buổi liệu trình kế tiếp</Label>
               <Select value={treatmentId} onValueChange={setTreatmentId}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={
                     treatmentsQ.isLoading
                       ? "Đang tải..."
                       : nextInLine.length ? "Chọn liệu trình" : "Không có liệu trình khả dụng"
                   } />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[calc(100vw-2rem)]">
                   {nextInLine.map((t) => {
                     const sname = t.service_id ? serviceNamesQ.data?.get(t.service_id) ?? "Liệu trình" : "Liệu trình";
                     return (
-                      <SelectItem key={t.id} value={t.id}>
-                        {sname} — Buổi #{t.session_number} (còn {t.remaining} buổi)
+                      <SelectItem key={t.id} value={t.id} className="max-w-full">
+                        <span className="block truncate max-w-[280px] sm:max-w-[420px]">
+                          {sname} — Buổi #{t.session_number} (còn {t.remaining} buổi)
+                        </span>
                       </SelectItem>
                     );
                   })}
@@ -260,7 +241,7 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
               </Select>
               {!treatmentsQ.isLoading && nextInLine.length === 0 && (
                 <p className="text-xs text-ink-muted">
-                  Bạn chưa có liệu trình khả dụng. Hãy chọn “Đăng ký dịch vụ mới”.
+                  Bạn chưa có liệu trình khả dụng (đơn hàng cần ở trạng thái "đã thanh toán"). Hãy chọn "Đăng ký dịch vụ mới".
                 </p>
               )}
             </div>
@@ -270,12 +251,14 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
             <div className="space-y-1.5">
               <Label>Dịch vụ</Label>
               <Select value={serviceId} onValueChange={setServiceId}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={servicesQ.isLoading ? "Đang tải..." : "Chọn dịch vụ"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[calc(100vw-2rem)]">
                   {(servicesQ.data ?? []).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    <SelectItem key={s.id} value={s.id} className="max-w-full">
+                      <span className="block truncate max-w-[280px] sm:max-w-[420px]">{s.name}</span>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -291,22 +274,6 @@ export function CustomerBookingDialog({ customer }: { customer: Customer }) {
               <Label>Giờ hẹn</Label>
               <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} required />
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Cơ sở</Label>
-            <Select value={storeId} onValueChange={setStoreId}>
-              <SelectTrigger>
-                <SelectValue placeholder={storesQ.isLoading ? "Đang tải..." : "Chọn chi nhánh"} />
-              </SelectTrigger>
-              <SelectContent>
-                {(storesQ.data ?? []).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}{s.address ? ` — ${s.address}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-1.5">
