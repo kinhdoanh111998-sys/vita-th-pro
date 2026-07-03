@@ -211,7 +211,8 @@ function BookingPage() {
         </div>
 
         {/* Cột phải: Form */}
-        <div className="bg-brand-surface p-6 md:p-8 rounded-card border border-brand-border shadow-sm">
+        {/* Cột phải (mobile), trái (desktop): Form */}
+        <div className="lg:order-1 bg-brand-surface p-6 md:p-8 rounded-card border border-brand-border shadow-sm">
           <h2 className="font-heading text-brand-text text-xl font-semibold mb-1">
             Thông tin đặt lịch
           </h2>
