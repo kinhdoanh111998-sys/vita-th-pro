@@ -85,13 +85,16 @@ function OrdersPage() {
   const catalogQ = useQuery({
     queryKey: ["services", "catalog-all"],
     queryFn: async (): Promise<CatalogItem[]> => {
-      const [srvRes, prdRes] = await Promise.all([
-        supabase.from("services").select("id,name,price,default_sessions"),
-        supabase.from("products").select("id,name,price")
-      ]);
-      const srvs = (srvRes.data ?? []).map(x => ({ ...x, type: "service" as const }));
-      const prds = (prdRes.data ?? []).map(x => ({ ...x, default_sessions: null, type: "product" as const }));
-      return [...srvs, ...prds].sort((a, b) => a.name.localeCompare(b.name));
+      const { data: srvs, error: srvErr } = await supabase.from("services").select("id,name,price,default_sessions");
+      const { data: prds, error: prdErr } = await supabase.from("products").select("id,name,price");
+      
+      if (srvErr) console.error("Lỗi fetch services:", srvErr);
+      if (prdErr) console.error("Lỗi fetch products:", prdErr);
+
+      const srvList = (srvs ?? []).map(x => ({ ...x, type: "service" as const }));
+      const prdList = (prds ?? []).map(x => ({ ...x, default_sessions: null, type: "product" as const }));
+      
+      return [...srvList, ...prdList].sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 
@@ -1067,11 +1070,15 @@ function OrderDetailDrawer({
                     </thead>
                     <tbody>
                       {(itemsQ.data ?? []).map((it) => {
-                        const cat = catMap.get(it.item_id);
+                        const cat = catMap.get(it.item_id) || { name: "Mặt hàng đã xóa", price: it.unit_price };
                         return (
                           <tr key={it.id} className="border-t border-hairline">
-                            <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
-                            <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
+                            <td className="py-2">{cat.name}</td>
+                            <td className="py-2 text-xs">
+                                <Badge variant={it.item_type === "service" ? "default" : "secondary"}>
+                                  {it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}
+                                </Badge>
+                            </td>
                             <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
                             <td className="py-2 text-right">{it.quantity}</td>
                             <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
