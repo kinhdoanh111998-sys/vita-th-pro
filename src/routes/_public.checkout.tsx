@@ -173,12 +173,16 @@ function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      // Resolve customer_id
+      const uid = session?.user?.id;
+      if (!uid) throw new Error("Chưa đăng nhập");
+
+      // Resolve customer_id — tạo mới với id = auth.uid() để pass RLS
       let customerId = currentCustomer?.id;
       if (!customerId) {
         const { data: newCus, error: cErr } = await supabase
           .from("customers")
           .insert({
+            id: uid,
             name: customerName.trim(),
             full_name: customerName.trim(),
             phone: customerPhone.trim(),
@@ -187,7 +191,10 @@ function CheckoutPage() {
           })
           .select("id")
           .single();
-        if (cErr) throw cErr;
+        if (cErr) {
+          console.error("[checkout] insert customer failed:", cErr);
+          throw new Error("Lỗi tạo khách hàng: " + cErr.message);
+        }
         customerId = newCus.id as string;
       }
 
@@ -195,58 +202,77 @@ function CheckoutPage() {
         typeof window !== "undefined" &&
         window.location.pathname.startsWith("/app");
 
-      // Insert order — chờ thanh toán, admin xác nhận thủ công
-      const { error: oErr } = await supabase
-        .from("orders")
-        .insert({
-          customer_id: customerId,
-          order_code: orderCode,
-          subtotal_amount: totalAmount,
-          discount_amount: discountAmount,
-          total_amount: finalAmount,
-          voucher_id: appliedVoucher?.id ?? null,
-          voucher_code: appliedVoucher?.code ?? null,
-          status: "pending_payment",
-          payment_method: method,
-          payment_status: "pending",
-          order_source: isApp ? "app" : "web",
-          customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim(),
-          shipping_address: address.trim() || null,
-          note: note.trim() || null,
-        })
-        .select("id, order_code")
-        .single();
-      if (oErr) throw oErr;
+      // === KHỐI 1: Cô lập lưu đơn hàng + order_items ===
+      let insertedOrderId: string | null = null;
+      try {
+        const { data: order, error: oErr } = await supabase
+          .from("orders")
+          .insert({
+            customer_id: customerId,
+            order_code: orderCode,
+            subtotal_amount: totalAmount,
+            discount_amount: discountAmount,
+            total_amount: finalAmount,
+            voucher_id: appliedVoucher?.id ?? null,
+            voucher_code: appliedVoucher?.code ?? null,
+            status: "pending_payment",
+            payment_method: method,
+            payment_status: "pending",
+            order_source: isApp ? "app" : "web",
+            customer_name: customerName.trim(),
+            customer_phone: customerPhone.trim(),
+            shipping_address: address.trim() || null,
+            note: note.trim() || null,
+          })
+          .select("id, order_code")
+          .single();
+        if (oErr) throw oErr;
+        insertedOrderId = order.id as string;
 
-      // Insert order_items
-      const { data: orderRow } = await supabase
-        .from("orders")
-        .select("id")
-        .eq("order_code", orderCode)
-        .maybeSingle();
-      const orderId = orderRow?.id as string;
-      const rows = lines.map((l) => ({
-        order_id: orderId,
-        item_type: l.type,
-        item_id: l.id,
-        name: l.name,
-        quantity: l.qty,
-        unit_price: l.price,
-        total_price: l.price * l.qty,
-      }));
-      const { error: iErr } = await supabase.from("order_items").insert(rows);
-      if (iErr) throw iErr;
+        const rows = lines.map((l) => ({
+          order_id: insertedOrderId!,
+          item_type: l.type,
+          item_id: l.id,
+          name: l.name,
+          quantity: l.qty,
+          unit_price: l.price,
+          total_price: l.price * l.qty,
+        }));
+        const { error: iErr } = await supabase.from("order_items").insert(rows);
+        if (iErr) throw iErr;
+      } catch (orderErr) {
+        const msg = orderErr instanceof Error ? orderErr.message : String(orderErr);
+        console.error("[checkout] insert order failed:", orderErr);
+        toast.error("Lỗi lưu đơn hàng: " + msg);
+        return; // Không redirect nếu lưu đơn thất bại
+      }
+
+      // === KHỐI 2: Failsafe notification (không chặn luồng) ===
+      try {
+        await supabase.from("notifications").insert({
+          recipient_id: uid,
+          type: "order_created",
+          title: "Đơn hàng đã ghi nhận",
+          body: `Đơn hàng ${orderCode} của bạn đã được ghi nhận, đang chờ xác nhận thanh toán.`,
+          ref_type: "order",
+          ref_id: insertedOrderId,
+        });
+      } catch (notifyErr) {
+        console.error("[checkout] insert notification failed (non-blocking):", notifyErr);
+      }
 
       clearCart();
       toast.success("Đã ghi nhận đơn hàng. Chúng tôi sẽ kiểm tra và xác nhận trong chốc lát!");
       navigate({ to: "/khach-hang" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Đặt đơn thất bại");
+      const msg = err instanceof Error ? err.message : "Đặt đơn thất bại";
+      console.error("[checkout] handleSubmit fatal:", err);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const vietQrUrl = `https://img.vietqr.io/image/MBBank-686288889999-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(orderCode)}&accountName=Cong%20Ty%20Tnhh%20Xuat%20Nhap%20Khau%20Thiet%20Bi%20Cham%20Soc%20Suc%20Khoe%20Tri%20Tue%20Nhan%20Tao`;
 
