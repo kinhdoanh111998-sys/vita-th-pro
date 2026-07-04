@@ -447,58 +447,6 @@ function CheckoutPage() {
 
       <RequireAuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} intent="order" />
 
-      {/* VietQR modal */}
-      <Dialog open={qr.open} onOpenChange={(v) => setQr((s) => ({ ...s, open: v }))}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-brand-dark">Chuyển khoản đơn hàng</DialogTitle>
-            <DialogDescription>
-              Quét mã VietQR bên dưới để hoàn tất thanh toán. Đơn hàng sẽ được xử lý khi Admin xác nhận đã nhận tiền.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {qrUrl ? (
-              <div className="grid place-items-center bg-white rounded-xl p-4 border">
-                <img src={qrUrl} alt="VietQR" className="w-64 h-64 object-contain" />
-              </div>
-            ) : (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
-                Chưa cấu hình tài khoản ngân hàng. Vui lòng liên hệ Admin.
-              </div>
-            )}
-            <div className="text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-gray-600">Ngân hàng</span><b>{bankName}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Số TK</span><b>{bankAcc || "—"}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Chủ TK</span><b>{bankHolder}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Số tiền</span><b className="text-brand-primary">{fmt(qr.amount)}</b></div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Nội dung CK</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const txt = `VITA ORDER_${qr.orderCode}`;
-                    navigator.clipboard.writeText(txt);
-                    toast.success("Đã sao chép nội dung CK");
-                  }}
-                  className="inline-flex items-center gap-1 font-bold text-emerald-700"
-                >
-                  VITA ORDER_{qr.orderCode} <Copy className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-            <Button
-              type="button"
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => {
-                setQr({ open: false, orderCode: null, orderId: null, amount: 0 });
-                navigate({ to: "/app/account" });
-              }}
-            >
-              Tôi đã chuyển khoản
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
