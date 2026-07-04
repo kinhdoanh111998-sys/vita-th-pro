@@ -362,8 +362,18 @@ function CheckoutPage() {
                       <span className="text-sm font-bold text-brand-primary">{fmt(l.qty * l.price)}</span>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(l.id)}
+                    aria-label={`Xóa ${l.name}`}
+                    className="self-start p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                    title="Xóa khỏi giỏ"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </li>
               ))}
+
             </ul>
           )}
         </section>
