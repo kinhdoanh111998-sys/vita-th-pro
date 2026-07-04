@@ -37,7 +37,7 @@ export function Footer() {
             items={["Máy công nghệ", "Phụ kiện", "Dịch vụ", "Chuyển giao công nghệ"]}
           />
           <div>
-            <h4 className="font-bold mb-2">Liên hệ</h4>
+            <h4 className="font-bold mb-2 text-white">Liên hệ</h4>
             <p className="text-sm text-[#d7f4d8]">
               Hotline: <a href={`tel:${hotline}`} className="hover:underline">{hotline}</a>
             </p>
@@ -62,7 +62,7 @@ export function Footer() {
 function FooterCol({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
-      <h4 className="font-bold mb-2">{title}</h4>
+      <h4 className="font-bold mb-2 text-white">{title}</h4>
       {items.map((i) => (
         <p key={i} className="text-sm text-[#d7f4d8] py-0.5">
           <a href="#" className="hover:underline">{i}</a>
