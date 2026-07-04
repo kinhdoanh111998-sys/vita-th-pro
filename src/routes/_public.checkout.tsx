@@ -203,17 +203,18 @@ function CheckoutPage() {
         typeof window !== "undefined" &&
         window.location.pathname.startsWith("/app");
 
-      // Insert order — pending, chưa sinh treatments
-      const { data: order, error: oErr } = await supabase
+      // Insert order — chờ thanh toán, admin xác nhận thủ công
+      const { error: oErr } = await supabase
         .from("orders")
         .insert({
           customer_id: customerId,
+          order_code: orderCode,
           subtotal_amount: totalAmount,
           discount_amount: discountAmount,
           total_amount: finalAmount,
           voucher_id: appliedVoucher?.id ?? null,
           voucher_code: appliedVoucher?.code ?? null,
-          status: "pending",
+          status: "pending_payment",
           payment_method: method,
           payment_status: "pending",
           order_source: isApp ? "app" : "web",
@@ -227,8 +228,14 @@ function CheckoutPage() {
       if (oErr) throw oErr;
 
       // Insert order_items
+      const { data: orderRow } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("order_code", orderCode)
+        .maybeSingle();
+      const orderId = orderRow?.id as string;
       const rows = lines.map((l) => ({
-        order_id: order.id as string,
+        order_id: orderId,
         item_type: l.type,
         item_id: l.id,
         name: l.name,
@@ -239,21 +246,9 @@ function CheckoutPage() {
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // COD → clear cart + về trang tài khoản
-      if (method === "cod") {
-        clearCart();
-        toast.success("Đặt đơn thành công! Chúng tôi sẽ liên hệ xác nhận.");
-        navigate({ to: "/app/account" });
-      } else {
-        // Transfer → hiện QR modal, clear cart sau khi user đóng modal
-        setQr({
-          open: true,
-          orderCode: (order.order_code as string) ?? (order.id as string).slice(0, 8),
-          orderId: order.id as string,
-          amount: finalAmount,
-        });
-        clearCart();
-      }
+      clearCart();
+      toast.success("Đã ghi nhận đơn hàng. Chúng tôi sẽ kiểm tra và xác nhận trong chốc lát!");
+      navigate({ to: "/khach-hang" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Đặt đơn thất bại");
     } finally {
@@ -261,16 +256,7 @@ function CheckoutPage() {
     }
   };
 
-  const bankBin = sys?.bank_bin ?? "970422"; // MB bank fallback
-  const bankAcc = sys?.bank_account_number ?? "";
-  const bankHolder = sys?.bank_account_holder ?? "VITA TH PRO";
-  const bankName = sys?.bank_name ?? "MB Bank";
-
-  const qrUrl = qr.orderCode && bankAcc
-    ? `https://img.vietqr.io/image/${bankBin}-${bankAcc}-compact2.png?amount=${qr.amount}&addInfo=${encodeURIComponent(
-        `VITA ORDER_${qr.orderCode}`,
-      )}&accountName=${encodeURIComponent(bankHolder)}`
-    : null;
+  const vietQrUrl = `https://img.vietqr.io/image/MBBank-686288889999-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(orderCode)}&accountName=Cong%20Ty%20Tnhh%20Xuat%20Nhap%20Khau%20Thiet%20Bi%20Cham%20Soc%20Suc%20Khoe%20Tri%20Tue%20Nhan%20Tao`;
 
   if (authLoading) {
     return (
