@@ -833,7 +833,9 @@ function OrderDetailDrawer({
 
   const isPaid = order?.status === "paid";
   const isCancelled = order?.status === "cancelled";
-  const editable = order?.status === "pending";
+  const isCustomerOrder = !!order && (order.order_source === "web" || order.order_source === "app");
+  const editable = order?.status === "pending" || order?.status === "pending_payment";
+
 
   const subtotal = editItems.reduce((s, it) => {
     const cat = catMap.get(it.item_id);
