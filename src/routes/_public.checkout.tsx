@@ -230,15 +230,27 @@ function CheckoutPage() {
       // LƯU CHI TIẾT SẢN PHẨM (Đúng 6 cột chuẩn của DB)
       const rows = lines.map((l) => ({
         order_id: insertedOrderId,
-        item_type: l.type,
+        item_type: l.type === "product" ? "product" : "service", // Ép kiểu chuẩn Enum
         item_id: l.id,
-        quantity: l.qty,
-        unit_price: l.price,
-        total_price: l.price * l.qty,
+        quantity: Number(l.qty),
+        unit_price: Number(l.price),
+        total_price: Number(l.price) * Number(l.qty),
       }));
 
+      console.log("[checkout] order_items rows chuẩn bị lưu:", rows);
+
       const { error: iErr } = await supabase.from("order_items").insert(rows);
-      if (iErr) throw new Error("Lỗi lưu chi tiết sản phẩm: " + iErr.message);
+      if (iErr) {
+        console.error("[checkout] order_items insert error:", iErr, rows);
+        
+        // Hủy luôn vỏ đơn vừa tạo nếu lưu ruột đơn thất bại (Tránh rác data)
+        await supabase
+          .from("orders")
+          .update({ status: "cancelled", note: "Lỗi hệ thống: Không lưu được chi tiết đơn" })
+          .eq("id", insertedOrderId);
+          
+        throw new Error("Lỗi lưu chi tiết sản phẩm: " + iErr.message);
+      }
 
       // SAU KHI LƯU THÀNH CÔNG -> Clear giỏ và nhảy trang
       clearCart();
