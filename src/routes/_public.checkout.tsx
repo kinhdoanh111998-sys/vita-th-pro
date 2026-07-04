@@ -10,24 +10,15 @@ import {
   Ticket,
   X,
   CheckCircle2,
-  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useCartStore, useCartTotals } from "@/lib/cart/useCartStore";
-import { useSystemSettings } from "@/lib/useSystemSettings";
 import { RequireAuthDialog } from "@/components/RequireAuthDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_public/checkout")({
   component: CheckoutPage,
@@ -53,19 +44,13 @@ type Voucher = {
 
 type PayMethod = "cod" | "transfer";
 
-interface QrModalState {
-  open: boolean;
-  orderCode: string | null;
-  orderId: string | null;
-  amount: number;
-}
-
 function CheckoutPage() {
   const navigate = useNavigate();
   const { session, email, loading: authLoading } = useAuth();
   const { lines, totalAmount, totalQty } = useCartTotals();
   const clearCart = useCartStore((s) => s.clear);
-  const { data: sys } = useSystemSettings();
+
+
 
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -77,12 +62,7 @@ function CheckoutPage() {
   const [applyingVoucher, setApplyingVoucher] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [qr, setQr] = useState<QrModalState>({
-    open: false,
-    orderCode: null,
-    orderId: null,
-    amount: 0,
-  });
+  const [orderCode] = useState<string>(() => "DH" + Date.now());
 
   // Bắt buộc auth
   useEffect(() => {
@@ -215,17 +195,18 @@ function CheckoutPage() {
         typeof window !== "undefined" &&
         window.location.pathname.startsWith("/app");
 
-      // Insert order — pending, chưa sinh treatments
-      const { data: order, error: oErr } = await supabase
+      // Insert order — chờ thanh toán, admin xác nhận thủ công
+      const { error: oErr } = await supabase
         .from("orders")
         .insert({
           customer_id: customerId,
+          order_code: orderCode,
           subtotal_amount: totalAmount,
           discount_amount: discountAmount,
           total_amount: finalAmount,
           voucher_id: appliedVoucher?.id ?? null,
           voucher_code: appliedVoucher?.code ?? null,
-          status: "pending",
+          status: "pending_payment",
           payment_method: method,
           payment_status: "pending",
           order_source: isApp ? "app" : "web",
@@ -239,8 +220,14 @@ function CheckoutPage() {
       if (oErr) throw oErr;
 
       // Insert order_items
+      const { data: orderRow } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("order_code", orderCode)
+        .maybeSingle();
+      const orderId = orderRow?.id as string;
       const rows = lines.map((l) => ({
-        order_id: order.id as string,
+        order_id: orderId,
         item_type: l.type,
         item_id: l.id,
         name: l.name,
@@ -251,21 +238,9 @@ function CheckoutPage() {
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // COD → clear cart + về trang tài khoản
-      if (method === "cod") {
-        clearCart();
-        toast.success("Đặt đơn thành công! Chúng tôi sẽ liên hệ xác nhận.");
-        navigate({ to: "/app/account" });
-      } else {
-        // Transfer → hiện QR modal, clear cart sau khi user đóng modal
-        setQr({
-          open: true,
-          orderCode: (order.order_code as string) ?? (order.id as string).slice(0, 8),
-          orderId: order.id as string,
-          amount: finalAmount,
-        });
-        clearCart();
-      }
+      clearCart();
+      toast.success("Đã ghi nhận đơn hàng. Chúng tôi sẽ kiểm tra và xác nhận trong chốc lát!");
+      navigate({ to: "/khach-hang" });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Đặt đơn thất bại");
     } finally {
@@ -273,16 +248,7 @@ function CheckoutPage() {
     }
   };
 
-  const bankBin = sys?.bank_bin ?? "970422"; // MB bank fallback
-  const bankAcc = sys?.bank_account_number ?? "";
-  const bankHolder = sys?.bank_account_holder ?? "VITA TH PRO";
-  const bankName = sys?.bank_name ?? "MB Bank";
-
-  const qrUrl = qr.orderCode && bankAcc
-    ? `https://img.vietqr.io/image/${bankBin}-${bankAcc}-compact2.png?amount=${qr.amount}&addInfo=${encodeURIComponent(
-        `VITA ORDER_${qr.orderCode}`,
-      )}&accountName=${encodeURIComponent(bankHolder)}`
-    : null;
+  const vietQrUrl = `https://img.vietqr.io/image/MBBank-686288889999-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(orderCode)}&accountName=Cong%20Ty%20Tnhh%20Xuat%20Nhap%20Khau%20Thiet%20Bi%20Cham%20Soc%20Suc%20Khoe%20Tri%20Tue%20Nhan%20Tao`;
 
   if (authLoading) {
     return (
@@ -431,6 +397,25 @@ function CheckoutPage() {
               </span>
             </button>
           </div>
+
+          {method === "transfer" && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+              <div className="grid place-items-center bg-white rounded-lg p-3 border border-emerald-100">
+                <img
+                  src={vietQrUrl}
+                  alt={`VietQR đơn ${orderCode}`}
+                  className="w-64 h-64 object-contain"
+                />
+              </div>
+              <div className="mt-2 text-xs text-gray-600 space-y-1">
+                <div className="flex justify-between"><span>Mã đơn</span><b className="font-mono text-emerald-700">{orderCode}</b></div>
+                <div className="flex justify-between"><span>Số tiền</span><b className="text-brand-primary">{fmt(finalAmount)}</b></div>
+              </div>
+              <p className="mt-2 text-xs text-gray-600 italic text-center">
+                Quý khách vui lòng quét mã thanh toán, sau đó bấm Xác nhận đặt hàng bên dưới.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Totals */}
@@ -473,58 +458,6 @@ function CheckoutPage() {
 
       <RequireAuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} intent="order" />
 
-      {/* VietQR modal */}
-      <Dialog open={qr.open} onOpenChange={(v) => setQr((s) => ({ ...s, open: v }))}>
-        <DialogContent className="max-w-md bg-white">
-          <DialogHeader>
-            <DialogTitle className="text-brand-dark">Chuyển khoản đơn hàng</DialogTitle>
-            <DialogDescription>
-              Quét mã VietQR bên dưới để hoàn tất thanh toán. Đơn hàng sẽ được xử lý khi Admin xác nhận đã nhận tiền.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {qrUrl ? (
-              <div className="grid place-items-center bg-white rounded-xl p-4 border">
-                <img src={qrUrl} alt="VietQR" className="w-64 h-64 object-contain" />
-              </div>
-            ) : (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
-                Chưa cấu hình tài khoản ngân hàng. Vui lòng liên hệ Admin.
-              </div>
-            )}
-            <div className="text-sm space-y-1">
-              <div className="flex justify-between"><span className="text-gray-600">Ngân hàng</span><b>{bankName}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Số TK</span><b>{bankAcc || "—"}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Chủ TK</span><b>{bankHolder}</b></div>
-              <div className="flex justify-between"><span className="text-gray-600">Số tiền</span><b className="text-brand-primary">{fmt(qr.amount)}</b></div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-600">Nội dung CK</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const txt = `VITA ORDER_${qr.orderCode}`;
-                    navigator.clipboard.writeText(txt);
-                    toast.success("Đã sao chép nội dung CK");
-                  }}
-                  className="inline-flex items-center gap-1 font-bold text-emerald-700"
-                >
-                  VITA ORDER_{qr.orderCode} <Copy className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-            <Button
-              type="button"
-              className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => {
-                setQr({ open: false, orderCode: null, orderId: null, amount: 0 });
-                navigate({ to: "/app/account" });
-              }}
-            >
-              Tôi đã chuyển khoản
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

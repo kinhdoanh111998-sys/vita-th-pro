@@ -229,7 +229,7 @@ function OrdersPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        {o.status === "pending" ? (
+                        {(o.status === "pending" || o.status === "pending_payment") ? (
                           <>
                             <button
                               type="button"
@@ -240,7 +240,38 @@ function OrdersPage() {
                                     .update({ status: "paid", payment_status: "paid" })
                                     .eq("id", o.id);
                                   if (error) throw error;
-                                  toast.success("Đã xác nhận thanh toán — treatments được sinh tự động");
+
+                                  // Tìm user_id của khách (qua email khớp public.users)
+                                  const cust = customerMap.get(o.customer_id);
+                                  let recipientId: string | null = null;
+                                  if (cust) {
+                                    const { data: cRow } = await supabase
+                                      .from("customers")
+                                      .select("email")
+                                      .eq("id", o.customer_id)
+                                      .maybeSingle();
+                                    if (cRow?.email) {
+                                      const { data: uRow } = await supabase
+                                        .from("users")
+                                        .select("id")
+                                        .eq("email", cRow.email)
+                                        .maybeSingle();
+                                      recipientId = (uRow?.id as string) ?? null;
+                                    }
+                                  }
+
+                                  if (recipientId) {
+                                    await supabase.from("notifications").insert({
+                                      recipient_id: recipientId,
+                                      type: "order_paid",
+                                      title: "Thanh toán thành công",
+                                      body: `Đơn hàng ${o.order_code ?? o.id.slice(0, 8)} của bạn đã được xác nhận thanh toán thành công.`,
+                                      ref_type: "order",
+                                      ref_id: o.id,
+                                    });
+                                  }
+
+                                  toast.success("Đã xác nhận thanh toán!");
                                   qc.invalidateQueries({ queryKey: ["orders"] });
                                   qc.invalidateQueries({ queryKey: ["treatments"] });
                                 } catch (e) {
@@ -248,8 +279,9 @@ function OrdersPage() {
                                 }
                               }}
                               className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
+                              title="Xác nhận đã thu tiền"
                             >
-                              <Check className="size-3.5" /> Thanh toán
+                              <Check className="size-3.5" /> Xác nhận đã thu tiền
                             </button>
                             <button type="button" onClick={() => setViewOrderId(o.id)}
                               className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
