@@ -1122,6 +1122,8 @@ function OrderDetailDrawer({
                 </div>
               </div>
             </section>
+            )}
+
 
             {(treatmentsQ.data?.length ?? 0) > 0 && (
               <section className="rounded-xl border border-hairline p-4">
