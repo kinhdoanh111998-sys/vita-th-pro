@@ -957,7 +957,7 @@ function OrderDetailDrawer({
               <div className="font-bold text-brand-dark flex items-center gap-2">
                 <User className="size-4" /> Khách hàng
               </div>
-              {editable ? (
+              {editable && !isCustomerOrder ? (
                 <Select value={customerId} onValueChange={setCustomerId}>
                   <SelectTrigger><SelectValue placeholder="Chọn khách hàng" /></SelectTrigger>
                   <SelectContent>
@@ -969,11 +969,14 @@ function OrderDetailDrawer({
                   </SelectContent>
                 </Select>
               ) : (
-                <>
-                  <div className="font-bold">{customer?.name ?? "—"}</div>
-                  <div className="text-xs text-ink-muted">{customer?.phone ?? ""}</div>
-                </>
+                <div className="rounded-lg border border-hairline bg-brand-soft/20 px-3 py-2 opacity-90">
+                  <div className="font-bold">{customer?.name ?? "—"}{customer?.phone ? ` · ${customer.phone}` : ""}</div>
+                  {isCustomerOrder && (
+                    <div className="text-[11px] text-ink-muted italic mt-0.5">Khóa — đơn do khách tự đặt</div>
+                  )}
+                </div>
               )}
+
             </section>
 
             {/* Items */}
