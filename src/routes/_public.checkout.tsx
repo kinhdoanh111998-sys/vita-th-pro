@@ -415,7 +415,7 @@ function CheckoutPage() {
             >
               <Wallet className={`w-5 h-5 ${method === "cod" ? "text-emerald-700" : "text-gray-500"}`} />
               <span className={`text-sm font-semibold ${method === "cod" ? "text-emerald-700" : "text-gray-600"}`}>
-                Thanh toán COD
+                Thanh toán Tại cửa hàng
               </span>
             </button>
             <button
