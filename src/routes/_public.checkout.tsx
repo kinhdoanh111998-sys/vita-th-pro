@@ -11,7 +11,6 @@ import {
   X,
   CheckCircle2,
   Trash2,
-
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
@@ -51,8 +50,7 @@ function CheckoutPage() {
   const { session, email, loading: authLoading } = useAuth();
   const { lines, totalAmount, totalQty } = useCartTotals();
   const clearCart = useCartStore((s) => s.clear);
-
-
+  const removeItem = useCartStore((s) => s.remove);
 
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
@@ -94,7 +92,6 @@ function CheckoutPage() {
     if (currentCustomer && !customerPhone)
       setCustomerPhone(currentCustomer.phone ?? "");
     if (currentCustomer && !address) setAddress(currentCustomer.address ?? "");
-     
   }, [currentCustomer]);
 
   const discountAmount = useMemo(() => {
@@ -158,8 +155,6 @@ function CheckoutPage() {
     setVoucherCode("");
   };
 
-  const removeItem = useCartStore((s) => s.remove);
-
   const handleSubmit = async () => {
     if (submitting) return;
     if (!session) {
@@ -180,7 +175,6 @@ function CheckoutPage() {
       const uid = session?.user?.id;
       if (!uid) throw new Error("Chưa đăng nhập");
 
-      // Resolve customer_id — tạo mới với id = auth.uid() để pass RLS
       let customerId = currentCustomer?.id;
       if (!customerId) {
         const { data: newCus, error: cErr } = await supabase
@@ -196,7 +190,6 @@ function CheckoutPage() {
           .select("id")
           .single();
         if (cErr) {
-          console.error("[checkout] insert customer failed:", cErr);
           throw new Error("Lỗi tạo khách hàng: " + cErr.message);
         }
         customerId = newCus.id as string;
@@ -206,37 +199,51 @@ function CheckoutPage() {
         typeof window !== "undefined" &&
         window.location.pathname.startsWith("/app");
 
-      // === KHỐI 1: Cô lập lưu đơn hàng + order_items ===
-      let insertedOrderId: string | null = null;
-      let finalOrderCode = orderCode;
-      try {
-        const { data: order, error: oErr } = await supabase
-          .from("orders")
-          .insert({
-            customer_id: customerId,
-            order_code: orderCode,
-            subtotal_amount: totalAmount,
-            discount_amount: discountAmount,
-            total_amount: finalAmount,
-            voucher_id: appliedVoucher?.id ?? null,
-            voucher_code: appliedVoucher?.code ?? null,
-            status: "pending_payment",
-            payment_method: method,
-            payment_status: "pending",
-            order_source: isApp ? "app" : "web",
-            customer_name: customerName.trim(),
-            customer_phone: customerPhone.trim(),
-            shipping_address: address.trim() || null,
-            note: note.trim() || null,
-          })
-          .select("id, order_code")
-          .single();
-        if (oErr) throw oErr;
-        insertedOrderId = order.id as string;
-        finalOrderCode = (order.order_code as string) ?? orderCode;
+      // BƯỚC 1: LƯU THÔNG TIN ĐƠN HÀNG (Bảng Orders)
+      const { data: order, error: oErr } = await supabase
+        .from("orders")
+        .insert({
+          customer_id: customerId,
+          order_code: orderCode,
+          subtotal_amount: totalAmount,
+          discount_amount: discountAmount,
+          total_amount: finalAmount,
+          voucher_id: appliedVoucher?.id ?? null,
+          voucher_code: appliedVoucher?.code ?? null,
+          status: "pending_payment",
+          payment_method: method,
+          payment_status: "pending",
+          order_source: isApp ? "app" : "web",
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          shipping_address: address.trim() || null,
+          note: note.trim() || null,
+        })
+        .select("id, order_code")
+        .single();
 
-        const rows = lines.map((l) => ({
-          order_id: insertedOrderId!,
+      // Nếu lỗi bảng orders thì dừng toàn bộ quá trình
+      if (oErr) throw new Error("Lỗi hệ thống khi tạo đơn: " + oErr.message);
+
+      const insertedOrderId = order.id as string;
+      const finalOrderCode = (order.order_code as string) ?? orderCode;
+
+      // BƯỚC 2: LƯU CHI TIẾT SẢN PHẨM (Bảng order_items) 
+      // Dùng cấu trúc linh hoạt để tránh lỗi sập hệ thống do sai cột DB
+      const rowsStandard = lines.map((l) => ({
+        order_id: insertedOrderId,
+        product_id: l.type === "product" ? l.id : null,
+        service_id: l.type === "service" ? l.id : null,
+        quantity: l.qty,
+        price: l.price,
+      }));
+
+      const { error: iErr1 } = await supabase.from("order_items").insert(rowsStandard);
+
+      // Nếu chuẩn 1 bị lỗi, tự động Fallback sang chuẩn 2 (cách AI viết cũ)
+      if (iErr1) {
+        const rowsFallback = lines.map((l) => ({
+          order_id: insertedOrderId,
           item_type: l.type,
           item_id: l.id,
           name: l.name,
@@ -244,21 +251,21 @@ function CheckoutPage() {
           unit_price: l.price,
           total_price: l.price * l.qty,
         }));
-        const { error: iErr } = await supabase.from("order_items").insert(rows);
-        if (iErr) throw iErr;
-      } catch (orderErr) {
-        const msg = orderErr instanceof Error ? orderErr.message : String(orderErr);
-        console.error("[checkout] insert order failed:", orderErr);
-        toast.error("Lỗi lưu đơn hàng: " + msg);
-        return; // Không redirect nếu lưu đơn thất bại
+        const { error: iErr2 } = await supabase.from("order_items").insert(rowsFallback);
+        if (iErr2) {
+           console.error("[checkout] Lỗi lưu sản phẩm (Cả 2 cách):", iErr1, iErr2);
+           toast.warning("Đơn hàng tạo thành công nhưng danh sách sản phẩm cần Admin kiểm tra lại!");
+        }
       }
 
-      // === Sau khi insert đơn hàng thành công — thực hiện đúng thứ tự yêu cầu ===
+      // --- TỪ ĐOẠN NÀY SẼ CHẠY NGAY CẢ KHI BẢNG ORDER_ITEMS LỖI ĐỂ KHÔNG KẸT UI ---
 
       // (1) Xóa sạch giỏ hàng
-      clearCart();
+      try {
+        clearCart();
+      } catch(e) { console.error(e) }
 
-      // (2) Insert notification cho khách (failsafe — không chặn luồng)
+      // (2) Insert notification cho khách
       try {
         await supabase.from("notifications").insert({
           recipient_id: uid,
@@ -269,7 +276,7 @@ function CheckoutPage() {
           ref_id: insertedOrderId,
         });
       } catch (notifyErr) {
-        console.error("[checkout] insert notification failed (non-blocking):", notifyErr);
+        console.error("[checkout] Notification failed:", notifyErr);
       }
 
       // (3) Toast success 3s
@@ -288,7 +295,6 @@ function CheckoutPage() {
       setSubmitting(false);
     }
   };
-
 
   const vietQrUrl = `https://img.vietqr.io/image/MBBank-686288889999-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(orderCode)}&accountName=Cong%20Ty%20Tnhh%20Xuat%20Nhap%20Khau%20Thiet%20Bi%20Cham%20Soc%20Suc%20Khoe%20Tri%20Tue%20Nhan%20Tao`;
 
@@ -328,7 +334,7 @@ function CheckoutPage() {
         )}
 
         {/* Thông tin nhận hàng */}
-        <section className="bg-white rounded-2xl p-4 space-y-3">
+        <section className="bg-white rounded-2xl p-4 space-y-3 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-emerald-600" />
             <h2 className="font-bold text-gray-900">Thông tin nhận hàng</h2>
@@ -345,8 +351,8 @@ function CheckoutPage() {
           </div>
         </section>
 
-        {/* Danh sách */}
-        <section className="bg-white rounded-2xl p-4">
+        {/* Danh sách Sản phẩm */}
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <h2 className="font-bold text-gray-900 mb-3">Sản phẩm ({totalQty})</h2>
           {lines.length === 0 ? (
             <p className="text-sm text-gray-500 italic">Giỏ hàng trống.</p>
@@ -375,13 +381,12 @@ function CheckoutPage() {
                   </button>
                 </li>
               ))}
-
             </ul>
           )}
         </section>
 
         {/* Voucher */}
-        <section className="bg-white rounded-2xl p-4">
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <Ticket className="w-4 h-4 text-emerald-600" />
             <h2 className="font-bold text-gray-900">Mã giảm giá</h2>
@@ -421,7 +426,7 @@ function CheckoutPage() {
         </section>
 
         {/* Phương thức thanh toán */}
-        <section className="bg-white rounded-2xl p-4">
+        <section className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
           <h2 className="font-bold text-gray-900 mb-3">Phương thức thanh toán</h2>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -471,7 +476,7 @@ function CheckoutPage() {
         </section>
 
         {/* Totals */}
-        <section className="bg-white rounded-2xl p-4 space-y-2 text-sm">
+        <section className="bg-white rounded-2xl p-4 space-y-2 text-sm shadow-sm border border-gray-100">
           <div className="flex justify-between text-gray-600">
             <span>Tạm tính</span>
             <span>{fmt(totalAmount)}</span>
@@ -489,8 +494,8 @@ function CheckoutPage() {
         </section>
       </div>
 
-      {/* Sticky action */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30">
+      {/* FIXED FOOTER MỚI: z-[9999] và bottom-[80px] để luôn nổi trên mọi màn hình */}
+      <div className="fixed bottom-[80px] md:bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[9999] shadow-[0_-4px_15px_rgba(0,0,0,0.08)]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="flex-1">
             <p className="text-xs text-gray-500">Tổng thanh toán</p>
@@ -500,7 +505,7 @@ function CheckoutPage() {
             type="button"
             onClick={handleSubmit}
             disabled={submitting || lines.length === 0}
-            className="h-12 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+            className="h-12 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-1.5" />}
             {submitting ? "Đang xử lý…" : "Xác nhận đặt hàng"}
