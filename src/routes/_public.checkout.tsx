@@ -49,7 +49,8 @@ function CheckoutPage() {
   const { session, email, loading: authLoading } = useAuth();
   const { lines, totalAmount, totalQty } = useCartTotals();
   const clearCart = useCartStore((s) => s.clear);
-  const { data: sys } = useSystemSettings();
+
+
 
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [customerName, setCustomerName] = useState("");
