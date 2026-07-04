@@ -199,7 +199,7 @@ function CheckoutPage() {
         typeof window !== "undefined" &&
         window.location.pathname.startsWith("/app");
 
-      // BƯỚC 1: LƯU THÔNG TIN ĐƠN HÀNG (Bảng Orders)
+      // LƯU ĐƠN HÀNG
       const { data: order, error: oErr } = await supabase
         .from("orders")
         .insert({
@@ -222,50 +222,27 @@ function CheckoutPage() {
         .select("id, order_code")
         .single();
 
-      // Nếu lỗi bảng orders thì dừng toàn bộ quá trình
-      if (oErr) throw new Error("Lỗi hệ thống khi tạo đơn: " + oErr.message);
+      if (oErr) throw new Error("Lỗi tạo đơn hàng: " + oErr.message);
 
       const insertedOrderId = order.id as string;
       const finalOrderCode = (order.order_code as string) ?? orderCode;
 
-      // BƯỚC 2: LƯU CHI TIẾT SẢN PHẨM (Bảng order_items) 
-      // Dùng cấu trúc linh hoạt để tránh lỗi sập hệ thống do sai cột DB
-      const rowsStandard = lines.map((l) => ({
+      // LƯU CHI TIẾT SẢN PHẨM (Đúng 6 cột chuẩn của DB)
+      const rows = lines.map((l) => ({
         order_id: insertedOrderId,
-        product_id: l.type === "product" ? l.id : null,
-        service_id: l.type === "service" ? l.id : null,
+        item_type: l.type,
+        item_id: l.id,
         quantity: l.qty,
-        price: l.price,
+        unit_price: l.price,
+        total_price: l.price * l.qty,
       }));
 
-      const { error: iErr1 } = await supabase.from("order_items").insert(rowsStandard);
+      const { error: iErr } = await supabase.from("order_items").insert(rows);
+      if (iErr) throw new Error("Lỗi lưu chi tiết sản phẩm: " + iErr.message);
 
-      // Nếu chuẩn 1 bị lỗi, tự động Fallback sang chuẩn 2 (cách AI viết cũ)
-      if (iErr1) {
-        const rowsFallback = lines.map((l) => ({
-          order_id: insertedOrderId,
-          item_type: l.type,
-          item_id: l.id,
-          name: l.name,
-          quantity: l.qty,
-          unit_price: l.price,
-          total_price: l.price * l.qty,
-        }));
-        const { error: iErr2 } = await supabase.from("order_items").insert(rowsFallback);
-        if (iErr2) {
-           console.error("[checkout] Lỗi lưu sản phẩm (Cả 2 cách):", iErr1, iErr2);
-           toast.warning("Đơn hàng tạo thành công nhưng danh sách sản phẩm cần Admin kiểm tra lại!");
-        }
-      }
+      // SAU KHI LƯU THÀNH CÔNG -> Clear giỏ và nhảy trang
+      clearCart();
 
-      // --- TỪ ĐOẠN NÀY SẼ CHẠY NGAY CẢ KHI BẢNG ORDER_ITEMS LỖI ĐỂ KHÔNG KẸT UI ---
-
-      // (1) Xóa sạch giỏ hàng
-      try {
-        clearCart();
-      } catch(e) { console.error(e) }
-
-      // (2) Insert notification cho khách
       try {
         await supabase.from("notifications").insert({
           recipient_id: uid,
@@ -276,20 +253,17 @@ function CheckoutPage() {
           ref_id: insertedOrderId,
         });
       } catch (notifyErr) {
-        console.error("[checkout] Notification failed:", notifyErr);
+        console.error("Lỗi thông báo:", notifyErr);
       }
 
-      // (3) Toast success 3s
       toast.success("Đã xác nhận đơn hàng thành công", { duration: 3000 });
 
-      // (4) Auto-redirect về /app sau 3s
       setTimeout(() => {
         navigate({ to: "/app" });
       }, 3000);
 
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Đặt đơn thất bại";
-      console.error("[checkout] handleSubmit fatal:", err);
       toast.error(msg);
     } finally {
       setSubmitting(false);
