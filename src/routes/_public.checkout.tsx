@@ -10,6 +10,8 @@ import {
   Ticket,
   X,
   CheckCircle2,
+  Trash2,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
@@ -156,6 +158,8 @@ function CheckoutPage() {
     setVoucherCode("");
   };
 
+  const removeItem = useCartStore((s) => s.remove);
+
   const handleSubmit = async () => {
     if (submitting) return;
     if (!session) {
@@ -204,6 +208,7 @@ function CheckoutPage() {
 
       // === KHỐI 1: Cô lập lưu đơn hàng + order_items ===
       let insertedOrderId: string | null = null;
+      let finalOrderCode = orderCode;
       try {
         const { data: order, error: oErr } = await supabase
           .from("orders")
@@ -228,6 +233,7 @@ function CheckoutPage() {
           .single();
         if (oErr) throw oErr;
         insertedOrderId = order.id as string;
+        finalOrderCode = (order.order_code as string) ?? orderCode;
 
         const rows = lines.map((l) => ({
           order_id: insertedOrderId!,
@@ -247,13 +253,18 @@ function CheckoutPage() {
         return; // Không redirect nếu lưu đơn thất bại
       }
 
-      // === KHỐI 2: Failsafe notification (không chặn luồng) ===
+      // === Sau khi insert đơn hàng thành công — thực hiện đúng thứ tự yêu cầu ===
+
+      // (1) Xóa sạch giỏ hàng
+      clearCart();
+
+      // (2) Insert notification cho khách (failsafe — không chặn luồng)
       try {
         await supabase.from("notifications").insert({
           recipient_id: uid,
           type: "order_created",
-          title: "Đơn hàng đã ghi nhận",
-          body: `Đơn hàng ${orderCode} của bạn đã được ghi nhận, đang chờ xác nhận thanh toán.`,
+          title: "Đơn hàng đã tạo",
+          body: `Đơn hàng ${finalOrderCode} của bạn đã được tạo thành công.`,
           ref_type: "order",
           ref_id: insertedOrderId,
         });
@@ -261,9 +272,14 @@ function CheckoutPage() {
         console.error("[checkout] insert notification failed (non-blocking):", notifyErr);
       }
 
-      clearCart();
-      toast.success("Đã ghi nhận đơn hàng. Chúng tôi sẽ kiểm tra và xác nhận trong chốc lát!");
-      navigate({ to: "/khach-hang" });
+      // (3) Toast success 3s
+      toast.success("Đã xác nhận đơn hàng thành công", { duration: 3000 });
+
+      // (4) Auto-redirect về /app sau 3s
+      setTimeout(() => {
+        navigate({ to: "/app" });
+      }, 3000);
+
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Đặt đơn thất bại";
       console.error("[checkout] handleSubmit fatal:", err);
@@ -348,8 +364,18 @@ function CheckoutPage() {
                       <span className="text-sm font-bold text-brand-primary">{fmt(l.qty * l.price)}</span>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(l.id)}
+                    aria-label={`Xóa ${l.name}`}
+                    className="self-start p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                    title="Xóa khỏi giỏ"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </li>
               ))}
+
             </ul>
           )}
         </section>

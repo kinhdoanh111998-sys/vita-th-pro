@@ -281,8 +281,9 @@ function OrdersPage() {
                               className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
                               title="Xác nhận đã thu tiền"
                             >
-                              <Check className="size-3.5" /> Xác nhận đã thu tiền
+                              <Check className="size-3.5" /> Thanh toán
                             </button>
+
                             <button type="button" onClick={() => setViewOrderId(o.id)}
                               className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
                               <Save className="size-3.5" /> Sửa
@@ -832,7 +833,9 @@ function OrderDetailDrawer({
 
   const isPaid = order?.status === "paid";
   const isCancelled = order?.status === "cancelled";
-  const editable = order?.status === "pending";
+  const isCustomerOrder = !!order && (order.order_source === "web" || order.order_source === "app");
+  const editable = order?.status === "pending" || order?.status === "pending_payment";
+
 
   const subtotal = editItems.reduce((s, it) => {
     const cat = catMap.get(it.item_id);
@@ -954,7 +957,7 @@ function OrderDetailDrawer({
               <div className="font-bold text-brand-dark flex items-center gap-2">
                 <User className="size-4" /> Khách hàng
               </div>
-              {editable ? (
+              {editable && !isCustomerOrder ? (
                 <Select value={customerId} onValueChange={setCustomerId}>
                   <SelectTrigger><SelectValue placeholder="Chọn khách hàng" /></SelectTrigger>
                   <SelectContent>
@@ -966,11 +969,14 @@ function OrderDetailDrawer({
                   </SelectContent>
                 </Select>
               ) : (
-                <>
-                  <div className="font-bold">{customer?.name ?? "—"}</div>
-                  <div className="text-xs text-ink-muted">{customer?.phone ?? ""}</div>
-                </>
+                <div className="rounded-lg border border-hairline bg-brand-soft/20 px-3 py-2 opacity-90">
+                  <div className="font-bold">{customer?.name ?? "—"}{customer?.phone ? ` · ${customer.phone}` : ""}</div>
+                  {isCustomerOrder && (
+                    <div className="text-[11px] text-ink-muted italic mt-0.5">Khóa — đơn do khách tự đặt</div>
+                  )}
+                </div>
               )}
+
             </section>
 
             {/* Items */}
@@ -1089,8 +1095,10 @@ function OrderDetailDrawer({
             </section>
 
             {/* Sales & commission */}
+            {!isCustomerOrder && (
             <section className="rounded-xl border border-hairline p-4 space-y-3">
               <div className="font-bold text-brand-dark">Người bán & Hoa hồng</div>
+
               <div className="grid grid-cols-[1fr_140px] gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">Người bán</Label>
@@ -1114,6 +1122,8 @@ function OrderDetailDrawer({
                 </div>
               </div>
             </section>
+            )}
+
 
             {(treatmentsQ.data?.length ?? 0) > 0 && (
               <section className="rounded-xl border border-hairline p-4">
