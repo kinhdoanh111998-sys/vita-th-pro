@@ -10,24 +10,15 @@ import {
   Ticket,
   X,
   CheckCircle2,
-  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { useCartStore, useCartTotals } from "@/lib/cart/useCartStore";
-import { useSystemSettings } from "@/lib/useSystemSettings";
 import { RequireAuthDialog } from "@/components/RequireAuthDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_public/checkout")({
   component: CheckoutPage,
