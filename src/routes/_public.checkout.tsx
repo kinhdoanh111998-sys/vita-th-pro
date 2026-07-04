@@ -405,6 +405,25 @@ function CheckoutPage() {
               </span>
             </button>
           </div>
+
+          {method === "transfer" && (
+            <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+              <div className="grid place-items-center bg-white rounded-lg p-3 border border-emerald-100">
+                <img
+                  src={vietQrUrl}
+                  alt={`VietQR đơn ${orderCode}`}
+                  className="w-64 h-64 object-contain"
+                />
+              </div>
+              <div className="mt-2 text-xs text-gray-600 space-y-1">
+                <div className="flex justify-between"><span>Mã đơn</span><b className="font-mono text-emerald-700">{orderCode}</b></div>
+                <div className="flex justify-between"><span>Số tiền</span><b className="text-brand-primary">{fmt(finalAmount)}</b></div>
+              </div>
+              <p className="mt-2 text-xs text-gray-600 italic text-center">
+                Quý khách vui lòng quét mã thanh toán, sau đó bấm Xác nhận đặt hàng bên dưới.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Totals */}
