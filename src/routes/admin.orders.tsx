@@ -281,8 +281,9 @@ function OrdersPage() {
                               className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold hover:bg-emerald-100"
                               title="Xác nhận đã thu tiền"
                             >
-                              <Check className="size-3.5" /> Xác nhận đã thu tiền
+                              <Check className="size-3.5" /> Thanh toán
                             </button>
+
                             <button type="button" onClick={() => setViewOrderId(o.id)}
                               className="inline-flex items-center gap-1 rounded-md border border-hairline px-2 py-1 text-xs font-bold hover:bg-brand-soft">
                               <Save className="size-3.5" /> Sửa
