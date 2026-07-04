@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -85,7 +85,6 @@ function OrdersPage() {
   const catalogQ = useQuery({
     queryKey: ["services", "catalog-all"],
     queryFn: async (): Promise<CatalogItem[]> => {
-      // Kết hợp cả services và products thành chung 1 mảng Catalog
       const [srvRes, prdRes] = await Promise.all([
         supabase.from("services").select("id,name,price,default_sessions"),
         supabase.from("products").select("id,name,price")
@@ -245,7 +244,6 @@ function OrdersPage() {
                                     .eq("id", o.id);
                                   if (error) throw error;
 
-                                  // Tìm user_id của khách (qua email khớp public.users)
                                   const cust = customerMap.get(o.customer_id);
                                   let recipientId: string | null = null;
                                   if (cust) {
@@ -489,7 +487,7 @@ function CreateOrderDrawer({
       }).select("id,order_code").single();
       if (oErr) throw oErr;
 
-      // 3) Insert order_items
+      // 3) Insert order_items (CHUẨN 6 CỘT)
       const rows = values.items.map((it) => {
         const cat = catalog.find((c) => c.id === it.item_id)!;
         const unit = Number(cat.price);
@@ -497,11 +495,8 @@ function CreateOrderDrawer({
           order_id: order.id as string,
           item_type: cat.type,
           item_id: it.item_id,
-          product_id: cat.type === "product" ? it.item_id : null,
-          service_id: cat.type === "service" ? it.item_id : null,
           quantity: it.quantity,
           unit_price: unit,
-          price: unit, // Fallback backward compatibility
           total_price: unit * it.quantity,
         };
       });
@@ -742,17 +737,15 @@ function CreateOrderDrawer({
 }
 
 /* ============================================================ */
+// ĐƯA VỀ ĐÚNG 6 CỘT CHUẨN TRONG DB
 type OrderItemRow = {
   id: string;
   order_id: string;
   item_type: "product" | "service";
-  item_id?: string;
-  product_id?: string;
-  service_id?: string;
+  item_id: string;
   quantity: number;
-  unit_price?: number;
-  price?: number;
-  total_price?: number;
+  unit_price: number;
+  total_price: number;
 };
 
 function OrderDetailDrawer({
@@ -818,16 +811,11 @@ function OrderDetailDrawer({
 
   useEffect(() => {
     if (itemsQ.data) {
-      setEditItems(itemsQ.data.map((it) => {
-        // Nắn lại logic đọc ID linh hoạt từ cả 3 cột (item_id, product_id, service_id)
-        const theId = it.item_id || it.product_id || it.service_id || "";
-        const theType = it.item_type || (it.product_id ? "product" : "service");
-        return {
-          item_type: theType as "product" | "service",
-          item_id: theId,
-          quantity: Number(it.quantity),
-        };
-      }));
+      setEditItems(itemsQ.data.map((it) => ({
+        item_type: it.item_type,
+        item_id: it.item_id,
+        quantity: Number(it.quantity),
+      })));
     }
   }, [itemsQ.data]);
 
@@ -873,7 +861,7 @@ function OrderDetailDrawer({
       const { error: dErr } = await supabase.from("order_items").delete().eq("order_id", order.id);
       if (dErr) throw dErr;
 
-      // Nắn lại logic lưu ID linh hoạt cho tương thích ngược
+      // CHUẨN HÓA: Chỉ ghi 6 cột gốc
       const rows = editItems.map((it) => {
         const cat = catMap.get(it.item_id)!;
         const unit = Number(cat?.price ?? 0);
@@ -881,11 +869,8 @@ function OrderDetailDrawer({
           order_id: order.id,
           item_type: cat.type,
           item_id: it.item_id,
-          product_id: cat.type === "product" ? it.item_id : null,
-          service_id: cat.type === "service" ? it.item_id : null,
           quantity: it.quantity,
           unit_price: unit,
-          price: unit,
           total_price: unit * it.quantity,
         };
       });
@@ -1082,17 +1067,14 @@ function OrderDetailDrawer({
                     </thead>
                     <tbody>
                       {(itemsQ.data ?? []).map((it) => {
-                        const theId = it.item_id || it.product_id || it.service_id || "";
-                        const cat = catMap.get(theId);
-                        const displayPrice = it.unit_price || it.price || cat?.price || 0;
-                        const displayTotal = it.total_price || (displayPrice * it.quantity);
+                        const cat = catMap.get(it.item_id);
                         return (
                           <tr key={it.id} className="border-t border-hairline">
-                            <td className="py-2">{cat?.name ?? theId.slice(0, 8)}</td>
-                            <td className="py-2 text-xs">{it.item_type === "service" || it.service_id ? "Dịch vụ" : "Sản phẩm"}</td>
-                            <td className="py-2 text-right">{fmt(Number(displayPrice))}</td>
+                            <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
+                            <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
+                            <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
                             <td className="py-2 text-right">{it.quantity}</td>
-                            <td className="py-2 text-right font-bold">{fmt(Number(displayTotal))}</td>
+                            <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
                           </tr>
                         );
                       })}
