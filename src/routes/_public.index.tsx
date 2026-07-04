@@ -360,32 +360,7 @@ function CommunityHome() {
 
 
 
-      {/* Public Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-200 z-50">
-        <div className="grid grid-cols-3 h-16">
-          <Link
-            to="/"
-            className="flex flex-col items-center justify-center gap-1 text-emerald-600"
-          >
-            <HomeIcon className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Trang chủ</span>
-          </Link>
-          <Link
-            to="/products"
-            className="flex flex-col items-center justify-center gap-1 text-gray-500"
-          >
-            <Store className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Cửa hàng</span>
-          </Link>
-          <Link
-            to="/login"
-            className="flex flex-col items-center justify-center gap-1 text-gray-500"
-          >
-            <User className="w-5 h-5" />
-            <span className="text-[11px] font-medium">Đăng nhập</span>
-          </Link>
-        </div>
-      </nav>
+
 
       {/* Soi da AI Modal */}
       {skinAIOpen && (
