@@ -1095,8 +1095,10 @@ function OrderDetailDrawer({
             </section>
 
             {/* Sales & commission */}
+            {!isCustomerOrder && (
             <section className="rounded-xl border border-hairline p-4 space-y-3">
               <div className="font-bold text-brand-dark">Người bán & Hoa hồng</div>
+
               <div className="grid grid-cols-[1fr_140px] gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">Người bán</Label>
