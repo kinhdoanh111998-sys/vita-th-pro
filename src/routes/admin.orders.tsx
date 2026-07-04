@@ -85,10 +85,14 @@ function OrdersPage() {
   const catalogQ = useQuery({
     queryKey: ["services", "catalog-all"],
     queryFn: async (): Promise<CatalogItem[]> => {
-      const { data, error } = await supabase.from("services")
-        .select("id,name,price,default_sessions,type").order("name");
-      if (error) throw error;
-      return (data ?? []) as CatalogItem[];
+      // Kết hợp cả services và products thành chung 1 mảng Catalog
+      const [srvRes, prdRes] = await Promise.all([
+        supabase.from("services").select("id,name,price,default_sessions"),
+        supabase.from("products").select("id,name,price")
+      ]);
+      const srvs = (srvRes.data ?? []).map(x => ({ ...x, type: "service" as const }));
+      const prds = (prdRes.data ?? []).map(x => ({ ...x, default_sessions: null, type: "product" as const }));
+      return [...srvs, ...prds].sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 
@@ -386,8 +390,6 @@ function CreateOrderDrawer({
     ).slice(0, 6);
   }, [customers, customerSearch]);
 
-  // NOTE: Không dùng useMemo vì react-hook-form `watch` trả về reference ổn định,
-  // deps sẽ không đổi khi user chỉnh quantity → memo không tính lại (bug tổng = 0).
   const subtotal = (items ?? []).reduce((sum, it) => {
     const cat = catalog.find((c) => c.id === it?.item_id);
     const price = cat?.price ?? 0;
@@ -474,7 +476,7 @@ function CreateOrderDrawer({
         finalCustomerId = newCus.id as string;
       }
 
-      // 2) Insert order với status='pending' để tránh AFTER INSERT trigger fire khi chưa có order_items
+      // 2) Insert order
       const { data: order, error: oErr } = await supabase.from("orders").insert({
         customer_id: finalCustomerId,
         subtotal_amount: subtotal,
@@ -493,27 +495,24 @@ function CreateOrderDrawer({
         const unit = Number(cat.price);
         return {
           order_id: order.id as string,
-          item_type: it.item_type,
+          item_type: cat.type,
           item_id: it.item_id,
+          product_id: cat.type === "product" ? it.item_id : null,
+          service_id: cat.type === "service" ? it.item_id : null,
           quantity: it.quantity,
           unit_price: unit,
+          price: unit, // Fallback backward compatibility
           total_price: unit * it.quantity,
         };
       });
       const { error: iErr } = await supabase.from("order_items").insert(rows);
       if (iErr) throw iErr;
 
-      // 4) Đơn hàng mới luôn ở trạng thái 'pending' — chỉ chuyển 'paid' khi admin xác nhận thanh toán
-      //    Trigger sinh treatments sẽ chạy vào thời điểm đó.
-
-      // 5) Increment voucher usage (best-effort; not race-safe)
       if (appliedVoucher) {
         await supabase.from("vouchers").update({
           used_count: (Number((appliedVoucher as unknown as { used_count?: number }).used_count) || 0) + 1,
         }).eq("id", appliedVoucher.id);
       }
-
-
 
       toast.success(`Đã tạo đơn ${order.order_code ?? ""}`, {
         description: `Tổng ${fmt(total)}. Liệu trình sẽ được tự sinh cho các dịch vụ.`,
@@ -747,10 +746,13 @@ type OrderItemRow = {
   id: string;
   order_id: string;
   item_type: "product" | "service";
-  item_id: string;
+  item_id?: string;
+  product_id?: string;
+  service_id?: string;
   quantity: number;
-  unit_price: number;
-  total_price: number;
+  unit_price?: number;
+  price?: number;
+  total_price?: number;
 };
 
 function OrderDetailDrawer({
@@ -816,11 +818,16 @@ function OrderDetailDrawer({
 
   useEffect(() => {
     if (itemsQ.data) {
-      setEditItems(itemsQ.data.map((it) => ({
-        item_type: it.item_type,
-        item_id: it.item_id,
-        quantity: Number(it.quantity),
-      })));
+      setEditItems(itemsQ.data.map((it) => {
+        // Nắn lại logic đọc ID linh hoạt từ cả 3 cột (item_id, product_id, service_id)
+        const theId = it.item_id || it.product_id || it.service_id || "";
+        const theType = it.item_type || (it.product_id ? "product" : "service");
+        return {
+          item_type: theType as "product" | "service",
+          item_id: theId,
+          quantity: Number(it.quantity),
+        };
+      }));
     }
   }, [itemsQ.data]);
 
@@ -866,15 +873,19 @@ function OrderDetailDrawer({
       const { error: dErr } = await supabase.from("order_items").delete().eq("order_id", order.id);
       if (dErr) throw dErr;
 
+      // Nắn lại logic lưu ID linh hoạt cho tương thích ngược
       const rows = editItems.map((it) => {
         const cat = catMap.get(it.item_id)!;
         const unit = Number(cat?.price ?? 0);
         return {
           order_id: order.id,
-          item_type: it.item_type,
+          item_type: cat.type,
           item_id: it.item_id,
+          product_id: cat.type === "product" ? it.item_id : null,
+          service_id: cat.type === "service" ? it.item_id : null,
           quantity: it.quantity,
           unit_price: unit,
+          price: unit,
           total_price: unit * it.quantity,
         };
       });
@@ -1071,14 +1082,17 @@ function OrderDetailDrawer({
                     </thead>
                     <tbody>
                       {(itemsQ.data ?? []).map((it) => {
-                        const cat = catMap.get(it.item_id);
+                        const theId = it.item_id || it.product_id || it.service_id || "";
+                        const cat = catMap.get(theId);
+                        const displayPrice = it.unit_price || it.price || cat?.price || 0;
+                        const displayTotal = it.total_price || (displayPrice * it.quantity);
                         return (
                           <tr key={it.id} className="border-t border-hairline">
-                            <td className="py-2">{cat?.name ?? it.item_id.slice(0, 8)}</td>
-                            <td className="py-2 text-xs">{it.item_type === "service" ? "Dịch vụ" : "Sản phẩm"}</td>
-                            <td className="py-2 text-right">{fmt(Number(it.unit_price))}</td>
+                            <td className="py-2">{cat?.name ?? theId.slice(0, 8)}</td>
+                            <td className="py-2 text-xs">{it.item_type === "service" || it.service_id ? "Dịch vụ" : "Sản phẩm"}</td>
+                            <td className="py-2 text-right">{fmt(Number(displayPrice))}</td>
                             <td className="py-2 text-right">{it.quantity}</td>
-                            <td className="py-2 text-right font-bold">{fmt(Number(it.total_price))}</td>
+                            <td className="py-2 text-right font-bold">{fmt(Number(displayTotal))}</td>
                           </tr>
                         );
                       })}
@@ -1166,4 +1180,3 @@ function OrderDetailDrawer({
     </Dialog>
   );
 }
-
