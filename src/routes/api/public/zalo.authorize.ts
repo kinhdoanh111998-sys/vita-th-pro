@@ -48,11 +48,14 @@ export const Route = createFileRoute("/api/public/zalo/authorize")({
           }
           const redirectUri = `${origin}${ZALO_CALLBACK_PATH}`;
 
-          // httpOnly cookies, 5 minutes lifetime
+          // httpOnly cookies, 5 minutes lifetime.
+          // Zalo OAuth redirects go cross-site (oauth.zaloapp.com → app origin),
+          // so cookies MUST be SameSite=None + Secure or Chrome/Safari drop them.
+          const isHttps = origin.startsWith("https://");
           const cookieOpts = {
             httpOnly: true,
-            secure: origin.startsWith("https://"),
-            sameSite: "lax" as const,
+            secure: isHttps,
+            sameSite: isHttps ? ("none" as const) : ("lax" as const),
             path: "/",
             maxAge: 60 * 5,
           };
