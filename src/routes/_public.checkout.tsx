@@ -10,6 +10,8 @@ import {
   Ticket,
   X,
   CheckCircle2,
+  Trash2,
+
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
