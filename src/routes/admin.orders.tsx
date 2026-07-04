@@ -39,6 +39,7 @@ type OrderRow = {
   payment_method?: string | null;
   payment_status?: string | null;
   order_source?: string | null;
+  order_items?: any[]; // Đã thêm để chứa dữ liệu chi tiết mặt hàng
 };
 
 type Voucher = {
@@ -69,8 +70,7 @@ function OrdersPage() {
   const [openDrawer, setOpenDrawer] = useState(false);
   const [viewOrderId, setViewOrderId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-
+  const [toDate, setDate] = useState("");
 
   const customersQ = useQuery({
     queryKey: ["customers", "list"],
@@ -112,8 +112,9 @@ function OrdersPage() {
   const ordersQ = useQuery({
     queryKey: ["orders", "list"],
     queryFn: async (): Promise<OrderRow[]> => {
+      // Đã sửa lại truy vấn móc thêm bảng order_items
       const { data, error } = await supabase.from("orders")
-        .select("*").order("created_at", { ascending: false });
+        .select("*, order_items(*)").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as OrderRow[];
     },
@@ -124,6 +125,7 @@ function OrdersPage() {
     customersQ.data?.forEach((c) => m.set(c.id, c));
     return m;
   }, [customersQ.data]);
+  
   const staffMap = useMemo(() => {
     const m = new Map<string, StaffUser>();
     staffQ.data?.forEach((s) => m.set(s.id, s));
@@ -160,10 +162,10 @@ function OrdersPage() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Đến ngày</Label>
-              <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-[150px]" />
+              <Input type="date" value={toDate} onChange={(e) => setDate(e.target.value)} className="w-[150px]" />
             </div>
             {(fromDate || toDate) && (
-              <Button type="button" variant="ghost" onClick={() => { setFromDate(""); setToDate(""); }}>
+              <Button type="button" variant="ghost" onClick={() => { setFromDate(""); setDate(""); }}>
                 Xoá lọc
               </Button>
             )}
@@ -180,6 +182,7 @@ function OrdersPage() {
                 <th className="px-4 py-3 font-bold">Mã đơn</th>
                 <th className="px-4 py-3 font-bold">Ngày</th>
                 <th className="px-4 py-3 font-bold">Khách hàng</th>
+                <th className="px-4 py-3 font-bold">Mặt hàng</th>
                 <th className="px-4 py-3 font-bold">Người bán</th>
                 <th className="px-4 py-3 font-bold text-right">Tạm tính</th>
                 <th className="px-4 py-3 font-bold text-right">Giảm</th>
@@ -191,9 +194,9 @@ function OrdersPage() {
 
             <tbody>
               {ordersQ.isLoading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-ink-muted">Đang tải...</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-ink-muted">Đang tải...</td></tr>
               ) : filteredOrders.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-10 text-center text-ink-muted">
+                <tr><td colSpan={10} className="px-4 py-10 text-center text-ink-muted">
                   <ShoppingCart className="mx-auto size-8 mb-2 opacity-50" />
                   Chưa có đơn hàng nào.
                 </td></tr>
@@ -211,6 +214,18 @@ function OrdersPage() {
                     <td className="px-4 py-3">
                       <div className="font-bold">{c?.name ?? "—"}</div>
                       <div className="text-xs text-ink-muted">{c?.phone ?? ""}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="space-y-1">
+                        {o.order_items?.map((it: any, i: number) => {
+                          const cat = catalogQ.data?.find(c => c.id === it.item_id);
+                          return (
+                            <div key={i} className="text-xs">
+                              {cat?.type === 'service' ? 'DV' : 'SP'} · {cat?.name ?? 'Mặt hàng đã xóa'} x{it.quantity}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-xs">
                       {s ? <>{s.full_name ?? s.email}<div className="text-ink-muted">{o.commission_rate}%</div></> : "—"}
@@ -487,7 +502,7 @@ function CreateOrderDrawer({
         sales_staff_id: values.sales_staff_id || null,
         commission_rate: Number(values.commission_rate) || 5,
         status: "pending",
-        order_source: "admin", // <--- ĐÃ THÊM DÒNG NÀY VÀO ĐÂY NHÉ!
+        order_source: "admin", 
       }).select("id,order_code").single();
       if (oErr) throw oErr;
 
