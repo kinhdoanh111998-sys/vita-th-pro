@@ -9,10 +9,6 @@ export type SystemSettings = {
   updated_at: string;
   show_store_list: boolean;
   zalo_oa_url: string | null;
-  bank_name: string | null;
-  bank_account_number: string | null;
-  bank_account_holder: string | null;
-  bank_bin: string | null;
 };
 
 export const SYSTEM_SETTINGS_KEY = ["system_settings"] as const;
