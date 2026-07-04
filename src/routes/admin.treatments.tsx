@@ -17,15 +17,16 @@ type TRow = {
   id: string;
   order_id: string;
   customer_id: string;
+  service_id: string; // Đã thêm vào API fetch
   session_number: number;
   status: string;
   created_at: string;
 };
-type Order = { id: string; service_id: string; quantity: number; created_at: string };
 type Service = { id: string; name: string; default_sessions: number | null };
 type Customer = { id: string; name: string | null; phone: string | null };
 
 type Aggregate = {
+  id_group: string;
   order_id: string;
   customer_id: string;
   customer_name: string;
@@ -44,17 +45,10 @@ function TreatmentsAdmin() {
   const treatmentsQ = useQuery({
     queryKey: ["admin", "treatments", "all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("treatments").select("id,order_id,customer_id,session_number,status,created_at").order("created_at", { ascending: false });
+      // Đã sửa lại query gọi trực tiếp service_id từ bảng treatments
+      const { data, error } = await supabase.from("treatments").select("id,order_id,customer_id,service_id,session_number,status,created_at").order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as TRow[];
-    },
-  });
-  const ordersQ = useQuery({
-    queryKey: ["admin", "orders", "min"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("orders").select("id,service_id,quantity,created_at");
-      if (error) throw error;
-      return (data ?? []) as Order[];
     },
   });
   const servicesQ = useQuery({
@@ -74,22 +68,23 @@ function TreatmentsAdmin() {
     },
   });
 
-  const isLoading = treatmentsQ.isLoading || ordersQ.isLoading || servicesQ.isLoading || customersQ.isLoading;
-  const error = treatmentsQ.error || ordersQ.error || servicesQ.error || customersQ.error;
+  const isLoading = treatmentsQ.isLoading || servicesQ.isLoading || customersQ.isLoading;
+  const error = treatmentsQ.error || servicesQ.error || customersQ.error;
 
   const aggregates: Aggregate[] = useMemo(() => {
-    const orders = new Map((ordersQ.data ?? []).map((o) => [o.id, o]));
     const services = new Map((servicesQ.data ?? []).map((s) => [s.id, s]));
     const customers = new Map((customersQ.data ?? []).map((c) => [c.id, c]));
     const grouped = new Map<string, Aggregate>();
+    
     for (const t of treatmentsQ.data ?? []) {
-      const key = t.order_id;
+      // Logic gom nhóm mới: Nếu 1 đơn mua 2 dịch vụ khác nhau thì sẽ tách làm 2 dòng riêng biệt
+      const key = `${t.order_id}_${t.service_id}`;
       let agg = grouped.get(key);
       if (!agg) {
-        const o = orders.get(t.order_id);
-        const svc = o ? services.get(o.service_id) : null;
+        const svc = services.get(t.service_id);
         const cus = customers.get(t.customer_id);
         agg = {
+          id_group: key,
           order_id: t.order_id,
           customer_id: t.customer_id,
           customer_name: cus?.name ?? "—",
@@ -98,7 +93,7 @@ function TreatmentsAdmin() {
           total: 0,
           completed: 0,
           remaining: 0,
-          created_at: o?.created_at ?? t.created_at,
+          created_at: t.created_at,
           status: "active",
         };
         grouped.set(key, agg);
@@ -111,7 +106,7 @@ function TreatmentsAdmin() {
       a.status = a.remaining <= 0 ? "done" : "active";
       return a;
     }).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-  }, [treatmentsQ.data, ordersQ.data, servicesQ.data, customersQ.data]);
+  }, [treatmentsQ.data, servicesQ.data, customersQ.data]);
 
   const filtered = useMemo(() => {
     if (statusFilter === "all") return aggregates;
@@ -160,18 +155,20 @@ function TreatmentsAdmin() {
             ) : filtered.map((r) => {
               const pct = r.total > 0 ? Math.round((r.completed / r.total) * 100) : 0;
               return (
-                <tr key={r.order_id}>
+                <tr key={r.id_group}>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
                     <div className="font-semibold">{r.customer_name}</div>
-                    {r.customer_phone && <div className="text-xs text-ink-muted">{r.customer_phone}</div>}
+                    <div className="text-xs text-ink-muted">{r.customer_phone}</div>
                   </td>
-                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">{r.service_name}</td>
+                  <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] font-medium text-brand-dark">{r.service_name}</td>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed] min-w-[260px]">
                     <div className="flex justify-between text-xs mb-1.5">
                       <span>Đã dùng <b>{r.completed}</b> / <b>{r.total}</b></span>
                       <span className="text-brand-dark font-bold">Còn {r.remaining}</span>
                     </div>
-                    <Progress value={pct} />
+                    <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                       <div className="h-full bg-brand rounded-full" style={{ width: `${pct}%` }}></div>
+                    </div>
                   </td>
                   <td className="px-3.5 py-3 text-sm border-b border-[#edf3ed]">
                     <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${r.status === "done" ? "bg-blue-100 text-blue-800" : "bg-emerald-100 text-emerald-800"}`}>
