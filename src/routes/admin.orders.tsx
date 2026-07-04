@@ -39,7 +39,7 @@ type OrderRow = {
   payment_method?: string | null;
   payment_status?: string | null;
   order_source?: string | null;
-  order_items?: any[]; // Đã thêm để chứa dữ liệu chi tiết mặt hàng
+  order_items?: any[];
 };
 
 type Voucher = {
@@ -82,19 +82,45 @@ function OrdersPage() {
     },
   });
 
+  // BẢN VÁ LỖI HIỂN THỊ SP/DV (CATALOG QUERY ĐÃ ĐƯỢC CHUẨN HÓA)
   const catalogQ = useQuery({
     queryKey: ["services", "catalog-all"],
     queryFn: async (): Promise<CatalogItem[]> => {
-      const { data: srvs, error: srvErr } = await supabase.from("services").select("id,name,price,default_sessions");
-      const { data: prds, error: prdErr } = await supabase.from("products").select("id,name,price");
+      // 1. Fetch toàn bộ (*) để lấy được cột type thật sự dưới DB
+      const { data: srvs, error: srvErr } = await supabase.from("services").select("*");
+      const { data: prds, error: prdErr } = await supabase.from("products").select("*");
       
       if (srvErr) console.error("Lỗi fetch services:", srvErr);
       if (prdErr) console.error("Lỗi fetch products:", prdErr);
 
-      const srvList = (srvs ?? []).map(x => ({ ...x, type: "service" as const }));
-      const prdList = (prds ?? []).map(x => ({ ...x, default_sessions: null, type: "product" as const }));
+      // 2. Map dữ liệu chuẩn, bóc tách chính xác Dịch vụ và Sản phẩm
+      const srvList = (srvs ?? []).map(x => ({
+        id: x.id,
+        name: x.name,
+        price: x.price || x.sale_price || 0,
+        default_sessions: x.default_sessions ?? null,
+        // Điểm mấu chốt: Tôn trọng cột type của DB nếu có
+        type: (x.type === "product" ? "product" : "service") as "product" | "service"
+      }));
+
+      const prdList = (prds ?? []).map(x => ({
+        id: x.id,
+        name: x.name,
+        price: x.price || x.sale_price || 0,
+        default_sessions: null,
+        type: "product" as const
+      }));
       
-      return [...srvList, ...prdList].sort((a, b) => a.name.localeCompare(b.name));
+      // 3. Gộp mảng và dùng Map để lọc bỏ các ID bị trùng lặp (tránh render 2 lần cùng 1 món)
+      const allItems = [...srvList, ...prdList];
+      const uniqueMap = new Map<string, CatalogItem>();
+      allItems.forEach(item => {
+        if (!uniqueMap.has(item.id)) {
+          uniqueMap.set(item.id, item);
+        }
+      });
+
+      return Array.from(uniqueMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     },
   });
 
@@ -112,7 +138,6 @@ function OrdersPage() {
   const ordersQ = useQuery({
     queryKey: ["orders", "list"],
     queryFn: async (): Promise<OrderRow[]> => {
-      // Đã sửa lại truy vấn móc thêm bảng order_items
       const { data, error } = await supabase.from("orders")
         .select("*, order_items(*)").order("created_at", { ascending: false });
       if (error) throw error;
@@ -862,10 +887,14 @@ function OrderDetailDrawer({
     if (!order) return;
     if (!customerId) { toast.error("Vui lòng chọn khách hàng"); return; }
     if (editItems.length === 0) { toast.error("Đơn cần ít nhất 1 mặt hàng"); return; }
+    
+    // Thêm vòng bảo vệ kiểm tra logic
     for (const it of editItems) {
       if (!it.item_id) { toast.error("Có dòng chưa chọn mặt hàng"); return; }
       if (!it.quantity || it.quantity <= 0) { toast.error("Số lượng phải > 0"); return; }
+      if (!catMap.has(it.item_id)) { toast.error("Mặt hàng bạn chọn không còn tồn tại trong kho"); return; }
     }
+    
     setSaving(true);
     try {
       const { error: uErr } = await supabase.from("orders").update({
