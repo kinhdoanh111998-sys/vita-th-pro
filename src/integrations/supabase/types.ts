@@ -1385,12 +1385,35 @@ export type Database = {
         }
         Relationships: []
       }
-      system_settings: {
+      system_bank_settings: {
         Row: {
           bank_account_holder: string | null
           bank_account_number: string | null
           bank_bin: string | null
           bank_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          bank_account_holder?: string | null
+          bank_account_number?: string | null
+          bank_bin?: string | null
+          bank_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
           facebook_link: string | null
           hotline: string | null
           id: string
@@ -1400,10 +1423,6 @@ export type Database = {
           zalo_oa_url: string | null
         }
         Insert: {
-          bank_account_holder?: string | null
-          bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_name?: string | null
           facebook_link?: string | null
           hotline?: string | null
           id?: string
@@ -1413,10 +1432,6 @@ export type Database = {
           zalo_oa_url?: string | null
         }
         Update: {
-          bank_account_holder?: string | null
-          bank_account_number?: string | null
-          bank_bin?: string | null
-          bank_name?: string | null
           facebook_link?: string | null
           hotline?: string | null
           id?: string
