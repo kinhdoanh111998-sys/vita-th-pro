@@ -40,15 +40,18 @@ function ZaloCallbackPage() {
     (async () => {
       try {
         if (search.error) {
-          const zaloError = search.error_description || search.error || "Zalo từ chối đăng nhập";
-          setMessage(`Đăng nhập Zalo thất bại: ${zaloError}`);
-          toast.error(`Đăng nhập Zalo thất bại: ${zaloError}`);
-          setTimeout(() => navigate({ to: "/login", replace: true }), 1800);
+          const zaloError = search.error_description || search.error;
+          const msg = `Zalo trả về lỗi: ${zaloError}`;
+          setMessage(msg);
+          toast.error(msg);
+          setTimeout(() => navigate({ to: "/login", replace: true }), 3000);
           return;
         }
         if (!search.code || !search.state) {
-          toast.error("Thiếu thông tin từ Zalo, vui lòng thử lại");
-          navigate({ to: "/login", replace: true });
+          const msg = `Thiếu tham số từ Zalo (code=${search.code ?? "null"}, state=${search.state ?? "null"})`;
+          setMessage(msg);
+          toast.error(msg);
+          setTimeout(() => navigate({ to: "/login", replace: true }), 3000);
           return;
         }
 
@@ -67,8 +70,11 @@ function ZaloCallbackPage() {
             }, 1800);
             return;
           }
-          toast.error(result.message || "Đăng nhập Zalo thất bại");
-          navigate({ to: "/login", replace: true });
+          const detail = result.message || result.error || "unknown_error";
+          const msg = `Lỗi backend Zalo [${result.error}]: ${detail}`;
+          setMessage(msg);
+          toast.error(msg);
+          setTimeout(() => navigate({ to: "/login", replace: true }), 3500);
           return;
         }
 
@@ -78,8 +84,10 @@ function ZaloCallbackPage() {
         });
         if (signInErr) {
           console.error("[zalo/callback] signIn error:", signInErr);
-          toast.error("Không thể tạo phiên đăng nhập, vui lòng thử lại");
-          navigate({ to: "/login", replace: true });
+          const msg = `Lỗi tạo phiên đăng nhập: ${signInErr.message} (code=${signInErr.code ?? "n/a"}, status=${signInErr.status ?? "n/a"})`;
+          setMessage(msg);
+          toast.error(msg);
+          setTimeout(() => navigate({ to: "/login", replace: true }), 3500);
           return;
         }
 
@@ -88,8 +96,10 @@ function ZaloCallbackPage() {
         navigate({ to: "/app", replace: true });
       } catch (err) {
         console.error("[zalo/callback] crash:", err);
-        toast.error("Có lỗi khi đăng nhập Zalo");
-        navigate({ to: "/login", replace: true });
+        const msg = `Exception khi đăng nhập Zalo: ${(err as Error)?.message ?? String(err)}`;
+        setMessage(msg);
+        toast.error(msg);
+        setTimeout(() => navigate({ to: "/login", replace: true }), 3500);
       } finally {
         setLoading(false);
       }
