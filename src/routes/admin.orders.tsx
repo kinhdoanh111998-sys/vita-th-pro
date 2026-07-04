@@ -488,6 +488,7 @@ function CreateOrderDrawer({
         sales_staff_id: values.sales_staff_id || null,
         commission_rate: Number(values.commission_rate) || 5,
         status: "pending",
+        order_source: "admin", // <--- ĐÃ THÊM DÒNG NÀY VÀO ĐÂY NHÉ!
       }).select("id,order_code").single();
       if (oErr) throw oErr;
 
