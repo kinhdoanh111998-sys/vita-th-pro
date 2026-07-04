@@ -53,13 +53,6 @@ type Voucher = {
 
 type PayMethod = "cod" | "transfer";
 
-interface QrModalState {
-  open: boolean;
-  orderCode: string | null;
-  orderId: string | null;
-  amount: number;
-}
-
 function CheckoutPage() {
   const navigate = useNavigate();
   const { session, email, loading: authLoading } = useAuth();
@@ -77,12 +70,7 @@ function CheckoutPage() {
   const [applyingVoucher, setApplyingVoucher] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<Voucher | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [qr, setQr] = useState<QrModalState>({
-    open: false,
-    orderCode: null,
-    orderId: null,
-    amount: 0,
-  });
+  const [orderCode] = useState<string>(() => "DH" + Date.now());
 
   // Bắt buộc auth
   useEffect(() => {
