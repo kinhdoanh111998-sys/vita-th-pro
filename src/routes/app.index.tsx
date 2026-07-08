@@ -80,10 +80,7 @@ function AppHome() {
             <p className="text-xs text-gray-500">Xin chào,</p>
             <h1 className="font-heading text-lg">Cộng đồng Vita 👋</h1>
           </div>
-          <button className="ml-auto relative w-10 h-10 rounded-full bg-white border border-gray-100 grid place-items-center">
-            <Bell className="w-5 h-5 text-gray-600" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-status-error" />
-          </button>
+          <div className="ml-auto w-10 h-10" />
         </div>
         <SearchBar placeholder="Tìm sự kiện, cửa hàng, bài viết..." />
         <FilterTabs tabs={TABS} active={tab} onChange={setTab} />
