@@ -219,14 +219,15 @@ function CommunityHome() {
           </h2>
           <div className="mx-auto mt-3 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6">
+        {/* Đã sửa thành Slider vuốt ngang trên Mobile, giữ Grid trên PC */}
+        <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
           {stores.map((b, i) => {
             const gradient = BRANCH_GRADIENTS[i % BRANCH_GRADIENTS.length];
             const hotline = b.hotline ?? b.phone ?? "";
             return (
               <article
                 key={b.id}
-                className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="w-[85%] max-w-[320px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className={`relative h-40 md:h-48 bg-gradient-to-br ${gradient} overflow-hidden`}>
                   {b.main_image && (
