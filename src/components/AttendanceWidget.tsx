@@ -59,22 +59,24 @@ export function AttendanceWidget() {
       (data ?? []).forEach((s) => { m[s.id] = s as Shift; });
       return m;
     },
+    refetchOnWindowFocus: true, // VÁ LỖI 1: Tự động cập nhật giờ ca làm ngay khi Admin sửa
   });
 
-  // VÁ LỖI 1: Dùng toán tử like hoặc dải gte/lte để bọc trọn vẹn ngày bất chấp định dạng Timestamp của Supabase
+  // Đăng ký đã được duyệt hôm nay (để chọn khi check-in)
   const regsQ = useQuery({
     enabled: !!uid,
     queryKey: ["portal-my-regs-today", uid, day],
     queryFn: async (): Promise<Registration[]> => {
+      // VÁ LỖI 2: Dùng .eq chuẩn xác cho cột DATE, không dính lỗi Timestamp rỗng
       const { data, error } = await supabase.from("shift_registrations")
         .select("id,shift_id,date,status")
         .eq("employee_id", uid!)
-        .gte("date", day)
-        .lte("date", day + " 23:59:59")
+        .eq("date", day)
         .eq("status", "approved");
       if (error) throw error;
       return (data ?? []) as Registration[];
     },
+    refetchOnWindowFocus: true,
   });
 
   const attQ = useQuery({
@@ -84,13 +86,12 @@ export function AttendanceWidget() {
       const { data, error } = await supabase.from("attendances")
         .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason")
         .eq("employee_id", uid!)
-        .gte("date", day)
-        .lte("date", day + " 23:59:59")
-        .limit(1)
+        .eq("date", day)
         .maybeSingle();
-      if (error) throw error;
+      if (error && error.code !== "PGRST116") throw error;
       return (data ?? null) as Attendance | null;
     },
+    refetchOnWindowFocus: true,
   });
 
   const att = attQ.data;
@@ -114,10 +115,10 @@ export function AttendanceWidget() {
     if (!earlyReason.trim()) { toast.error("Vui lòng nhập lý do"); return; }
     setEarlySaving(true);
     try {
-      // VÁ LỖI 2: Xóa bỏ trường "early_checkout_requested_at" không tồn tại dưới database để lệnh Update lọt qua
+      // VÁ LỖI 3: Loại bỏ hoàn toàn cột ma "early_checkout_requested_at" để lệnh Update xuống Database trơn tru
       const { error } = await supabase.from("attendances").update({
         early_checkout_requested: true,
-        early_checkout_reason: earlyReason.trim()
+        early_checkout_reason: earlyReason.trim(),
       }).eq("id", att.id);
       
       if (error) throw error;
@@ -337,7 +338,7 @@ export function AttendanceWidget() {
             </Select>
           </div>
           <Button onClick={doCheckIn} disabled={busy || !chosenShift}
-            className="mt-4 w-full h-14 text-base">
+            className="mt-4 w-full h-14 text-base bg-brand hover:bg-brand-dark">
             <LogIn className="size-5 mr-2 inline" /> BẤM CHECK-IN VÀO CA
           </Button>
         </>
@@ -362,6 +363,7 @@ export function ShiftRegistrationPanel() {
       const { data } = await supabase.from("shifts").select("*").eq("is_active", true).order("start_time");
       return (data ?? []) as Shift[];
     },
+    refetchOnWindowFocus: true, // VÁ LỖI 1: Tự động tải lại ca làm việc khi Admin thay đổi
   });
 
   // Lịch trong 7 ngày
@@ -376,16 +378,16 @@ export function ShiftRegistrationPanel() {
     enabled: !!uid,
     queryKey: ["portal-my-regs-week", uid, weekStart, weekEnd],
     queryFn: async (): Promise<Registration[]> => {
-      // VÁ LỖI HIỂN THỊ LỊCH TUẦN ĐỂ KHÔNG BỊ TRƯỢT DỮ LIỆU CUỐI NGÀY
       const { data, error } = await supabase.from("shift_registrations")
         .select("id,shift_id,date,status")
         .eq("employee_id", uid!)
         .gte("date", weekStart)
-        .lte("date", weekEnd + " 23:59:59")
+        .lte("date", weekEnd) // Trả lại .lte thuần túy cho cột định dạng DATE
         .order("date");
       if (error) throw error;
       return (data ?? []) as Registration[];
     },
+    refetchOnWindowFocus: true,
   });
 
   const submit = async () => {
