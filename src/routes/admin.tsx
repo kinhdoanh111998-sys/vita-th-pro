@@ -27,12 +27,17 @@ function AdminLayout() {
                 <Menu className="w-5 h-5" />
               </button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[86%] max-w-[320px] bg-brand-surface border-0 text-brand-text">
-              {/* FIXED: Bổ sung chiều cao 100% và thanh cuộn ẩn cho menu Mobile */}
-              <div onClick={() => setOpen(false)} className="h-full overflow-y-auto scrollbar-none pb-10">
+            
+            {/* FIXED MOBILE: Chuyển overflow-y-auto và max-h-screen vào thẳng SheetContent để điện thoại nhận diện vùng vuốt */}
+            <SheetContent 
+              side="left" 
+              className="p-0 w-[86%] max-w-[320px] bg-brand-surface border-0 text-brand-text overflow-y-auto max-h-screen pb-12"
+            >
+              <div onClick={() => setOpen(false)}>
                 <AdminSidebar />
               </div>
             </SheetContent>
+            
           </Sheet>
           <div className="flex items-center gap-2">
             <img src={logo} alt="" className="h-8 bg-white rounded-md p-0.5 border border-brand-border" />
@@ -42,7 +47,6 @@ function AdminLayout() {
         </header>
 
         {/* Desktop sidebar */}
-        {/* FIXED: Bổ sung sticky, giới hạn h-screen và bật scrollbar cho menu PC/Tablet */}
         <div className="hidden lg:block sticky top-0 h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
           <AdminSidebar />
         </div>
