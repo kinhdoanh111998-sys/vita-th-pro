@@ -34,15 +34,13 @@ const TABS = [
 ];
 
 const QUICK_ICONS: Record<string, { icon: typeof Sparkles; color: string }> = {
-  skin_ai:  { icon: Sparkles,     color: "bg-pink-100 text-pink-600" },
+  skin_ai:    { icon: Sparkles,     color: "bg-pink-100 text-pink-600" },
   store:    { icon: Store,        color: "bg-emerald-100 text-emerald-600" },
   booking:  { icon: CalendarDays, color: "bg-amber-100 text-amber-600" },
-  scan:     { icon: QrCode,       color: "bg-sky-100 text-sky-600" },
+  scan:      { icon: QrCode,       color: "bg-sky-100 text-sky-600" },
   wallet:   { icon: Wallet,       color: "bg-violet-100 text-violet-600" },
   vouchers: { icon: Gift,         color: "bg-rose-100 text-rose-600" },
 };
-
-
 
 
 function AppHome() {
@@ -50,10 +48,12 @@ function AppHome() {
   const { data: stores = [] } = useActiveStores();
   const { data: appNav = [] } = useNavigationItems("app");
   const { data: sys } = useSystemSettings();
-  const freeTrialName = sys?.free_trial_campaign || "Trải nghiệm liệu trình miễn phí";
   const showStoreList = sys?.show_store_list !== false;
   const quickItems = appNav.filter((i) => i.is_visible);
 
+  // Lấy tên chiến dịch động từ Database hệ thống (có fallback mặc định nếu bảng trống)
+  const heroCampaignName = sys?.app_home_hero_campaign || "Trải nghiệm liệu trình miễn phí";
+  const shortcutCampaignName = sys?.homepage_shortcut_campaign || "Soi da AI chuyên sâu";
 
   const eventsQ = useQuery({
     queryKey: ["public", "events"],
@@ -69,7 +69,6 @@ function AppHome() {
   const allEvents = eventsQ.data ?? [];
   const upcomingEvents = allEvents.filter(isUpcoming);
   const pastEvents = allEvents.filter((e) => !isUpcoming(e));
-
 
 
   return (
@@ -112,21 +111,21 @@ function AppHome() {
       ) : (
 
         <>
-          {/* Hero banner (Đã được làm động) */}
+          {/* Hero banner (Đã được làm động hoàn toàn theo app_home_hero_campaign) */}
           <section className="px-4 mt-2">
             <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-primary to-brand-primary-dark text-white p-5 shadow-lg">
               <span className="inline-flex text-[11px] font-semibold uppercase tracking-wide bg-white/20 rounded-full px-2 py-0.5">
                 Ưu đãi thành viên
               </span>
               <h2 className="font-heading text-xl mt-2 text-white">
-                {freeTrialName}
+                {heroCampaignName}
               </h2>
               <p className="text-sm text-white/85 mt-1">
                 Đặt lịch ngay để nhận buổi trải nghiệm và tư vấn cá nhân hoá.
               </p>
-              <Link 
+              <Link
                 to="/booking"
-                search={{ note: freeTrialName }}
+                search={{ note: heroCampaignName }}
                 className="mt-3 inline-flex bg-white text-brand-primary text-sm font-semibold px-4 py-2 rounded-full active:scale-95 transition-transform"
               >
                 Khám phá ngay
@@ -156,14 +155,33 @@ function AppHome() {
           <CommunityFeedMobile />
 
 
-
-          {/* Quick Access (dynamic from DB) */}
+          {/* Quick Access (Đã được đấu nối động phễu nút bấm Soi da AI) */}
           {quickItems.length > 0 && (
             <section className="px-4 mt-4">
               <div className="grid grid-cols-4 gap-3">
                 {quickItems.map((item) => {
                   const meta = QUICK_ICONS[item.menu_key] ?? { icon: Sparkles, color: "bg-gray-100 text-gray-600" };
                   const Icon = meta.icon;
+                  
+                  // Bắt mạch: Nếu menu_key là skin_ai, ta gài tên chiến dịch động lôi từ trong trang quản trị
+                  if (item.menu_key === "skin_ai") {
+                    return (
+                      <Link
+                        key={item.id}
+                        to="/booking"
+                        search={{ note: shortcutCampaignName }}
+                        className="flex flex-col items-center gap-1.5"
+                      >
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${meta.color} active:scale-95 transition`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <span className="text-[11px] md:text-xs font-bold text-emerald-700 text-center leading-tight">
+                          ✨ {item.label}
+                        </span>
+                      </Link>
+                    );
+                  }
+
                   return (
                     <Link
                       key={item.id}
@@ -204,8 +222,6 @@ function AppHome() {
               </div>
             </>
           )}
-
-
 
         </>
       )}
@@ -287,4 +303,3 @@ function EventList({
     </>
   );
 }
-
