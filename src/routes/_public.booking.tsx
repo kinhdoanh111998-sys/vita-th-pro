@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { notifyOpsNewBooking } from "@/lib/booking-notify.functions";
 import { useAuth } from "@/lib/AuthContext";
 
-// Khai báo kiểu dữ liệu cho tham số trên URL
+// Khai báo kiểu dữ liệu an toàn cho tham số chiến dịch Marketing trên URL
 type BookingSearch = {
   note?: string;
 };
@@ -34,8 +34,9 @@ const OTHER_VALUE = "__other__";
 type ServiceOption = { id: string; name: string };
 
 function BookingPage() {
-  const { session } = useAuth(); // Chỉ lấy session để lấy UID cho notify
-  // Lấy tham số 'note' từ URL do Trang chủ / Marketing đẩy sang
+  const { session } = useAuth(); // Lấy session cho chức năng notify thông báo ca hẹn
+  
+  // Trạm nhận diện URL: Đọc tham số 'note' từ Trang chủ / Admin Marketing đẩy sang
   const searchParams = useSearch({ from: "/_public/booking" });
   const campaignNote = searchParams.note || "";
 
@@ -46,13 +47,13 @@ function BookingPage() {
   const [date, setDate] = useState(""); 
   const [time, setTime] = useState(""); 
   
-  // Khởi tạo state note bằng biến campaignNote lấy từ URL (nếu có)
+  // Khởi tạo ghi chú bằng đúng tên chiến dịch Marketing lấy từ URL
   const [note, setNote] = useState(campaignNote);
   
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<ServiceOption[]>([]);
 
-  // NẾU đi từ nút Marketing, ta tự động set dịch vụ thành "Dịch vụ khác" để tránh lỗi trống trường
+  // Nếu khách đi từ nút chiến dịch Marketing, tự động chọn "Dịch vụ khác" và gán tên chiến dịch vào
   useEffect(() => {
     if (campaignNote) {
       setService(OTHER_VALUE);
@@ -118,14 +119,14 @@ function BookingPage() {
           : null;
       const numericRef = refCode && /^\d+$/.test(refCode) ? refCode : null;
 
-      // Ghép ngày và giờ lại để lưu
+      // Ghép ngày và giờ để đẩy xuống database
       const appointmentDate = new Date(`${date}T${time}:00`);
       const bookingDate = date;
       const bookingTime = time;
 
       let customerId: string | null = null;
       
-      // FIX LỖI 2: Chỉ lấy ID của khách hàng có Số Điện Thoại khớp với SĐT vừa nhập trên form. 
+      // Dò tìm ID khách hàng chính xác theo SĐT vừa nhập
       if (trimmedPhone) {
         const { data: cust } = await supabase
           .from("customers").select("id").eq("phone", trimmedPhone).maybeSingle();
@@ -178,10 +179,12 @@ function BookingPage() {
         console.warn("[booking] notify ops failed", nErr);
       }
 
+      // Thông báo Toast thành công rõ ràng kéo dài 5 giây cho khách an tâm
       toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 5000 });
+      
       setName("");
       setPhone("");
-      // Không reset 2 trường này nếu là form từ chiến dịch
+      // Giữ lại cấu hình chiến dịch Marketing nếu khách đi từ luồng quảng cáo
       if (!campaignNote) {
         setService("");
         setOtherService("");
@@ -204,12 +207,13 @@ function BookingPage() {
     <section className="bg-brand-bg py-16">
       <div className="mx-auto max-w-[1200px] px-5 grid gap-10 lg:grid-cols-2 items-start">
         <div className="lg:order-2">
+          {/* Đổi tiêu đề động theo tên chiến dịch Marketing cho chuyên nghiệp */}
           <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold">
             {campaignNote ? "Đăng Ký " + campaignNote : "Đặt Lịch Hẹn Trị Liệu"}
           </h1>
           <p className="font-body text-brand-muted mt-4 text-lg leading-relaxed max-w-lg">
             {campaignNote 
-              ? "Bạn đang đăng ký tham gia chương trình ưu đãi đặc biệt. Vui lòng để lại thông tin để chúng tôi liên hệ xác nhận."
+              ? "Bạn đang đăng ký tham gia chương trình ưu đãi đặc biệt từ hệ thống VITA. Vui lòng để lại thông tin chính xác để nhận suất ưu đãi."
               : "Không gian tĩnh tâm, đội ngũ chuyên viên tận tâm. Hãy để VITA đồng hành cùng hành trình chăm sóc sức khỏe và vẻ đẹp của bạn."
             }
           </p>
@@ -284,7 +288,7 @@ function BookingPage() {
               />
             </div>
 
-            {/* Nếu đang là luồng Đăng ký chiến dịch (Có tham số note trên URL) thì ta ẨN cái chọn Dịch vụ đi cho mượt */}
+            {/* Nếu đang chạy luồng chiến dịch Marketing từ URL, ta ẩn ô chọn Dịch vụ rườm rà đi để tăng tỷ lệ đăng ký */}
             {!campaignNote && (
               <div>
                 <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
@@ -319,7 +323,7 @@ function BookingPage() {
               </div>
             )}
 
-            {/* FIX LỖI 1: Tách ô Ngày và Giờ */}
+            {/* Ô chọn Ngày và Giờ đã được tách riêng để chống lỗi hiển thị trên điện thoại */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
@@ -356,7 +360,7 @@ function BookingPage() {
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={1000}
                 rows={4}
-                disabled={!!campaignNote} // Khóa ô ghi chú nếu đi từ chiến dịch để khách ko xóa mất chữ
+                disabled={!!campaignNote} // Khóa mờ ô ghi chú nếu đi từ Marketing để bảo vệ dữ liệu nguồn chiến dịch
                 className="w-full min-h-[100px] px-4 py-3 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition resize-y disabled:bg-gray-50 disabled:text-emerald-700 disabled:font-semibold"
                 placeholder="Mong muốn thêm về lịch hẹn..."
               />
