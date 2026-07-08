@@ -1,11 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { notifyOpsNewBooking } from "@/lib/booking-notify.functions";
 import { useAuth } from "@/lib/AuthContext";
 
+// Khai báo kiểu dữ liệu cho tham số trên URL
+type BookingSearch = {
+  note?: string;
+};
+
 export const Route = createFileRoute("/_public/booking")({
+  validateSearch: (search: Record<string, unknown>): BookingSearch => {
+    return {
+      note: typeof search.note === "string" ? search.note : undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Đặt lịch hẹn | Vita TH Pro" },
@@ -24,16 +34,31 @@ const OTHER_VALUE = "__other__";
 type ServiceOption = { id: string; name: string };
 
 function BookingPage() {
-  const { session } = useAuth(); // Chỉ lấy session để lấy UID cho notify, không dùng email để ép ID khách nữa
+  const { session } = useAuth(); // Chỉ lấy session để lấy UID cho notify
+  // Lấy tham số 'note' từ URL do Trang chủ / Marketing đẩy sang
+  const searchParams = useSearch({ from: "/_public/booking" });
+  const campaignNote = searchParams.note || "";
+
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [service, setService] = useState(""); 
   const [otherService, setOtherService] = useState("");
-  const [date, setDate] = useState(""); // Đã tách Ngày
-  const [time, setTime] = useState(""); // Đã tách Giờ
-  const [note, setNote] = useState("");
+  const [date, setDate] = useState(""); 
+  const [time, setTime] = useState(""); 
+  
+  // Khởi tạo state note bằng biến campaignNote lấy từ URL (nếu có)
+  const [note, setNote] = useState(campaignNote);
+  
   const [loading, setLoading] = useState(false);
   const [services, setServices] = useState<ServiceOption[]>([]);
+
+  // NẾU đi từ nút Marketing, ta tự động set dịch vụ thành "Dịch vụ khác" để tránh lỗi trống trường
+  useEffect(() => {
+    if (campaignNote) {
+      setService(OTHER_VALUE);
+      setOtherService(campaignNote);
+    }
+  }, [campaignNote]);
 
   useEffect(() => {
     let mounted = true;
@@ -101,7 +126,6 @@ function BookingPage() {
       let customerId: string | null = null;
       
       // FIX LỖI 2: Chỉ lấy ID của khách hàng có Số Điện Thoại khớp với SĐT vừa nhập trên form. 
-      // Không ép ID theo Email đang đăng nhập để có thể đặt lịch hộ người khác.
       if (trimmedPhone) {
         const { data: cust } = await supabase
           .from("customers").select("id").eq("phone", trimmedPhone).maybeSingle();
@@ -157,11 +181,14 @@ function BookingPage() {
       toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ xác nhận sớm.", { duration: 5000 });
       setName("");
       setPhone("");
-      setService("");
-      setOtherService("");
+      // Không reset 2 trường này nếu là form từ chiến dịch
+      if (!campaignNote) {
+        setService("");
+        setOtherService("");
+        setNote("");
+      }
       setDate("");
       setTime("");
-      setNote("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Không gửi được";
       toast.error(`Đặt lịch thất bại: ${msg}`);
@@ -178,11 +205,13 @@ function BookingPage() {
       <div className="mx-auto max-w-[1200px] px-5 grid gap-10 lg:grid-cols-2 items-start">
         <div className="lg:order-2">
           <h1 className="font-heading text-brand-text text-3xl md:text-4xl font-bold">
-            Đặt Lịch Hẹn Trị Liệu
+            {campaignNote ? "Đăng Ký " + campaignNote : "Đặt Lịch Hẹn Trị Liệu"}
           </h1>
           <p className="font-body text-brand-muted mt-4 text-lg leading-relaxed max-w-lg">
-            Không gian tĩnh tâm, đội ngũ chuyên viên tận tâm. Hãy để VITA đồng
-            hành cùng hành trình chăm sóc sức khỏe và vẻ đẹp của bạn.
+            {campaignNote 
+              ? "Bạn đang đăng ký tham gia chương trình ưu đãi đặc biệt. Vui lòng để lại thông tin để chúng tôi liên hệ xác nhận."
+              : "Không gian tĩnh tâm, đội ngũ chuyên viên tận tâm. Hãy để VITA đồng hành cùng hành trình chăm sóc sức khỏe và vẻ đẹp của bạn."
+            }
           </p>
 
           <div className="mt-8 grid grid-cols-2 gap-4">
@@ -255,39 +284,42 @@ function BookingPage() {
               />
             </div>
 
-            <div>
-              <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
-                Dịch vụ quan tâm <span className="text-status-error">*</span>
-              </label>
-              <select
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                required
-                className={inputCls}
-              >
-                <option value="">-- Chọn dịch vụ --</option>
-                {services.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-                <option value={OTHER_VALUE}>Dịch vụ khác</option>
-              </select>
-
-              {isOther && (
-                <input
-                  type="text"
-                  value={otherService}
-                  onChange={(e) => setOtherService(e.target.value)}
-                  maxLength={500}
+            {/* Nếu đang là luồng Đăng ký chiến dịch (Có tham số note trên URL) thì ta ẨN cái chọn Dịch vụ đi cho mượt */}
+            {!campaignNote && (
+              <div>
+                <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
+                  Dịch vụ quan tâm <span className="text-status-error">*</span>
+                </label>
+                <select
+                  value={service}
+                  onChange={(e) => setService(e.target.value)}
                   required
-                  className={`${inputCls} mt-3`}
-                  placeholder="Vui lòng nhập dịch vụ hoặc yêu cầu cụ thể của bạn..."
-                />
-              )}
-            </div>
+                  className={inputCls}
+                >
+                  <option value="">-- Chọn dịch vụ --</option>
+                  {services.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                  <option value={OTHER_VALUE}>Dịch vụ khác</option>
+                </select>
 
-            {/* FIX LỖI 1: Tách ô Ngày và Giờ thành 2 ô riêng biệt để không bị lỗi trên điện thoại */}
+                {isOther && (
+                  <input
+                    type="text"
+                    value={otherService}
+                    onChange={(e) => setOtherService(e.target.value)}
+                    maxLength={500}
+                    required
+                    className={`${inputCls} mt-3`}
+                    placeholder="Vui lòng nhập dịch vụ hoặc yêu cầu cụ thể của bạn..."
+                  />
+                )}
+              </div>
+            )}
+
+            {/* FIX LỖI 1: Tách ô Ngày và Giờ */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-body text-sm font-medium text-brand-text mb-1.5">
@@ -324,7 +356,8 @@ function BookingPage() {
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={1000}
                 rows={4}
-                className="w-full min-h-[100px] px-4 py-3 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition resize-y"
+                disabled={!!campaignNote} // Khóa ô ghi chú nếu đi từ chiến dịch để khách ko xóa mất chữ
+                className="w-full min-h-[100px] px-4 py-3 rounded-input border border-brand-border bg-white text-brand-text font-body outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary-light transition resize-y disabled:bg-gray-50 disabled:text-emerald-700 disabled:font-semibold"
                 placeholder="Mong muốn thêm về lịch hẹn..."
               />
             </div>
@@ -332,9 +365,9 @@ function BookingPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-[44px] rounded-btn bg-brand-primary text-white font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              className="w-full h-[44px] rounded-btn bg-brand-primary text-white font-medium hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition shadow-sm"
             >
-              {loading ? "Đang gửi..." : "Đặt lịch ngay"}
+              {loading ? "Đang gửi..." : "Đăng ký ngay"}
             </button>
           </form>
         </div>
