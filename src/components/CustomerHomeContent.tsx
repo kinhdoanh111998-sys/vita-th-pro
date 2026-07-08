@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 type Treatment = { id: string; order_id: string; session_number: number; status: string; qr_code_id: string; service_id: string | null };
 type Order = { id: string; service_id: string | null; quantity: number | null; total_amount: number | null; status: string | null; created_at: string | null; order_code: string | null };
-type OrderItem = { id: string; order_id: string; item_type: string; item_id: string | null; quantity: number | null; unit_price: number | null; total_price: number | null };
+type OrderItem = { id: string; order_id: string; item_type: string; item_id: string | null; quantity: number | null; unit_price: number | null; total_price: number | null; name?: string | null };
 type Service = { id: string; name: string; default_sessions: number | null };
 
 const money = (n: number) =>
@@ -102,7 +102,7 @@ export function CustomerHomeContent() {
       try {
         const { data, error } = await supabase
           .from("order_items")
-          .select("order_id, item_type, item_id, quantity, unit_price, total_price")
+          .select("id, order_id, item_type, item_id, quantity, unit_price, total_price")
           .in("order_id", orderIdsForItems);
         if (error) throw error;
         return (data ?? []) as OrderItem[];
@@ -396,11 +396,11 @@ export function CustomerHomeContent() {
                 {usedSessions.map((u) => (
                   <div key={u.id} className="flex items-center gap-2 rounded-xl border border-hairline bg-[#fafcf7] px-3 py-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <div className="flex-1 text-sm">
-                      <span className="font-semibold text-ink">{u.serviceName}</span>{" "}
-                      <span className="text-ink-muted">— Buổi #{u.session_number}</span>
+                    <div className="flex-1 min-w-0 pr-2 text-sm">
+                      <div className="font-semibold text-ink truncate">{u.serviceName}</div>
+                      <div className="text-ink-muted text-xs truncate">— Buổi #{u.session_number}</div>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">{u.status}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold shrink-0">{u.status}</span>
                   </div>
                 ))}
               </div>
@@ -432,16 +432,16 @@ export function CustomerHomeContent() {
                       onClick={() => setSelectedOrder(o)} 
                       className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-400 hover:shadow-sm transition-all"
                     >
-                      <div className="min-w-0">
+                      <div className="flex-1 min-w-0 pr-2">
                         <div className="text-sm font-semibold text-ink truncate">{displayName}</div>
-                        <div className="text-[10px] text-ink-muted">
+                        <div className="text-[10px] text-ink-muted mt-0.5 truncate">
                           #{o.order_code ?? o.id.slice(0, 6)} ·{" "}
                           {o.created_at ? new Date(o.created_at).toLocaleDateString("vi-VN") : ""} · SL {totalQty}
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
+                      <div className="text-right shrink-0 flex flex-col items-end whitespace-nowrap">
                         <div className="text-sm font-black text-brand-dark">{money(Number(o.total_amount ?? 0))}</div>
-                        <span className={"text-[10px] px-2 py-0.5 rounded-full font-bold " + (isPaid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>
+                        <span className={"mt-1 text-[10px] px-2 py-0.5 rounded-full font-bold " + (isPaid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>
                           {isPaid ? "Đã thanh toán" : (o.status ?? "—")}
                         </span>
                       </div>
@@ -607,16 +607,16 @@ export function CustomerHomeContent() {
                   {(orderItemsQ.data ?? [])
                     .filter((it) => it.order_id === selectedOrder.id)
                     .map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-brand-dark">
+                      <div key={idx} className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <p className="text-sm font-semibold text-brand-dark line-clamp-2">
                             {(item.item_id ? catalogNameMap.get(item.item_id) : null) || "Sản phẩm / Dịch vụ"}
                           </p>
                           <p className="text-xs text-ink-muted mt-0.5">
                             {item.quantity} x {money(Number(item.unit_price ?? 0))}
                           </p>
                         </div>
-                        <span className="font-bold text-sm text-brand-dark">
+                        <span className="font-bold text-sm text-brand-dark shrink-0">
                           {money(Number(item.quantity ?? 0) * Number(item.unit_price ?? 0))}
                         </span>
                       </div>
@@ -624,14 +624,16 @@ export function CustomerHomeContent() {
 
                   {/* LUỒNG DỰ PHÒNG: Đơn hàng cũ chưa có order_items */}
                   {(orderItemsQ.data ?? []).filter((it) => it.order_id === selectedOrder.id).length === 0 && (
-                     <div className="flex justify-between items-start gap-4">
-                       <div className="flex-1">
-                         <p className="text-sm font-semibold text-brand-dark">
+                     <div className="flex justify-between items-start gap-3">
+                       <div className="flex-1 min-w-0 pr-2">
+                         <p className="text-sm font-semibold text-brand-dark line-clamp-2">
                             {selectedOrder.service_id ? catalogNameMap.get(selectedOrder.service_id) ?? "Sản phẩm / Dịch vụ" : "Đơn hàng"}
                          </p>
-                         <p className="text-xs text-ink-muted">Số lượng: {selectedOrder.quantity ?? 1}</p>
+                         <p className="text-xs text-ink-muted mt-0.5">Số lượng: {selectedOrder.quantity ?? 1}</p>
                        </div>
-                       <span className="font-bold text-sm text-brand-dark">{money(Number(selectedOrder.total_amount ?? 0))}</span>
+                       <span className="font-bold text-sm text-brand-dark shrink-0">
+                         {money(Number(selectedOrder.total_amount ?? 0))}
+                       </span>
                      </div>
                   )}
                 </div>
