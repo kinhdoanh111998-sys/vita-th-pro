@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Bell, CalendarDays, MapPin, Sparkles, Store, QrCode, Wallet, Gift,
+  CalendarDays, MapPin, Sparkles, Store, QrCode, Wallet, Gift,
 } from "lucide-react";
 import {
   SearchBar,
