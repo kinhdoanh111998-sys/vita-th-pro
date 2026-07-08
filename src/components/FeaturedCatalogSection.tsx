@@ -25,11 +25,6 @@ export function FeaturedCatalogSection({
 
   if (!isLoading && items.length === 0) return null;
 
-  const gridCls =
-    variant === "web"
-      ? "grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5"
-      : "grid grid-cols-2 gap-3";
-
   return (
     <section className="pt-8 max-w-7xl mx-auto w-full px-4 md:px-8">
       <div className="flex items-end justify-between mb-4">
@@ -48,10 +43,11 @@ export function FeaturedCatalogSection({
           Xem tất cả <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
+      
       {isLoading ? (
-        <div className={gridCls}>
-          {Array.from({ length: variant === "web" ? 4 : 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl bg-white border border-gray-100 overflow-hidden animate-pulse">
+        <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="w-[85%] max-w-[280px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink rounded-2xl bg-white border border-gray-100 overflow-hidden animate-pulse">
               <div className="aspect-square bg-gray-100" />
               <div className="p-3 space-y-2">
                 <div className="h-3 bg-gray-100 rounded w-3/4" />
@@ -61,14 +57,15 @@ export function FeaturedCatalogSection({
           ))}
         </div>
       ) : (
-        <div className={gridCls}>
+        <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:pb-0">
           {items.map((it) => (
-            <ServiceCard
-              key={it.id}
-              item={it}
-              variant={variant === "app" ? "app" : "web"}
-              linkTo={variant === "app" ? "app" : "web"}
-            />
+            <div key={it.id} className="w-[85%] max-w-[280px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink">
+              <ServiceCard
+                item={it}
+                variant={variant === "app" ? "app" : "web"}
+                linkTo={variant === "app" ? "app" : "web"}
+              />
+            </div>
           ))}
         </div>
       )}
