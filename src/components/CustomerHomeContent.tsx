@@ -15,7 +15,7 @@ import { useAuth } from "@/lib/AuthContext";
 
 type Treatment = { id: string; order_id: string; session_number: number; status: string; qr_code_id: string; service_id: string | null };
 type Order = { id: string; service_id: string | null; quantity: number | null; total_amount: number | null; status: string | null; created_at: string | null; order_code: string | null };
-type OrderItem = { order_id: string; item_type: string; item_id: string | null; name: string | null; quantity: number | null; unit_price: number | null };
+type OrderItem = { id: string; order_id: string; item_type: string; item_id: string | null; quantity: number | null; unit_price: number | null; total_price: number | null };
 type Service = { id: string; name: string; default_sessions: number | null };
 
 const money = (n: number) =>
@@ -102,7 +102,7 @@ export function CustomerHomeContent() {
       try {
         const { data, error } = await supabase
           .from("order_items")
-          .select("order_id, item_type, item_id, name, quantity, unit_price")
+          .select("order_id, item_type, item_id, quantity, unit_price, total_price")
           .in("order_id", orderIdsForItems);
         if (error) throw error;
         return (data ?? []) as OrderItem[];
