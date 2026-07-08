@@ -253,16 +253,17 @@ export function CustomerHomeContent() {
 
       {/* 2 CỘT: KHẢ DỤNG / ĐÃ SỬ DỤNG + ĐƠN HÀNG */}
       <div className="grid lg:grid-cols-2 gap-5">
-        <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4">
+        {/* Đã thêm min-w-0 vào Card này */}
+        <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-brand/10 grid place-items-center text-brand-dark">
+            <div className="w-9 h-9 rounded-xl bg-brand/10 grid place-items-center text-brand-dark shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
-            <div className="flex-1">
-              <h3 className="font-black text-brand-dark">Liệu trình còn khả dụng</h3>
-              <p className="text-xs text-ink-muted">Chọn để lấy mã QR check-in cho buổi tiếp theo.</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-brand-dark truncate">Liệu trình còn khả dụng</h3>
+              <p className="text-xs text-ink-muted truncate">Chọn để lấy mã QR check-in cho buổi tiếp theo.</p>
             </div>
-            <span className="text-xs font-bold text-brand-dark bg-brand-soft rounded-full px-2.5 py-1">
+            <span className="text-xs font-bold text-brand-dark bg-brand-soft rounded-full px-2.5 py-1 shrink-0">
               {availableSessions.length}
             </span>
           </div>
@@ -271,22 +272,22 @@ export function CustomerHomeContent() {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="flex items-center justify-between gap-2 w-full rounded-xl border border-hairline bg-[#fafcf7] px-4 py-3 text-left hover:border-brand-primary transition"
+                className="flex items-center justify-between gap-2 w-full rounded-xl border border-hairline bg-[#fafcf7] px-4 py-3 text-left hover:border-brand-primary transition min-w-0"
                 disabled={availableSessions.length === 0}
               >
-                <span className="text-sm">
+                <span className="text-sm flex-1 min-w-0 flex items-center">
                   {selected ? (
                     <>
-                      <span className="font-bold text-brand-dark">{selected.serviceName}</span>
-                      <span className="text-ink-muted"> · Buổi #{selected.treatment.session_number}</span>
+                      <span className="font-bold text-brand-dark truncate">{selected.serviceName}</span>
+                      <span className="text-ink-muted whitespace-nowrap ml-1">· Buổi #{selected.treatment.session_number}</span>
                     </>
                   ) : availableSessions.length === 0 ? (
-                    <span className="text-ink-muted italic">Bạn chưa có buổi khả dụng</span>
+                    <span className="text-ink-muted italic truncate w-full">Bạn chưa có buổi khả dụng</span>
                   ) : (
-                    <span className="text-ink-muted">-- Chọn liệu trình để lấy mã QR --</span>
+                    <span className="text-ink-muted truncate w-full">-- Chọn liệu trình để lấy mã QR --</span>
                   )}
                 </span>
-                <ChevronDown className="w-4 h-4 text-ink-muted" />
+                <ChevronDown className="w-4 h-4 text-ink-muted shrink-0" />
               </button>
             </PopoverTrigger>
             <PopoverContent align="start" className="p-0 w-[--radix-popover-trigger-width] bg-white z-50 shadow-md border border-hairline">
@@ -311,10 +312,10 @@ export function CustomerHomeContent() {
                       key={s.treatment.id}
                       type="button"
                       onClick={() => { setSelectedTreatmentId(s.treatment.id); setPickerOpen(false); setPickerQuery(""); }}
-                      className="w-full text-left px-4 py-3 hover:bg-brand-soft/60 border-b border-hairline last:border-b-0"
+                      className="w-full text-left px-4 py-3 hover:bg-brand-soft/60 border-b border-hairline last:border-b-0 min-w-0 flex flex-col"
                     >
-                      <div className="text-sm font-bold text-ink">{s.serviceName}</div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-sm font-bold text-ink w-full truncate">{s.serviceName}</div>
+                      <div className="text-[11px] text-ink-muted mt-0.5 w-full truncate">
                         Buổi tiếp theo: #{s.treatment.session_number}/{s.totalSessions} · còn {s.remaining} buổi
                       </div>
                     </button>
@@ -325,19 +326,19 @@ export function CustomerHomeContent() {
           </Popover>
 
           {selected ? (
-            <div className="rounded-2xl border border-hairline bg-gradient-to-br from-brand-soft to-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
+            <div className="rounded-2xl border border-hairline bg-gradient-to-br from-brand-soft to-white p-4 min-w-0">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <div className="text-[11px] uppercase tracking-widest text-ink-muted flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Mã QR check-in
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> Mã QR check-in
                   </div>
-                  <div className="font-black text-brand-dark mt-1">{selected.serviceName}</div>
-                  <div className="text-xs text-ink-muted mt-0.5">
+                  <div className="font-black text-brand-dark mt-1 line-clamp-2">{selected.serviceName}</div>
+                  <div className="text-xs text-ink-muted mt-0.5 truncate">
                     Buổi #{selected.treatment.session_number} / {selected.totalSessions} · còn lại{" "}
                     <b className="text-brand-dark">{selected.remaining}</b> buổi
                   </div>
                 </div>
-                <button type="button" onClick={() => setSelectedTreatmentId(null)} className="text-ink-muted hover:text-rose-600" aria-label="Bỏ chọn">
+                <button type="button" onClick={() => setSelectedTreatmentId(null)} className="text-ink-muted hover:text-rose-600 shrink-0" aria-label="Bỏ chọn">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -371,20 +372,20 @@ export function CustomerHomeContent() {
           )}
         </div>
 
-        {/* Đã sử dụng + Đơn hàng */}
-        <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4">
+        {/* Đã sử dụng + Đơn hàng - Đã thêm min-w-0 vào Card này */}
+        <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm flex flex-col gap-4 min-w-0">
           <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 grid place-items-center text-emerald-700">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 grid place-items-center text-emerald-700 shrink-0">
               <Package className="w-5 h-5" />
             </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-black text-emerald-800 uppercase tracking-wider">Đơn hàng</h3>
-              <p className="text-xs text-ink-muted">Dịch vụ/sản phẩm đã mua & buổi đã sử dụng.</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-black text-emerald-800 uppercase tracking-wider truncate">Đơn hàng</h3>
+              <p className="text-xs text-ink-muted truncate">Dịch vụ/sản phẩm đã mua & buổi đã sử dụng.</p>
             </div>
           </div>
 
-          <div>
-            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2">
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2 truncate">
               Liệu trình đã sử dụng ({usedSessions.length})
             </div>
             {usedSessions.length === 0 ? (
@@ -394,7 +395,7 @@ export function CustomerHomeContent() {
             ) : (
               <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
                 {usedSessions.map((u) => (
-                  <div key={u.id} className="flex items-center gap-2 rounded-xl border border-hairline bg-[#fafcf7] px-3 py-2">
+                  <div key={u.id} className="flex items-center gap-2 rounded-xl border border-hairline bg-[#fafcf7] px-3 py-2 min-w-0">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div className="flex-1 min-w-0 pr-2 text-sm">
                       <div className="font-semibold text-ink truncate">{u.serviceName}</div>
@@ -407,8 +408,8 @@ export function CustomerHomeContent() {
             )}
           </div>
 
-          <div>
-            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2">
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-semibold mb-2 truncate">
               Đơn hàng ({ordersQ.data?.length ?? 0})
             </div>
             {ordersQ.isLoading ? (
@@ -416,7 +417,7 @@ export function CustomerHomeContent() {
             ) : (ordersQ.data ?? []).length === 0 ? (
               <div className="rounded-xl border border-hairline bg-[#fafcf7] p-4 text-xs text-ink-muted italic text-center">Bạn chưa có đơn hàng nào.</div>
             ) : (
-              <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+              <ul className="space-y-1.5 max-h-72 overflow-y-auto pr-1 min-w-0">
                 {(ordersQ.data ?? []).map((o) => {
                   const items = (orderItemsQ.data ?? []).filter((it) => it.order_id === o.id);
                   const displayName = items.length > 0
@@ -430,7 +431,7 @@ export function CustomerHomeContent() {
                     <li 
                       key={o.id} 
                       onClick={() => setSelectedOrder(o)} 
-                      className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-400 hover:shadow-sm transition-all"
+                      className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-400 hover:shadow-sm transition-all min-w-0"
                     >
                       <div className="flex-1 min-w-0 pr-2">
                         <div className="text-sm font-semibold text-ink truncate">{displayName}</div>
@@ -457,15 +458,15 @@ export function CustomerHomeContent() {
       {/* AFFILIATE */}
       <section>
         <div className="mb-6">
-          <h2 className="text-2xl font-black text-brand-dark">Tiếp thị liên kết</h2>
+          <h2 className="text-2xl font-black text-brand-dark truncate">Tiếp thị liên kết</h2>
           <p className="text-sm text-ink-muted">
             Chia sẻ link giới thiệu của bạn. Mỗi lượt đặt lịch qua link sẽ được ghi nhận tự động.
           </p>
         </div>
         <div className="grid lg:grid-cols-3 gap-5">
-          <div className="lg:col-span-2 rounded-2xl border border-hairline bg-white p-6 shadow-sm">
+          <div className="lg:col-span-2 rounded-2xl border border-hairline bg-white p-6 shadow-sm min-w-0">
             <div className="flex items-center gap-2 text-brand-dark font-extrabold mb-3">
-              <Link2 className="w-5 h-5" /> Link giới thiệu của bạn
+              <Link2 className="w-5 h-5 shrink-0" /> Link giới thiệu của bạn
             </div>
             {customerQ.isLoading ? (
               <div className="text-ink-muted">Đang tải...</div>
@@ -477,10 +478,10 @@ export function CustomerHomeContent() {
               <>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1 rounded-xl border border-hairline bg-[#f7faf7] px-4 py-3 font-mono text-sm break-all">{link}</div>
-                  <Button onClick={handleCopy} className="sm:w-auto">
+                  <Button onClick={handleCopy} className="sm:w-auto shrink-0">
                     <Copy className="w-4 h-4" /> {copied ? "Đã sao chép" : "Copy Link"}
                   </Button>
-                  <Button variant="outline" onClick={handleShare} className="sm:w-auto">
+                  <Button variant="outline" onClick={handleShare} className="sm:w-auto shrink-0">
                     <Share2 className="w-4 h-4" /> Chia sẻ
                   </Button>
                 </div>
@@ -490,9 +491,9 @@ export function CustomerHomeContent() {
               </>
             )}
           </div>
-          <div className="rounded-2xl border border-hairline bg-gradient-to-br from-brand to-brand-dark text-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-hairline bg-gradient-to-br from-brand to-brand-dark text-white p-6 shadow-sm min-w-0">
             <div className="flex items-center gap-2 font-extrabold mb-2">
-              <Users2 className="w-5 h-5" /> Đã giới thiệu thành công
+              <Users2 className="w-5 h-5 shrink-0" /> Đã giới thiệu thành công
             </div>
             <div className="text-5xl font-black leading-none mt-3">
               {referrals.isLoading ? "…" : (referrals.data ?? 0)}
@@ -504,18 +505,18 @@ export function CustomerHomeContent() {
 
       {/* HOA HỒNG & ĐỔI THƯỞNG */}
       <section className="grid lg:grid-cols-2 gap-5">
-        <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm min-w-0">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center text-amber-700">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 grid place-items-center text-amber-700 shrink-0">
               <Trophy className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="font-black text-brand-dark">Hoa hồng của tôi</h3>
-              <p className="text-xs text-ink-muted">Tích luỹ từ chương trình giới thiệu.</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-brand-dark truncate">Hoa hồng của tôi</h3>
+              <p className="text-xs text-ink-muted truncate">Tích luỹ từ chương trình giới thiệu.</p>
             </div>
           </div>
           <div className="rounded-xl bg-gradient-to-br from-amber-50 to-white border border-hairline p-5">
-            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold">Số dư hoa hồng</div>
+            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold truncate">Số dư hoa hồng</div>
             <div className="text-4xl font-black text-brand-dark mt-2">{money(0)}</div>
             <div className="text-xs text-ink-muted mt-2">
               Cần tối thiểu {money(200000)} để đổi thưởng hoặc rút về ví.
@@ -527,22 +528,22 @@ export function CustomerHomeContent() {
               { label: "Tháng trước", value: money(0) },
               { label: "Tổng", value: money(0) },
             ].map((c) => (
-              <div key={c.label} className="rounded-xl border border-hairline p-3">
-                <div className="text-[10px] text-ink-muted uppercase tracking-wider font-bold">{c.label}</div>
-                <div className="text-sm font-black text-brand-dark mt-1">{c.value}</div>
+              <div key={c.label} className="rounded-xl border border-hairline p-3 min-w-0">
+                <div className="text-[10px] text-ink-muted uppercase tracking-wider font-bold truncate">{c.label}</div>
+                <div className="text-sm font-black text-brand-dark mt-1 truncate">{c.value}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-hairline bg-white p-6 shadow-sm min-w-0">
           <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-rose-100 grid place-items-center text-rose-600">
+            <div className="w-10 h-10 rounded-xl bg-rose-100 grid place-items-center text-rose-600 shrink-0">
               <Gift className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="font-black text-brand-dark">Đổi thưởng</h3>
-              <p className="text-xs text-ink-muted">Sử dụng điểm/hoa hồng để đổi ưu đãi.</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-black text-brand-dark truncate">Đổi thưởng</h3>
+              <p className="text-xs text-ink-muted truncate">Sử dụng điểm/hoa hồng để đổi ưu đãi.</p>
             </div>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -550,10 +551,10 @@ export function CustomerHomeContent() {
               { name: "Voucher 200K", cost: "200 điểm", color: "from-rose-100 to-white" },
               { name: "Buổi trị liệu miễn phí", cost: "500 điểm", color: "from-emerald-100 to-white" },
             ].map((r) => (
-              <div key={r.name} className={`rounded-xl border border-hairline bg-gradient-to-br ${r.color} p-4 flex flex-col gap-2`}>
+              <div key={r.name} className={`rounded-xl border border-hairline bg-gradient-to-br ${r.color} p-4 flex flex-col gap-2 min-w-0`}>
                 <div className="flex items-center gap-2">
-                  <Award className="w-4 h-4 text-brand-dark" />
-                  <div className="font-bold text-brand-dark text-sm">{r.name}</div>
+                  <Award className="w-4 h-4 text-brand-dark shrink-0" />
+                  <div className="font-bold text-brand-dark text-sm line-clamp-1">{r.name}</div>
                 </div>
                 <div className="text-xs text-ink-muted">{r.cost}</div>
                 <Button size="sm" variant="outline" disabled className="mt-auto">Sắp mở</Button>
@@ -561,7 +562,7 @@ export function CustomerHomeContent() {
             ))}
           </div>
           <div className="mt-5">
-            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold mb-2">Lịch sử đổi thưởng</div>
+            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold mb-2 truncate">Lịch sử đổi thưởng</div>
             <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-ink-muted italic">
               Chưa có giao dịch đổi thưởng nào.
             </div>
@@ -586,7 +587,7 @@ export function CustomerHomeContent() {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-ink-muted font-medium">Ngày đặt:</span>
-                <span className="font-bold text-brand-dark">
+                <span className="font-bold text-brand-dark text-right">
                   {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("vi-VN") : "N/A"}
                 </span>
               </div>
@@ -607,7 +608,7 @@ export function CustomerHomeContent() {
                   {(orderItemsQ.data ?? [])
                     .filter((it) => it.order_id === selectedOrder.id)
                     .map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-start gap-3">
+                      <div key={idx} className="flex justify-between items-start gap-3 min-w-0">
                         <div className="flex-1 min-w-0 pr-2">
                           <p className="text-sm font-semibold text-brand-dark line-clamp-2">
                             {(item.item_id ? catalogNameMap.get(item.item_id) : null) || "Sản phẩm / Dịch vụ"}
@@ -616,7 +617,7 @@ export function CustomerHomeContent() {
                             {item.quantity} x {money(Number(item.unit_price ?? 0))}
                           </p>
                         </div>
-                        <span className="font-bold text-sm text-brand-dark shrink-0">
+                        <span className="font-bold text-sm text-brand-dark shrink-0 whitespace-nowrap">
                           {money(Number(item.quantity ?? 0) * Number(item.unit_price ?? 0))}
                         </span>
                       </div>
@@ -624,14 +625,14 @@ export function CustomerHomeContent() {
 
                   {/* LUỒNG DỰ PHÒNG: Đơn hàng cũ chưa có order_items */}
                   {(orderItemsQ.data ?? []).filter((it) => it.order_id === selectedOrder.id).length === 0 && (
-                     <div className="flex justify-between items-start gap-3">
+                     <div className="flex justify-between items-start gap-3 min-w-0">
                        <div className="flex-1 min-w-0 pr-2">
                          <p className="text-sm font-semibold text-brand-dark line-clamp-2">
                             {selectedOrder.service_id ? catalogNameMap.get(selectedOrder.service_id) ?? "Sản phẩm / Dịch vụ" : "Đơn hàng"}
                          </p>
                          <p className="text-xs text-ink-muted mt-0.5">Số lượng: {selectedOrder.quantity ?? 1}</p>
                        </div>
-                       <span className="font-bold text-sm text-brand-dark shrink-0">
+                       <span className="font-bold text-sm text-brand-dark shrink-0 whitespace-nowrap">
                          {money(Number(selectedOrder.total_amount ?? 0))}
                        </span>
                      </div>
@@ -653,7 +654,6 @@ export function CustomerHomeContent() {
           )}
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
