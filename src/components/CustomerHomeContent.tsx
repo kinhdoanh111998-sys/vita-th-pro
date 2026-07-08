@@ -28,6 +28,9 @@ const money = (n: number) =>
 export function CustomerHomeContent() {
   const { email } = useAuth();
   const [copied, setCopied] = useState(false);
+  
+  // STATE MỚI: Quản lý việc hiển thị Popup Chi tiết Đơn hàng
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const customerQ = useQuery({
     queryKey: ["kh-customer-by-email", email],
@@ -205,6 +208,13 @@ export function CustomerHomeContent() {
       try { await navigator.share({ title: "Vita TH Pro", text: "Trải nghiệm dịch vụ cùng tôi tại Vita TH Pro!", url: link }); } catch { /* cancelled */ }
     } else { handleCopy(); }
   }
+
+  // Khóa cuộn trang khi bật popup Chi tiết đơn hàng
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      document.body.style.overflow = selectedOrder ? "hidden" : "unset";
+    }
+  }, [selectedOrder]);
 
   return (
     <div className="space-y-10">
@@ -391,8 +401,14 @@ export function CustomerHomeContent() {
                     ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
                     : (o.quantity ?? 1);
                   const isPaid = o.status === "paid";
+                  
                   return (
-                    <li key={o.id} className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3">
+                    // FIXED: Gán sự kiện onClick để mở Popup chi tiết đơn hàng
+                    <li 
+                      key={o.id} 
+                      onClick={() => setSelectedOrder(o)}
+                      className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-brand-primary hover:bg-brand-soft/30 transition-colors"
+                    >
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-ink truncate">{displayName}</div>
                         <div className="text-[10px] text-ink-muted">
@@ -529,6 +545,92 @@ export function CustomerHomeContent() {
           </div>
         </div>
       </section>
+
+      {/* POPUP: CHI TIẾT ĐƠN HÀNG */}
+      {selectedOrder && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedOrder(null)}
+        >
+          <div 
+            className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal */}
+            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50">
+              <div>
+                <h3 className="font-black text-xl text-brand-dark">Chi tiết đơn hàng</h3>
+                <p className="text-xs text-ink-muted mt-1">
+                  Mã đơn: <span className="font-mono font-bold text-brand-dark">#{selectedOrder.order_code ?? selectedOrder.id.slice(0,8)}</span>
+                </p>
+              </div>
+              <button 
+                onClick={() => setSelectedOrder(null)} 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content Modal */}
+            <div className="p-5 overflow-y-auto space-y-6">
+              
+              {/* Box Tóm tắt */}
+              <div className="bg-[#f8fafd] border border-[#e0e8f5] rounded-2xl p-4 text-sm space-y-2.5">
+                 <div className="flex justify-between items-center">
+                   <span className="text-ink-muted">Ngày đặt:</span>
+                   <span className="font-bold text-brand-dark">{selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("vi-VN") : "—"}</span>
+                 </div>
+                 <div className="flex justify-between items-center">
+                   <span className="text-ink-muted">Trạng thái:</span>
+                   <span className={`font-bold px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wide ${selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                     {selectedOrder.status === 'paid' ? 'Đã thanh toán' : (selectedOrder.status ?? '—')}
+                   </span>
+                 </div>
+              </div>
+
+              {/* Danh sách SP/Dịch vụ */}
+              <div>
+                <h4 className="font-extrabold text-sm uppercase tracking-wide text-ink-muted mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4" /> Sản phẩm / Dịch vụ
+                </h4>
+                <ul className="space-y-3">
+                  {(() => {
+                     const items = (orderItemsQ.data ?? []).filter(it => it.order_id === selectedOrder.id);
+                     
+                     // Fallback nếu không có item con (dữ liệu cũ)
+                     if (items.length === 0) {
+                        const svcName = selectedOrder.service_id ? serviceMap.get(selectedOrder.service_id)?.name : "Gói dịch vụ / Sản phẩm";
+                        return (
+                          <li className="flex justify-between items-center text-sm border border-hairline p-3 rounded-xl bg-white shadow-sm">
+                            <span className="font-semibold text-brand-dark">{svcName} <span className="text-ink-muted font-normal">(x{selectedOrder.quantity ?? 1})</span></span>
+                          </li>
+                        );
+                     }
+
+                     // Hiển thị danh sách item chuẩn
+                     return items.map((it, idx) => (
+                        <li key={idx} className="flex justify-between items-center text-sm border border-hairline p-3 rounded-xl bg-white shadow-sm">
+                          <div className="flex-1 truncate pr-3">
+                             <div className="font-bold text-brand-dark truncate text-sm">{it.name ?? "—"}</div>
+                             <div className="text-xs text-ink-muted mt-0.5">Số lượng: x{it.quantity ?? 1}</div>
+                          </div>
+                          <div className="font-black text-brand-dark">{money(Number(it.unit_price ?? 0) * Number(it.quantity ?? 1))}</div>
+                        </li>
+                     ));
+                  })()}
+                </ul>
+              </div>
+            </div>
+
+            {/* Footer Modal: Tổng tiền */}
+            <div className="p-5 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
+               <span className="font-bold text-ink-muted uppercase tracking-wide text-sm">Tổng cộng</span>
+               <span className="font-black text-2xl text-emerald-600">{money(Number(selectedOrder.total_amount ?? 0))}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
