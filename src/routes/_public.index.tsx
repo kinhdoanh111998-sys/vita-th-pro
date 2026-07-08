@@ -30,12 +30,6 @@ import { useNavigationItems } from "@/lib/useNavigationItems";
 import { useSystemSettings } from "@/lib/useSystemSettings";
 import { FeaturedCatalogSection } from "@/components/FeaturedCatalogSection";
 
-
-
-
-
-
-
 type Banner = {
   id: string;
   title: string;
@@ -62,17 +56,15 @@ export const Route = createFileRoute("/_public/")({
 type ShortcutIcon = typeof Sparkles;
 
 const SHORTCUT_ICONS: Record<string, { icon: ShortcutIcon; color: string }> = {
-  skin_ai:  { icon: Sparkles, color: "bg-pink-100 text-pink-600" },
-  store:    { icon: Store, color: "bg-emerald-100 text-emerald-600" },
+  skin_ai:  { icon: Sparkles,     color: "bg-pink-100 text-pink-600" },
+  store:    { icon: Store,        color: "bg-emerald-100 text-emerald-600" },
   booking:  { icon: CalendarDays, color: "bg-amber-100 text-amber-600" },
-  scan:     { icon: QrCode, color: "bg-sky-100 text-sky-600" },
-  wallet:   { icon: Wallet, color: "bg-violet-100 text-violet-600" },
-  vouchers: { icon: Gift, color: "bg-rose-100 text-rose-600" },
+  scan:      { icon: QrCode,       color: "bg-sky-100 text-sky-600" },
+  wallet:   { icon: Wallet,       color: "bg-violet-100 text-violet-600" },
+  vouchers: { icon: Gift,         color: "bg-rose-100 text-rose-600" },
 };
 
 const SKIN_AI_KEY = "skin_ai";
-
-
 
 type Testimonial = {
   id: number;
@@ -101,7 +93,7 @@ const TESTIMONIALS: Testimonial[] = [
     meta: "29 tuổi · TP.HCM",
     rating: 5,
     content:
-      "Rất ấn tượng với công nghệ soi da AI tại VITA, phân tích chuẩn xác từng phân vùng sắc tố ẩn sâu dưới da. Mình được bác sĩ lên phác đồ nâng cơ trẻ hoá bằng Ultherapy cá nhân hoá, chuyên viên thao tác rất chuẩn tay, không hề có tình trạng chèo kéo mua thêm combo.",
+      "Rất ấn tượng with công nghệ soi da AI tại VITA, phân tích chuẩn xác từng phân vùng sắc tố ẩn sâu dưới da. Mình được bác sĩ lên phác đồ nâng cơ trẻ hoá bằng Ultherapy cá nhân hoá, chuyên viên thao tác rất chuẩn tay, không hề có tình trạng chèo kéo mua thêm combo.",
     initial: "HL",
     ring: "from-sky-200 to-emerald-300",
   },
@@ -117,15 +109,12 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-
-
 function CommunityHome() {
   const { data: settings } = useSettings();
   const { session, loading: authLoading } = useAuth();
   const brand = settings?.brand ?? "Vita TH Pro";
   const hotline = settings?.hotline ?? "0988 000 888";
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [skinAIOpen, setSkinAIOpen] = useState(false);
 
   const { data: stores = [] } = useActiveStores();
   const { data: appNavItems = [] } = useNavigationItems("app");
@@ -133,40 +122,23 @@ function CommunityHome() {
   const showStoreList = sys?.show_store_list !== false;
   const shortcuts = appNavItems.filter((i) => i.is_visible);
 
-
-
-
-  const navLinks: Array<{ label: string; to: string }> = [
-    { label: "Trang chủ", to: "/" },
-    { label: "Giới thiệu", to: "/about" },
-    { label: "Sản phẩm", to: "/products" },
-    { label: "Dịch vụ", to: "/services" },
-    { label: "Sự kiện", to: "/events" },
-    { label: "Cộng đồng", to: "/community" },
-    { label: "Tin tức", to: "/news" },
-    { label: "Liên hệ", to: "/contact" },
-  ];
-
-
+  // Đấu nối đồng bộ tên chiến dịch động từ Database Admin Marketing
+  const shortcutCampaignName = sys?.homepage_shortcut_campaign || "Soi da AI chuyên sâu";
 
   return (
     <div className="mx-auto w-full max-w-[480px] md:max-w-none min-h-screen bg-[#FAFAFA] pb-24 md:pb-12">
-      {/* Header + Mobile Drawer are provided by the shared PublicLayout Header */}
-
-
-
-
-
       <HeroCarousel />
 
-
-
-      {/* Shortcuts */}
+      {/* Shortcuts Grid */}
       <section className="px-4 md:px-8 pt-5 max-w-7xl mx-auto w-full">
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3 md:gap-4">
           {shortcuts.map((s) => {
             const meta = SHORTCUT_ICONS[s.menu_key] ?? { icon: Sparkles, color: "bg-gray-100 text-gray-600" };
             const Icon = meta.icon;
+            
+            const isSkinAI = s.menu_key === SKIN_AI_KEY;
+            const displayLabel = isSkinAI ? shortcutCampaignName : s.label;
+
             const inner = (
               <>
                 <div
@@ -174,22 +146,26 @@ function CommunityHome() {
                 >
                   <Icon className="w-6 h-6 md:w-7 md:h-7" />
                 </div>
-                <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight">
-                  {s.label}
+                <span className="text-[11px] md:text-sm text-gray-700 text-center leading-tight font-medium">
+                  {displayLabel}
                 </span>
               </>
             );
-            if (s.menu_key === SKIN_AI_KEY) {
+
+            // Nếu là nút Soi da AI: Bỏ hoàn toàn Popup, cho chạy thẳng sang trang đặt lịch kèm tham số URL
+            if (isSkinAI) {
               return (
-                <button
+                <Link
                   key={s.id}
-                  onClick={() => setSkinAIOpen(true)}
+                  to="/booking"
+                  search={{ note: shortcutCampaignName }}
                   className="flex flex-col items-center gap-1.5 md:gap-2 group"
                 >
                   {inner}
-                </button>
+                </Link>
               );
             }
+
             return (
               <Link
                 key={s.id}
@@ -200,94 +176,84 @@ function CommunityHome() {
               </Link>
             );
           })}
-
         </div>
       </section>
 
-
-
-      {/* Hệ thống cơ sở VITA — có thể ẩn qua admin.navigation */}
+      {/* Hệ thống cơ sở VITA — Slider trượt ngang trên Mobile, giữ nguyên Grid trên PC */}
       {showStoreList && (
-      <section id="stores" className="pt-10 max-w-7xl mx-auto w-full px-4 md:px-8">
-
-        <div className="text-center mb-6 md:mb-8">
-          <div className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 mb-2">
-            Hệ thống trực thuộc
+        <section id="stores" className="pt-10 max-w-7xl mx-auto w-full px-4 md:px-8">
+          <div className="text-center mb-6 md:mb-8">
+            <div className="text-xs md:text-sm font-bold uppercase tracking-[0.2em] text-emerald-600 mb-2">
+              Hệ thống trực thuộc
+            </div>
+            <h2 className="text-2xl md:text-4xl font-heading font-black text-gray-900">
+              HỆ THỐNG CƠ SỞ SPA & CLINIC VITA TH PRO
+            </h2>
+            <div className="mx-auto mt-3 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
           </div>
-          <h2 className="text-2xl md:text-4xl font-heading font-black text-gray-900">
-            HỆ THỐNG CƠ SỞ SPA & CLINIC VITA TH PRO
-          </h2>
-          <div className="mx-auto mt-3 h-[3px] w-20 rounded-full bg-gradient-to-r from-emerald-500 via-amber-400 to-rose-500" />
-        </div>
-        {/* Đã sửa thành Slider vuốt ngang trên Mobile, giữ Grid trên PC */}
-        <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
-          {stores.map((b, i) => {
-            const gradient = BRANCH_GRADIENTS[i % BRANCH_GRADIENTS.length];
-            const hotline = b.hotline ?? b.phone ?? "";
-            return (
-              <article
-                key={b.id}
-                className="w-[85%] max-w-[320px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className={`relative h-40 md:h-48 bg-gradient-to-br ${gradient} overflow-hidden`}>
-                  {b.main_image && (
-                    <img
-                      src={b.main_image}
-                      alt={b.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.35),transparent_60%)]" />
-                  <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white uppercase tracking-wider">
-                    <Store className="w-3.5 h-3.5" /> VITA TH PRO
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md leading-tight">
-                      {b.name}
-                    </h3>
-                  </div>
-                </div>
-                <div className="p-5 space-y-3">
-                  {b.address && (
-                    <div className="flex items-start gap-2 text-sm text-gray-700">
-                      <MapPin className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
-                      <span className="leading-relaxed">{b.address}</span>
+          <div className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:grid-cols-3 md:gap-6 md:overflow-visible md:pb-0">
+            {stores.map((b, i) => {
+              const gradient = BRANCH_GRADIENTS[i % BRANCH_GRADIENTS.length];
+              const hotline = b.hotline ?? b.phone ?? "";
+              return (
+                <article
+                  key={b.id}
+                  className="w-[85%] max-w-[320px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className={`relative h-40 md:h-48 bg-gradient-to-br ${gradient} overflow-hidden`}>
+                    {b.main_image && (
+                      <img
+                        src={b.main_image}
+                        alt={b.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(0,0,0,0.35),transparent_60%)]" />
+                    <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/25 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-white uppercase tracking-wider">
+                      <Store className="w-3.5 h-3.5" /> VITA TH PRO
                     </div>
-                  )}
-                  {hotline && (
-                    <div className="flex items-center gap-2 text-sm text-gray-700">
-                      <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      <a
-                        href={`tel:${hotline.replace(/\s/g, "")}`}
-                        className="font-bold text-gray-900 hover:text-emerald-600"
-                      >
-                        {hotline}
-                      </a>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-xl md:text-2xl font-black text-white drop-shadow-md leading-tight">
+                        {b.name}
+                      </h3>
                     </div>
-                  )}
-                  <a
-                    href={
-                      b.address
-                        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}`
-                        : "#"
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 flex items-center justify-center gap-2 w-full rounded-full border-2 border-emerald-600 text-emerald-700 font-bold text-sm py-2.5 hover:bg-emerald-600 hover:text-white transition-colors"
-                  >
-                    <MapPin className="w-4 h-4" /> Xem bản đồ
-                  </a>
-                </div>
-              </article>
-            );
-          })}
-
-        </div>
-      </section>
+                  </div>
+                  <div className="p-5 space-y-3">
+                    {b.address && (
+                      <div className="flex items-start gap-2 text-sm text-gray-700">
+                        <MapPin className="w-4 h-4 mt-0.5 text-emerald-600 flex-shrink-0" />
+                        <span className="leading-relaxed">{b.address}</span>
+                      </div>
+                    )}
+                    {hotline && (
+                      <div className="flex items-center gap-2 text-sm text-gray-700">
+                        <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <a
+                          href={`tel:${hotline.replace(/\s/g, "")}`}
+                          className="font-bold text-gray-900 hover:text-emerald-600"
+                        >
+                          {hotline}
+                        </a>
+                      </div>
+                    )}
+                    <a
+                      href={b.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.address)}` : "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 flex items-center justify-center gap-2 w-full rounded-full border-2 border-emerald-600 text-emerald-700 font-bold text-sm py-2.5 hover:bg-emerald-600 hover:text-white transition-colors"
+                    >
+                      <MapPin className="w-4 h-4" /> Xem bản đồ
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      {/* Sản phẩm nổi bật + Dịch vụ nổi bật (đặt trước Feed) */}
+      {/* Sản phẩm nổi bật + Dịch vụ nổi bật */}
       <FeaturedCatalogSection
         kind="product"
         eyebrow="Cửa hàng"
@@ -301,12 +267,9 @@ function CommunityHome() {
         viewAllHref="/services"
       />
 
-      {/* Community Feed – realtime từ Sự kiện + Tin tức */}
       <CommunityFeedPC />
 
-
-
-      {/* Community Feed + Sidebar */}
+      {/* Hoạt động cộng đồng — Slider trượt ngang trên Mobile, giữ nguyên Grid trên PC */}
       <section id="feed" className="pt-6 max-w-7xl mx-auto w-full px-4 md:px-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base md:text-2xl font-heading font-bold text-gray-900">
@@ -317,7 +280,6 @@ function CommunityHome() {
           </button>
         </div>
         <div className="md:grid md:grid-cols-12 md:gap-6">
-          {/* Đã sửa thành Slider vuốt ngang trên Mobile, giữ dọc trên PC */}
           <div className="md:col-span-8 flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:gap-5 md:grid-cols-1 md:overflow-visible md:pb-0">
             {TESTIMONIALS.map((t) => (
               <div key={t.id} className="w-[85%] max-w-[320px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink">
@@ -361,64 +323,9 @@ function CommunityHome() {
           </aside>
         </div>
       </section>
-
-
-
-
-
-      {/* Soi da AI Modal */}
-      {skinAIOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-end md:items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-200">
-            <div className="relative bg-gradient-to-br from-pink-500 to-rose-500 text-white p-6">
-              <button
-                onClick={() => setSkinAIOpen(false)}
-                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"
-                aria-label="Đóng"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <Sparkles className="w-10 h-10 mb-3" />
-              <h3 className="text-xl font-black">Soi Da AI cá nhân hoá</h3>
-              <p className="text-sm text-white/90 mt-1">
-                Phân tích chi tiết 8 chỉ số da bằng công nghệ AI. Nhận phác đồ điều trị chuyên sâu miễn phí từ bác sĩ VITA.
-              </p>
-            </div>
-            <div className="p-6 space-y-3">
-              <ul className="space-y-2 text-sm text-gray-700">
-                {[
-                  "Phát hiện nám – tàn nhang – sắc tố ẩn dưới da",
-                  "Đo độ ẩm, độ đàn hồi, dầu và lỗ chân lông",
-                  "Bác sĩ tư vấn liệu trình cá nhân hoá",
-                ].map((it) => (
-                  <li key={it} className="flex items-start gap-2">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    {it}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/booking"
-                search={{ service: "soi-da-ai" } as never}
-                onClick={() => setSkinAIOpen(false)}
-                className="mt-2 flex items-center justify-center h-12 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700"
-              >
-                Đặt lịch Soi Da AI ngay
-              </Link>
-              <button
-                onClick={() => setSkinAIOpen(false)}
-                className="w-full h-11 rounded-xl border border-gray-200 font-semibold text-gray-600 hover:bg-gray-50"
-              >
-                Để sau
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
 
 function HeroCarousel() {
   const [active, setActive] = useState(0);
@@ -552,7 +459,7 @@ function HeroCarousel() {
 
 function TestimonialCard({ t }: { t: Testimonial }) {
   return (
-    <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 md:p-7">
+    <article className="relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow p-6 md:p-7 h-full">
       <Quote className="absolute top-5 right-5 w-8 h-8 text-emerald-100" />
       <div className="flex items-center gap-3 mb-4">
         <div
@@ -574,4 +481,3 @@ function TestimonialCard({ t }: { t: Testimonial }) {
     </article>
   );
 }
-
