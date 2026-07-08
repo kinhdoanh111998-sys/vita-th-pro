@@ -24,10 +24,6 @@ type NotificationRow = {
   created_at: string | null;
 };
 
-/**
- * Map a notification type to a destination based on the current user role.
- * Falls back to `/app/account` when nothing matches.
- */
 export function resolveNotificationRoute(n: Pick<NotificationRow, "type" | "ref_type" | "ref_id">, role: Role): string {
   const t = (n.type ?? n.ref_type ?? "").toLowerCase();
   const isStaff = role === "staff" || role === "employee" || role === "sale" || role === "technician";
@@ -94,7 +90,6 @@ function NotificationsPage() {
     },
   });
 
-  // Realtime refresh
   useEffect(() => {
     if (!uid) return;
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -117,6 +112,20 @@ function NotificationsPage() {
         await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
       } catch (e) { console.warn("[notifications] mark read", e); }
     }
+
+    const t = (n.type ?? n.ref_type ?? "").toLowerCase();
+    const isAdmin = role === "admin" || role === "manager";
+
+    // LÕI XỬ LÝ MỚI: Chỉ thông báo đơn hàng của khách hàng mới lưu tín hiệu mở Popup
+    if ((t.includes("order") || t.includes("payment")) && !isAdmin) {
+      if (n.ref_id) {
+        sessionStorage.setItem("viewOrderId", n.ref_id); // Phát tín hiệu mở Popup
+      }
+      navigate({ to: "/app/account" });
+      return;
+    }
+
+    // Các thông báo khác vẫn chuyển trang bình thường
     const dest = resolveNotificationRoute(n, role);
     navigate({ to: dest });
   }
