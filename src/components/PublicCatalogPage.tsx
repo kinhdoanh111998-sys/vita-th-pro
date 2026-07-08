@@ -10,7 +10,6 @@ import {
   productCategoryLabel,
 } from "@/lib/catalogCategories";
 
-
 type Kind = "product" | "service";
 
 interface Props {
@@ -37,6 +36,9 @@ function SkeletonCard() {
 const fmt = (n: number) => new Intl.NumberFormat("vi-VN").format(n);
 
 export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
+  // STATE MỚI: Quản lý trạng thái đóng/mở bộ lọc trên Mobile
+  const [isFilterMobileOpen, setIsFilterMobileOpen] = useState(false);
+
   const { data = [], isLoading, error } = useServiceCatalog();
   const { data: allCombos = [] } = usePublicCombos();
 
@@ -56,7 +58,6 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
     () => data.filter((it) => it.type === kind),
     [data, kind],
   );
-
 
   // Price bounds
   const priceBounds = useMemo(() => {
@@ -114,8 +115,17 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
     setPriceMax("");
   };
 
+  // Cấu hình ngăn cuộn trang nền khi mở popup trên mobile
+  if (typeof window !== "undefined") {
+    if (isFilterMobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+  }
+
   return (
-    <section className="bg-[#FAFAFA] min-h-screen">
+    <section className="bg-[#FAFAFA] min-h-screen relative">
       <div className="mx-auto max-w-[1240px] px-4 md:px-8 py-8 md:py-14">
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-8 md:mb-10">
@@ -128,104 +138,156 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
           <p className="mt-3 text-gray-500 text-sm md:text-base">{subtitle}</p>
         </div>
 
+        {/* NÚT MỞ BỘ LỌC DÀNH RIÊNG CHO MOBILE (Sticky dưới Header) */}
+        <div className="lg:hidden sticky top-[60px] md:top-[72px] z-30 bg-white/90 backdrop-blur-md py-3 px-4 flex justify-between items-center border border-gray-200 mb-6 rounded-2xl shadow-sm">
+           <span className="font-semibold text-gray-700 text-sm">Tìm kiếm & Lọc kết quả</span>
+           <button 
+             onClick={() => setIsFilterMobileOpen(true)} 
+             className="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-emerald-700 transition-colors"
+           >
+             Bộ lọc
+           </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-          {/* Sidebar filters (Desktop) */}
-          <aside className="lg:sticky lg:top-20 lg:self-start bg-white rounded-2xl border border-gray-100 p-5 shadow-sm h-fit">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold text-gray-900 text-sm">
-                Bộ lọc
-              </h3>
-              <button
-                onClick={reset}
-                className="text-xs text-emerald-700 font-semibold hover:underline"
-              >
-                Xoá lọc
-              </button>
-            </div>
-
-            {/* Search */}
-            <div className="mb-5">
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
-                Tìm kiếm
-              </label>
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 h-10">
-                <Search className="w-4 h-4 text-gray-400" />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder="Tên, mô tả..."
-                  className="flex-1 bg-transparent outline-none text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Category */}
-            <div className="mb-5">
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
-                Danh mục
-              </label>
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => setCat("all")}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    cat === "all"
-                      ? "bg-emerald-600 text-white"
-                      : "bg-gray-50 text-gray-700 hover:bg-emerald-50"
-                  }`}
-                >
-                  Tất cả
-                </button>
-                {availableCategories.map((c) => (
+          
+          {/* CỘT BÊN TRÁI: BỘ LỌC (Responsive) */}
+          {/* Màn hình mờ (Overlay) khi mở popup trên Mobile */}
+          <div 
+            className={`
+              ${isFilterMobileOpen ? 'fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm' : 'hidden'}
+              lg:block lg:static lg:bg-transparent lg:z-auto
+            `}
+            onClick={() => setIsFilterMobileOpen(false)} // Click ra ngoài để đóng
+          >
+            <aside 
+              className={`
+                bg-white w-full h-[85vh] lg:h-fit overflow-y-auto lg:overflow-visible rounded-t-3xl lg:rounded-2xl p-5 shadow-2xl lg:shadow-sm border border-gray-100
+                ${isFilterMobileOpen ? 'animate-in slide-in-from-bottom-full duration-300' : ''}
+                lg:sticky lg:top-24 lg:self-start
+              `}
+              onClick={(e) => e.stopPropagation()} // Ngăn chặn sự kiện click lan ra ngoài
+            >
+              {/* Header của Bảng lọc */}
+              <div className="flex items-center justify-between mb-6 lg:mb-4 border-b lg:border-none pb-4 lg:pb-0">
+                <h3 className="font-heading font-bold text-gray-900 text-xl lg:text-sm">
+                  Bộ lọc
+                </h3>
+                <div className="flex items-center gap-4">
                   <button
-                    key={c.key}
-                    onClick={() => setCat(c.key)}
+                    onClick={reset}
+                    className="text-sm lg:text-xs text-emerald-700 font-semibold hover:underline"
+                  >
+                    Xoá lọc
+                  </button>
+                  {/* Nút đóng bảng lọc (chỉ hiện trên mobile) */}
+                  {isFilterMobileOpen && (
+                    <button 
+                      onClick={() => setIsFilterMobileOpen(false)}
+                      className="lg:hidden w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Search */}
+              <div className="mb-5">
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
+                  Tìm kiếm
+                </label>
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 h-10">
+                  <Search className="w-4 h-4 text-gray-400" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Tên, mô tả..."
+                    className="flex-1 bg-transparent outline-none text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="mb-5">
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
+                  Danh mục
+                </label>
+                <div className="space-y-1.5">
+                  <button
+                    onClick={() => setCat("all")}
                     className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      cat === c.key
+                      cat === "all"
                         ? "bg-emerald-600 text-white"
                         : "bg-gray-50 text-gray-700 hover:bg-emerald-50"
                     }`}
                   >
-                    {c.label}
+                    Tất cả
                   </button>
-                ))}
-                {availableCategories.length === 0 && (
-                  <p className="text-xs text-gray-400 italic px-1">
-                    Chưa có danh mục
-                  </p>
-                )}
+                  {availableCategories.map((c) => (
+                    <button
+                      key={c.key}
+                      onClick={() => setCat(c.key)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        cat === c.key
+                          ? "bg-emerald-600 text-white"
+                          : "bg-gray-50 text-gray-700 hover:bg-emerald-50"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                  {availableCategories.length === 0 && (
+                    <p className="text-xs text-gray-400 italic px-1">
+                      Chưa có danh mục
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Price */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
-                Khoảng giá (VND)
-              </label>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  value={priceMin}
-                  onChange={(e) => setPriceMin(e.target.value)}
-                  placeholder="Từ"
-                  className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  value={priceMax}
-                  onChange={(e) => setPriceMax(e.target.value)}
-                  placeholder="Đến"
-                  className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500"
-                />
+              {/* Price */}
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wide text-gray-500 mb-2">
+                  Khoảng giá (VND)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="Từ"
+                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500"
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="Đến"
+                    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2">
+                  Dải giá: {fmt(priceBounds.min)}đ – {fmt(priceBounds.max)}đ
+                </p>
               </div>
-              <p className="text-[11px] text-gray-400 mt-2">
-                Dải giá: {fmt(priceBounds.min)}đ – {fmt(priceBounds.max)}đ
-              </p>
-            </div>
-          </aside>
 
-          {/* Content */}
+              {/* Nút Xem kết quả (Chỉ hiện trên mobile) */}
+              {isFilterMobileOpen && (
+                <div className="mt-8 pt-4 border-t border-gray-100 lg:hidden pb-safe">
+                  <button 
+                    onClick={() => setIsFilterMobileOpen(false)}
+                    className="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold shadow-md hover:bg-emerald-700 transition-colors"
+                  >
+                    Xem {items.length} kết quả
+                  </button>
+                </div>
+              )}
+            </aside>
+          </div>
+
+          {/* CỘT BÊN PHẢI: DANH SÁCH SẢN PHẨM/DỊCH VỤ */}
           <div>
             {/* Result count */}
             {!isLoading && !error && (
@@ -262,21 +324,21 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                 ))}
               </div>
             ) : items.length === 0 && combos.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <p className="text-gray-500 mb-3">
                   Không tìm thấy{" "}
                   {kind === "product" ? "sản phẩm" : "dịch vụ"} phù hợp.
                 </p>
                 <button
                   onClick={reset}
-                  className="inline-flex px-4 h-10 items-center rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700"
+                  className="inline-flex px-4 h-10 items-center rounded-full bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors"
                 >
                   Xoá bộ lọc
                 </button>
                 <div className="mt-4">
                   <Link
                     to="/"
-                    className="text-emerald-700 hover:underline font-semibold text-sm"
+                    className="text-emerald-700 hover:underline font-semibold text-sm transition-colors"
                   >
                     ← Về trang chủ
                   </Link>
@@ -290,7 +352,7 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                       <h2 className="font-heading text-lg md:text-xl font-black text-gray-900">
                         ✨ Combo đóng gói tiết kiệm
                       </h2>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded-md">
                         {combos.length} combo
                       </span>
                     </div>
@@ -315,7 +377,6 @@ export function PublicCatalogPage({ kind, title, eyebrow, subtitle }: Props) {
                 )}
               </div>
             )}
-
           </div>
         </div>
       </div>
