@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/AuthContext";
 
 type Treatment = { id: string; order_id: string; session_number: number; status: string; qr_code_id: string; service_id: string | null };
@@ -20,16 +21,11 @@ type Service = { id: string; name: string; default_sessions: number | null };
 const money = (n: number) =>
   n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
-/**
- * Full customer home experience: liệu trình + QR + đơn hàng + affiliate +
- * commission card + reward exchange. Assumes it renders inside a layout that
- * already provides an outer header/shell.
- */
 export function CustomerHomeContent() {
   const { email } = useAuth();
   const [copied, setCopied] = useState(false);
   
-  // STATE MỚI: Quản lý việc hiển thị Popup Chi tiết Đơn hàng
+  // STATE MỚI: Quản lý popup chi tiết đơn hàng
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const customerQ = useQuery({
@@ -87,6 +83,18 @@ export function CustomerHomeContent() {
       } catch (e) { console.warn("[CustomerHome] orders", e); return [] as Order[]; }
     },
   });
+
+  // RADAR BẮT TÍN HIỆU TỪ TRANG THÔNG BÁO DỘI VỀ
+  useEffect(() => {
+    const viewOrderId = sessionStorage.getItem("viewOrderId");
+    if (viewOrderId && ordersQ.data && ordersQ.data.length > 0) {
+      const orderToView = ordersQ.data.find(o => o.id === viewOrderId);
+      if (orderToView) {
+        setSelectedOrder(orderToView); // Bật Popup ngay lập tức
+        sessionStorage.removeItem("viewOrderId"); // Mở xong thì xóa tín hiệu đi
+      }
+    }
+  }, [ordersQ.data]);
 
   const orderIdsForItems = (ordersQ.data ?? []).map((o) => o.id);
   const orderItemsQ = useQuery({
@@ -208,13 +216,6 @@ export function CustomerHomeContent() {
       try { await navigator.share({ title: "Vita TH Pro", text: "Trải nghiệm dịch vụ cùng tôi tại Vita TH Pro!", url: link }); } catch { /* cancelled */ }
     } else { handleCopy(); }
   }
-
-  // Khóa cuộn trang khi bật popup Chi tiết đơn hàng
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.body.style.overflow = selectedOrder ? "hidden" : "unset";
-    }
-  }, [selectedOrder]);
 
   return (
     <div className="space-y-10">
@@ -401,13 +402,11 @@ export function CustomerHomeContent() {
                     ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
                     : (o.quantity ?? 1);
                   const isPaid = o.status === "paid";
-                  
                   return (
-                    // FIXED: Gán sự kiện onClick để mở Popup chi tiết đơn hàng
                     <li 
                       key={o.id} 
-                      onClick={() => setSelectedOrder(o)}
-                      className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-brand-primary hover:bg-brand-soft/30 transition-colors"
+                      onClick={() => setSelectedOrder(o)} 
+                      className="rounded-xl border border-hairline px-3 py-2 flex items-center justify-between gap-3 cursor-pointer hover:border-emerald-400 hover:shadow-sm transition-all"
                     >
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-ink truncate">{displayName}</div>
@@ -416,7 +415,7 @@ export function CustomerHomeContent() {
                           {o.created_at ? new Date(o.created_at).toLocaleDateString("vi-VN") : ""} · SL {totalQty}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <div className="text-sm font-black text-brand-dark">{money(Number(o.total_amount ?? 0))}</div>
                         <span className={"text-[10px] px-2 py-0.5 rounded-full font-bold " + (isPaid ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800")}>
                           {isPaid ? "Đã thanh toán" : (o.status ?? "—")}
@@ -546,91 +545,86 @@ export function CustomerHomeContent() {
         </div>
       </section>
 
-      {/* POPUP: CHI TIẾT ĐƠN HÀNG */}
-      {selectedOrder && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200"
-          onClick={() => setSelectedOrder(null)}
-        >
-          <div 
-            className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header Modal */}
-            <div className="flex justify-between items-center p-5 border-b border-gray-100 bg-gray-50/50">
-              <div>
-                <h3 className="font-black text-xl text-brand-dark">Chi tiết đơn hàng</h3>
-                <p className="text-xs text-ink-muted mt-1">
-                  Mã đơn: <span className="font-mono font-bold text-brand-dark">#{selectedOrder.order_code ?? selectedOrder.id.slice(0,8)}</span>
-                </p>
-              </div>
-              <button 
-                onClick={() => setSelectedOrder(null)} 
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+      {/* POPUP XEM CHI TIẾT ĐƠN HÀNG */}
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-md bg-white p-6 rounded-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black text-brand-dark border-b pb-3">
+              Chi tiết Đơn hàng
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* Content Modal */}
-            <div className="p-5 overflow-y-auto space-y-6">
-              
-              {/* Box Tóm tắt */}
-              <div className="bg-[#f8fafd] border border-[#e0e8f5] rounded-2xl p-4 text-sm space-y-2.5">
-                 <div className="flex justify-between items-center">
-                   <span className="text-ink-muted">Ngày đặt:</span>
-                   <span className="font-bold text-brand-dark">{selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("vi-VN") : "—"}</span>
-                 </div>
-                 <div className="flex justify-between items-center">
-                   <span className="text-ink-muted">Trạng thái:</span>
-                   <span className={`font-bold px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wide ${selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                     {selectedOrder.status === 'paid' ? 'Đã thanh toán' : (selectedOrder.status ?? '—')}
-                   </span>
-                 </div>
+          {selectedOrder && (
+            <div className="space-y-5 pt-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-ink-muted font-medium">Mã đơn:</span>
+                <span className="font-bold text-brand-dark">#{selectedOrder.order_code ?? selectedOrder.id.slice(0, 8).toUpperCase()}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-ink-muted font-medium">Ngày đặt:</span>
+                <span className="font-bold text-brand-dark">
+                  {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleString("vi-VN") : "N/A"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-ink-muted font-medium">Trạng thái:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  selectedOrder.status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {selectedOrder.status === 'paid' ? 'Đã thanh toán' : (selectedOrder.status ?? "Đang xử lý")}
+                </span>
               </div>
 
-              {/* Danh sách SP/Dịch vụ */}
-              <div>
-                <h4 className="font-extrabold text-sm uppercase tracking-wide text-ink-muted mb-3 flex items-center gap-2">
-                  <Package className="w-4 h-4" /> Sản phẩm / Dịch vụ
-                </h4>
-                <ul className="space-y-3">
-                  {(() => {
-                     const items = (orderItemsQ.data ?? []).filter(it => it.order_id === selectedOrder.id);
-                     
-                     // Fallback nếu không có item con (dữ liệu cũ)
-                     if (items.length === 0) {
-                        const svcName = selectedOrder.service_id ? serviceMap.get(selectedOrder.service_id)?.name : "Gói dịch vụ / Sản phẩm";
-                        return (
-                          <li className="flex justify-between items-center text-sm border border-hairline p-3 rounded-xl bg-white shadow-sm">
-                            <span className="font-semibold text-brand-dark">{svcName} <span className="text-ink-muted font-normal">(x{selectedOrder.quantity ?? 1})</span></span>
-                          </li>
-                        );
-                     }
+              <div className="mt-6">
+                <h4 className="text-xs uppercase tracking-widest text-ink-muted font-bold mb-3">Sản phẩm / Dịch vụ</h4>
+                <div className="space-y-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  {/* Tìm tất cả items thuộc về order này */}
+                  {(orderItemsQ.data ?? [])
+                    .filter((it) => it.order_id === selectedOrder.id)
+                    .map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-brand-dark">{item.name}</p>
+                          <p className="text-xs text-ink-muted mt-0.5">
+                            {item.quantity} x {money(Number(item.unit_price ?? 0))}
+                          </p>
+                        </div>
+                        <span className="font-bold text-sm text-brand-dark">
+                          {money(Number(item.quantity ?? 0) * Number(item.unit_price ?? 0))}
+                        </span>
+                      </div>
+                    ))}
 
-                     // Hiển thị danh sách item chuẩn
-                     return items.map((it, idx) => (
-                        <li key={idx} className="flex justify-between items-center text-sm border border-hairline p-3 rounded-xl bg-white shadow-sm">
-                          <div className="flex-1 truncate pr-3">
-                             <div className="font-bold text-brand-dark truncate text-sm">{it.name ?? "—"}</div>
-                             <div className="text-xs text-ink-muted mt-0.5">Số lượng: x{it.quantity ?? 1}</div>
-                          </div>
-                          <div className="font-black text-brand-dark">{money(Number(it.unit_price ?? 0) * Number(it.quantity ?? 1))}</div>
-                        </li>
-                     ));
-                  })()}
-                </ul>
+                  {/* Fallback nếu đơn hàng rỗng (cấu trúc cũ) */}
+                  {(orderItemsQ.data ?? []).filter((it) => it.order_id === selectedOrder.id).length === 0 && (
+                     <div className="flex justify-between items-start gap-4">
+                       <div className="flex-1">
+                         <p className="text-sm font-semibold text-brand-dark">
+                            {selectedOrder.service_id ? serviceMap.get(selectedOrder.service_id)?.name ?? "Gói dịch vụ" : "Đơn hàng"}
+                         </p>
+                         <p className="text-xs text-ink-muted">Số lượng: {selectedOrder.quantity ?? 1}</p>
+                       </div>
+                       <span className="font-bold text-sm text-brand-dark">{money(Number(selectedOrder.total_amount ?? 0))}</span>
+                     </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Footer Modal: Tổng tiền */}
-            <div className="p-5 border-t border-gray-100 flex justify-between items-center bg-gray-50/50">
-               <span className="font-bold text-ink-muted uppercase tracking-wide text-sm">Tổng cộng</span>
-               <span className="font-black text-2xl text-emerald-600">{money(Number(selectedOrder.total_amount ?? 0))}</span>
+              <div className="flex justify-between items-center border-t border-gray-100 pt-4 mt-2">
+                <span className="text-base font-bold text-brand-dark">Tổng cộng:</span>
+                <span className="text-xl font-black text-rose-600">
+                  {money(Number(selectedOrder.total_amount ?? 0))}
+                </span>
+              </div>
+
+              <Button onClick={() => setSelectedOrder(null)} className="w-full mt-4 bg-gray-100 text-gray-800 hover:bg-gray-200">
+                Đóng
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
