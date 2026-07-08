@@ -420,7 +420,7 @@ export function CustomerHomeContent() {
                 {(ordersQ.data ?? []).map((o) => {
                   const items = (orderItemsQ.data ?? []).filter((it) => it.order_id === o.id);
                   const displayName = items.length > 0
-                    ? items.map((it) => it.name || (it.item_id ? catalogNameMap.get(it.item_id) : null) || "Sản phẩm / Dịch vụ").join(", ")
+                    ? items.map((it) => (it.item_id ? catalogNameMap.get(it.item_id) : null) || "Sản phẩm / Dịch vụ").join(", ")
                     : o.service_id ? catalogNameMap.get(o.service_id) ?? "Đơn hàng" : "Đơn hàng";
                   const totalQty = items.length > 0
                     ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
