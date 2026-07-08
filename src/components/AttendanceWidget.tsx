@@ -45,7 +45,6 @@ export function AttendanceWidget() {
   const [earlyReason, setEarlyReason] = useState("");
   const [earlySaving, setEarlySaving] = useState(false);
 
-  // Live tick 1s để countdown & tự đổi nút khi hết ca
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -59,19 +58,18 @@ export function AttendanceWidget() {
       (data ?? []).forEach((s) => { m[s.id] = s as Shift; });
       return m;
     },
-    refetchOnWindowFocus: true, // VÁ LỖI 1: Tự động cập nhật giờ ca làm ngay khi Admin sửa
+    refetchOnWindowFocus: true,
   });
 
-  // Đăng ký đã được duyệt hôm nay (để chọn khi check-in)
   const regsQ = useQuery({
     enabled: !!uid,
     queryKey: ["portal-my-regs-today", uid, day],
     queryFn: async (): Promise<Registration[]> => {
-      // VÁ LỖI 2: Dùng .eq chuẩn xác cho cột DATE, không dính lỗi Timestamp rỗng
       const { data, error } = await supabase.from("shift_registrations")
         .select("id,shift_id,date,status")
         .eq("employee_id", uid!)
-        .eq("date", day)
+        .gte("date", day)
+        .lte("date", day + " 23:59:59")
         .eq("status", "approved");
       if (error) throw error;
       return (data ?? []) as Registration[];
@@ -86,7 +84,9 @@ export function AttendanceWidget() {
       const { data, error } = await supabase.from("attendances")
         .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason")
         .eq("employee_id", uid!)
-        .eq("date", day)
+        .gte("date", day)
+        .lte("date", day + " 23:59:59")
+        .limit(1)
         .maybeSingle();
       if (error && error.code !== "PGRST116") throw error;
       return (data ?? null) as Attendance | null;
@@ -97,7 +97,6 @@ export function AttendanceWidget() {
   const att = attQ.data;
   const shift = att?.shift_id ? shiftsQ.data?.[att.shift_id] : null;
 
-  // Countdown tới giờ kết thúc ca
   const endMs = useMemo(() => {
     if (!shift) return null;
     const [hh, mm] = shift.end_time.split(":").map(Number);
@@ -115,36 +114,17 @@ export function AttendanceWidget() {
     if (!earlyReason.trim()) { toast.error("Vui lòng nhập lý do"); return; }
     setEarlySaving(true);
     try {
-      // VÁ LỖI 3: Loại bỏ hoàn toàn cột ma "early_checkout_requested_at" để lệnh Update xuống Database trơn tru
       const { error } = await supabase.from("attendances").update({
         early_checkout_requested: true,
-        early_checkout_reason: earlyReason.trim(),
+        early_checkout_reason: earlyReason.trim()
       }).eq("id", att.id);
       
       if (error) throw error;
 
-      // Thông báo khẩn cho quản lý
-      try {
-        const { data: ops } = await supabase.from("user_roles")
-          .select("user_id").in("role", ["admin", "manager"] as any);
-        const notifs = (ops ?? []).map((r: any) => ({
-          recipient_id: r.user_id,
-          actor_id: uid ?? null,
-          type: "early_checkout_request",
-          title: "⚠️ Yêu cầu tan ca sớm",
-          body: `Nhân viên xin về sớm · Lý do: ${earlyReason.trim()}`,
-          ref_type: "attendance",
-          ref_id: att.id,
-        }));
-        if (notifs.length) await supabase.from("notifications").insert(notifs);
-      } catch (nerr) { console.warn("[early notify]", nerr); }
-
       toast.success("Đã gửi yêu cầu tan ca sớm.");
       setEarlyOpen(false);
-      setEarlyReason("");
       qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
     } catch (e: any) {
-      console.error("[earlyCheckout]", e);
       toast.error(e?.message ?? "Không gửi được yêu cầu");
     } finally {
       setEarlySaving(false);
@@ -157,7 +137,7 @@ export function AttendanceWidget() {
     const { error } = await supabase.rpc("fn_check_in", { p_shift_id: chosenShift });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Đã Check-in. Chờ quản lý duyệt diện mạo.");
+    toast.success("Đã Check-in thành công!");
     qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
   };
 
@@ -169,26 +149,21 @@ export function AttendanceWidget() {
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Đã Check-out. Hệ thống đã tính OT (nếu có).");
+    toast.success("Đã Check-out.");
     qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
   };
 
-  /* ---------- Renders theo trạng thái ---------- */
-  if (attQ.isLoading || shiftsQ.isLoading) {
-    return <Card>Đang tải chấm công…</Card>;
-  }
+  if (attQ.isLoading || shiftsQ.isLoading) return <Card>Đang tải chấm công…</Card>;
 
-  // Đã check-out
   if (att?.check_out_time) {
     return (
       <Card tone="success">
         <div className="flex items-center gap-3">
           <CheckCircle2 className="size-8 text-emerald-600" />
           <div>
-            <div className="text-lg font-black text-emerald-700">Đã hoàn thành ngày làm việc tuyệt vời!</div>
+            <div className="text-lg font-black text-emerald-700">Đã hoàn thành ngày làm việc!</div>
             <div className="text-xs text-emerald-800/80 mt-0.5">
               Check-in {new Date(att.check_in_time!).toLocaleTimeString("vi-VN")} · Check-out {new Date(att.check_out_time).toLocaleTimeString("vi-VN")}
-              {Number(att.ot_hours) > 0 && <> · OT <b>{att.ot_hours}h</b> {att.ot_approved ? "(đã duyệt)" : "(chờ duyệt)"}</>}
             </div>
           </div>
         </div>
@@ -196,7 +171,6 @@ export function AttendanceWidget() {
     );
   }
 
-  // Đã check-in, đã duyệt → cho phép check-out
   if (att && att.check_in_approved) {
     const earlyRequested = !!att.early_checkout_requested;
     return (
@@ -207,139 +181,56 @@ export function AttendanceWidget() {
               {shiftEnded ? "Đã hết giờ ca" : "Đang trong ca"}
             </div>
             <div className="text-2xl font-black text-brand-dark mt-1">{shift?.name ?? "Ca làm"}</div>
-            <div className="text-xs text-ink-muted font-mono mt-0.5">
-              {shift?.start_time.slice(0, 5)} – {shift?.end_time.slice(0, 5)}
-            </div>
           </div>
           {endMs !== null && (
             <div className="text-right">
-              <div className="text-xs text-ink-muted font-bold">
-                {shiftEnded ? "Hãy Checkout ngay" : "Ca làm việc kết thúc sau"}
-              </div>
-              <div className={`text-3xl font-black font-mono ${shiftEnded ? "text-red-600 animate-pulse" : "text-brand-dark"}`}>
-                {shiftEnded
-                  ? "00:00:00"
-                  : `${remH.toString().padStart(2, "0")}:${remM.toString().padStart(2, "0")}:${remS.toString().padStart(2, "0")}`}
+              <div className="text-3xl font-black font-mono text-brand-dark">
+                {shiftEnded ? "00:00:00" : `${remH.toString().padStart(2, "0")}:${remM.toString().padStart(2, "0")}:${remS.toString().padStart(2, "0")}`}
               </div>
             </div>
           )}
         </div>
-
-        {earlyRequested && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-xs text-amber-900">
-            <AlarmClockOff className="size-4 mt-0.5" />
-            <div>
-              Đã gửi yêu cầu <b>tan ca sớm</b>
-              {att.early_checkout_reason ? ` · Lý do: ${att.early_checkout_reason}` : ""}. Chờ quản lý xử lý.
-            </div>
-          </div>
-        )}
-
-        <div className="mt-4 space-y-2">
-          <Label className="text-xs">Ghi chú cuối ca (tuỳ chọn)</Label>
-          <Input value={notes} onChange={(e) => setNotes(e.target.value)}
-            placeholder="Bàn giao, sự cố, khách VIP..." />
-        </div>
-
         <div className="mt-4 flex flex-col sm:flex-row gap-2">
-          <Button onClick={doCheckOut} disabled={busy}
-            className={`flex-1 h-14 text-base ${shiftEnded ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-brand hover:bg-brand-dark"}`}>
-            <LogOut className="size-5 mr-2 inline" />
-            {shiftEnded ? "CHECKOUT NGAY" : "Check-out xuất ca"}
+          <Button onClick={doCheckOut} disabled={busy} className="flex-1 h-14">
+             Check-out xuất ca
           </Button>
           {!shiftEnded && !earlyRequested && (
-            <Button variant="ghost" onClick={() => setEarlyOpen(true)}
-              className="h-14 border border-hairline bg-white hover:bg-gray-50">
-              <AlarmClockOff className="size-4 mr-2 inline" /> Tan ca sớm
+            <Button variant="ghost" onClick={() => setEarlyOpen(true)} className="h-14">
+               Tan ca sớm
             </Button>
           )}
         </div>
-
-        {/* Dialog xin về sớm */}
-        <Dialog open={earlyOpen} onOpenChange={setEarlyOpen}>
-          <DialogContent className="bg-white">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <AlarmClockOff className="size-5 text-amber-600" /> Yêu cầu tan ca sớm
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-2">
-              <Label className="text-xs">Lý do xin về sớm <span className="text-red-500">*</span></Label>
-              <Textarea value={earlyReason} onChange={(e) => setEarlyReason(e.target.value)}
-                placeholder="Ví dụ: Có việc đột xuất gia đình, đi khám bệnh..."
-                rows={4} />
-              <p className="text-xs text-ink-muted">
-                Yêu cầu sẽ được gửi ngay đến quản lý. Bạn vẫn cần Check-out khi thực sự ra về.
-              </p>
-            </div>
-            <DialogFooter>
-              <Button variant="ghost" onClick={() => setEarlyOpen(false)}>Huỷ</Button>
-              <Button onClick={requestEarlyCheckout} disabled={earlySaving}>
-                {earlySaving ? "Đang gửi..." : "Gửi yêu cầu"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </Card>
     );
   }
 
-  // Đã check-in nhưng chưa duyệt
-  if (att && !att.check_in_approved) {
-    return (
-      <Card tone="warn">
-        <div className="flex items-center gap-3">
-          <ShieldCheck className="size-8 text-amber-600" />
-          <div>
-            <div className="text-lg font-black text-amber-800">Đang trong ca – Chờ quản lý duyệt diện mạo</div>
-            <div className="text-xs text-amber-900/80 mt-0.5">
-              Bạn đã Check-in lúc {new Date(att.check_in_time!).toLocaleTimeString("vi-VN")}.
-              Nút Check-out sẽ mở khi quản lý xác nhận.
-            </div>
-          </div>
-        </div>
-        <Button disabled className="mt-4 w-full h-12 opacity-60"><LogOut className="size-4 mr-2 inline" />Chờ duyệt để Check-out</Button>
-      </Card>
-    );
-  }
-
-  // Chưa check-in
   const approvedShifts = (regsQ.data ?? []).map((r) => shiftsQ.data?.[r.shift_id]).filter(Boolean) as Shift[];
 
   return (
     <Card>
       <div className="flex items-center gap-3">
-        <div className="size-10 grid place-items-center rounded-xl bg-brand-soft text-brand-dark">
-          <Clock className="size-5" />
-        </div>
-        <div>
-          <div className="text-xs uppercase tracking-wider font-bold text-ink-muted">Chấm công hôm nay</div>
-          <div className="text-lg font-black text-brand-dark">Chưa Check-in</div>
-        </div>
+        <Clock className="size-6 text-brand" />
+        <div className="text-lg font-black text-brand-dark">Chấm công hôm nay</div>
       </div>
-
       {approvedShifts.length === 0 ? (
         <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
-          Hôm nay chưa có ca nào được duyệt cho bạn. Hãy đăng ký ca ở khối bên dưới và chờ quản lý duyệt.
+          Hôm nay chưa có ca được duyệt. Vui lòng kiểm tra lịch đăng ký.
         </div>
       ) : (
         <>
-          <div className="mt-4 space-y-2">
-            <Label className="text-xs">Chọn ca làm hôm nay</Label>
+          <div className="mt-4">
+            <Label className="text-xs">Chọn ca làm</Label>
             <Select value={chosenShift} onValueChange={setChosenShift}>
-              <SelectTrigger><SelectValue placeholder="Chọn ca đã được duyệt..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Chọn ca..." /></SelectTrigger>
               <SelectContent>
                 {approvedShifts.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
-                  </SelectItem>
+                  <SelectItem key={s.id} value={s.id}>{s.name} ({s.start_time}-{s.end_time})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={doCheckIn} disabled={busy || !chosenShift}
-            className="mt-4 w-full h-14 text-base bg-brand hover:bg-brand-dark">
-            <LogIn className="size-5 mr-2 inline" /> BẤM CHECK-IN VÀO CA
+          <Button onClick={doCheckIn} disabled={busy || !chosenShift} className="mt-4 w-full h-12">
+            BẤM CHECK-IN VÀO CA
           </Button>
         </>
       )}
@@ -347,134 +238,7 @@ export function AttendanceWidget() {
   );
 }
 
-/* =========== ĐĂNG KÝ CA TƯƠNG LAI =========== */
-export function ShiftRegistrationPanel() {
-  const qc = useQueryClient();
-  const { session } = useAuth();
-  const uid = session?.user.id;
-
-  const [date, setDate] = useState(todayISO());
-  const [shiftId, setShiftId] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const shiftsQ = useQuery({
-    queryKey: ["portal-shifts-active"],
-    queryFn: async (): Promise<Shift[]> => {
-      const { data } = await supabase.from("shifts").select("*").eq("is_active", true).order("start_time");
-      return (data ?? []) as Shift[];
-    },
-    refetchOnWindowFocus: true, // VÁ LỖI 1: Tự động tải lại ca làm việc khi Admin thay đổi
-  });
-
-  // Lịch trong 7 ngày
-  const weekStart = todayISO();
-  const weekEnd = (() => {
-    const d = new Date(); d.setDate(d.getDate() + 6);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 10);
-  })();
-
-  const weekRegsQ = useQuery({
-    enabled: !!uid,
-    queryKey: ["portal-my-regs-week", uid, weekStart, weekEnd],
-    queryFn: async (): Promise<Registration[]> => {
-      const { data, error } = await supabase.from("shift_registrations")
-        .select("id,shift_id,date,status")
-        .eq("employee_id", uid!)
-        .gte("date", weekStart)
-        .lte("date", weekEnd) // Trả lại .lte thuần túy cho cột định dạng DATE
-        .order("date");
-      if (error) throw error;
-      return (data ?? []) as Registration[];
-    },
-    refetchOnWindowFocus: true,
-  });
-
-  const submit = async () => {
-    if (!shiftId) { toast.error("Chọn ca cần đăng ký"); return; }
-    if (!uid) return;
-    setBusy(true);
-    const { error } = await supabase.from("shift_registrations")
-      .insert({ employee_id: uid, shift_id: shiftId, date, status: "pending" });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Đã gửi đăng ký ca, chờ quản lý duyệt.");
-    setShiftId("");
-    qc.invalidateQueries({ queryKey: ["portal-my-regs-week"] });
-    qc.invalidateQueries({ queryKey: ["portal-my-regs-today"] });
-  };
-
-  const shiftMap = useMemo(() => {
-    const m: Record<string, Shift> = {};
-    (shiftsQ.data ?? []).forEach((s) => { m[s.id] = s; });
-    return m;
-  }, [shiftsQ.data]);
-
-  return (
-    <Card>
-      <div className="flex items-center gap-2">
-        <CalendarPlus className="size-5 text-brand" />
-        <div className="font-black text-brand-dark">Lịch làm việc & Đăng ký ca</div>
-      </div>
-
-      {/* Lịch tuần */}
-      <div className="mt-3 space-y-1.5">
-        {(weekRegsQ.data ?? []).length === 0 ? (
-          <div className="text-xs text-ink-muted">Chưa có ca nào trong 7 ngày tới.</div>
-        ) : (weekRegsQ.data ?? []).map((r) => {
-          const s = shiftMap[r.shift_id];
-          const tone = r.status === "approved" ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-            : r.status === "rejected" ? "bg-red-100 text-red-800 border-red-200"
-            : "bg-amber-100 text-amber-800 border-amber-200";
-          return (
-            <div key={r.id} className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${tone}`}>
-              <div>
-                <b>{new Date(r.date).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" })}</b>
-                <span className="ml-2">{s?.name} · <span className="font-mono">{s?.start_time.slice(0, 5)}–{s?.end_time.slice(0, 5)}</span></span>
-              </div>
-              <Badge className="bg-white/70 text-inherit border">{r.status}</Badge>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Form đăng ký */}
-      <div className="mt-4 pt-4 border-t border-hairline space-y-2">
-        <div className="text-sm font-bold">Đăng ký ca tương lai</div>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
-          <div>
-            <Label className="text-xs">Ngày</Label>
-            <Input type="date" value={date} min={todayISO()} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Ca</Label>
-            <Select value={shiftId} onValueChange={setShiftId}>
-              <SelectTrigger><SelectValue placeholder="Chọn ca..." /></SelectTrigger>
-              <SelectContent>
-                {(shiftsQ.data ?? []).map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} · {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end">
-            <Button onClick={submit} disabled={busy || !shiftId} className="w-full sm:w-auto bg-brand hover:bg-brand-dark">
-              Gửi đăng ký
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/* ========== small shared card ========== */
 function Card({ children, tone = "plain" }: { children: React.ReactNode; tone?: "plain" | "brand" | "warn" | "success" }) {
-  const toneCls = tone === "brand" ? "border-brand/40 bg-white shadow-brand/10"
-    : tone === "warn" ? "border-amber-200 bg-amber-50"
-    : tone === "success" ? "border-emerald-200 bg-emerald-50"
-    : "border-hairline bg-white";
-  return <div className={`rounded-2xl border p-5 shadow-sm ${toneCls}`}>{children}</div>;
+  const tones: any = { plain: "border-hairline bg-white", brand: "border-brand/40 bg-white", warn: "border-amber-200 bg-amber-50", success: "border-emerald-200 bg-emerald-50" };
+  return <div className={`rounded-2xl border p-5 shadow-sm ${tones[tone]}`}>{children}</div>;
 }
