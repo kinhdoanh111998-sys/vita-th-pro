@@ -25,7 +25,6 @@ type Attendance = {
   early_checkout_requested?: boolean; early_checkout_reason?: string | null;
 };
 
-
 const todayISO = () => {
   const d = new Date();
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -52,7 +51,6 @@ export function AttendanceWidget() {
     return () => clearInterval(t);
   }, []);
 
-
   const shiftsQ = useQuery({
     queryKey: ["portal-shifts-map"],
     queryFn: async (): Promise<Record<string, Shift>> => {
@@ -63,14 +61,17 @@ export function AttendanceWidget() {
     },
   });
 
-  // Đăng ký đã được duyệt hôm nay (để chọn khi check-in)
+  // VÁ LỖI 1: Dùng toán tử like hoặc dải gte/lte để bọc trọn vẹn ngày bất chấp định dạng Timestamp của Supabase
   const regsQ = useQuery({
     enabled: !!uid,
     queryKey: ["portal-my-regs-today", uid, day],
     queryFn: async (): Promise<Registration[]> => {
       const { data, error } = await supabase.from("shift_registrations")
         .select("id,shift_id,date,status")
-        .eq("employee_id", uid!).eq("date", day).eq("status", "approved");
+        .eq("employee_id", uid!)
+        .gte("date", day)
+        .lte("date", day + " 23:59:59")
+        .eq("status", "approved");
       if (error) throw error;
       return (data ?? []) as Registration[];
     },
@@ -82,7 +83,11 @@ export function AttendanceWidget() {
     queryFn: async (): Promise<Attendance | null> => {
       const { data, error } = await supabase.from("attendances")
         .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason")
-        .eq("employee_id", uid!).eq("date", day).maybeSingle();
+        .eq("employee_id", uid!)
+        .gte("date", day)
+        .lte("date", day + " 23:59:59")
+        .limit(1)
+        .maybeSingle();
       if (error) throw error;
       return (data ?? null) as Attendance | null;
     },
@@ -109,11 +114,12 @@ export function AttendanceWidget() {
     if (!earlyReason.trim()) { toast.error("Vui lòng nhập lý do"); return; }
     setEarlySaving(true);
     try {
+      // VÁ LỖI 2: Xóa bỏ trường "early_checkout_requested_at" không tồn tại dưới database để lệnh Update lọt qua
       const { error } = await supabase.from("attendances").update({
         early_checkout_requested: true,
-        early_checkout_reason: earlyReason.trim(),
-        early_checkout_requested_at: new Date().toISOString(),
+        early_checkout_reason: earlyReason.trim()
       }).eq("id", att.id);
+      
       if (error) throw error;
 
       // Thông báo khẩn cho quản lý
@@ -143,7 +149,6 @@ export function AttendanceWidget() {
       setEarlySaving(false);
     }
   };
-
 
   const doCheckIn = async () => {
     if (!chosenShift) { toast.error("Chọn ca làm việc"); return; }
@@ -243,7 +248,7 @@ export function AttendanceWidget() {
           </Button>
           {!shiftEnded && !earlyRequested && (
             <Button variant="ghost" onClick={() => setEarlyOpen(true)}
-              className="h-14 border border-hairline">
+              className="h-14 border border-hairline bg-white hover:bg-gray-50">
               <AlarmClockOff className="size-4 mr-2 inline" /> Tan ca sớm
             </Button>
           )}
@@ -277,7 +282,6 @@ export function AttendanceWidget() {
       </Card>
     );
   }
-
 
   // Đã check-in nhưng chưa duyệt
   if (att && !att.check_in_approved) {
@@ -372,9 +376,12 @@ export function ShiftRegistrationPanel() {
     enabled: !!uid,
     queryKey: ["portal-my-regs-week", uid, weekStart, weekEnd],
     queryFn: async (): Promise<Registration[]> => {
+      // VÁ LỖI HIỂN THỊ LỊCH TUẦN ĐỂ KHÔNG BỊ TRƯỢT DỮ LIỆU CUỐI NGÀY
       const { data, error } = await supabase.from("shift_registrations")
         .select("id,shift_id,date,status")
-        .eq("employee_id", uid!).gte("date", weekStart).lte("date", weekEnd)
+        .eq("employee_id", uid!)
+        .gte("date", weekStart)
+        .lte("date", weekEnd + " 23:59:59")
         .order("date");
       if (error) throw error;
       return (data ?? []) as Registration[];
@@ -451,7 +458,7 @@ export function ShiftRegistrationPanel() {
             </Select>
           </div>
           <div className="flex items-end">
-            <Button onClick={submit} disabled={busy || !shiftId} className="w-full sm:w-auto">
+            <Button onClick={submit} disabled={busy || !shiftId} className="w-full sm:w-auto bg-brand hover:bg-brand-dark">
               Gửi đăng ký
             </Button>
           </div>
@@ -463,7 +470,7 @@ export function ShiftRegistrationPanel() {
 
 /* ========== small shared card ========== */
 function Card({ children, tone = "plain" }: { children: React.ReactNode; tone?: "plain" | "brand" | "warn" | "success" }) {
-  const toneCls = tone === "brand" ? "border-brand/40 bg-white"
+  const toneCls = tone === "brand" ? "border-brand/40 bg-white shadow-brand/10"
     : tone === "warn" ? "border-amber-200 bg-amber-50"
     : tone === "success" ? "border-emerald-200 bg-emerald-50"
     : "border-hairline bg-white";
