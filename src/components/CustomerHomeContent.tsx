@@ -610,7 +610,7 @@ export function CustomerHomeContent() {
                       <div key={idx} className="flex justify-between items-start gap-4">
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-brand-dark">
-                            {item.name || (item.item_id ? catalogNameMap.get(item.item_id) : null) || "Sản phẩm / Dịch vụ"}
+                            {(item.item_id ? catalogNameMap.get(item.item_id) : null) || "Sản phẩm / Dịch vụ"}
                           </p>
                           <p className="text-xs text-ink-muted mt-0.5">
                             {item.quantity} x {money(Number(item.unit_price ?? 0))}
