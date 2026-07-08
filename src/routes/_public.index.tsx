@@ -317,9 +317,12 @@ function CommunityHome() {
           </button>
         </div>
         <div className="md:grid md:grid-cols-12 md:gap-6">
-          <div className="md:col-span-8 grid gap-5 md:grid-cols-1">
+          {/* Đã sửa thành Slider vuốt ngang trên Mobile, giữ dọc trên PC */}
+          <div className="md:col-span-8 flex overflow-x-auto snap-x snap-mandatory no-scrollbar gap-4 pb-4 md:grid md:gap-5 md:grid-cols-1 md:overflow-visible md:pb-0">
             {TESTIMONIALS.map((t) => (
-              <TestimonialCard key={t.id} t={t} />
+              <div key={t.id} className="w-[85%] max-w-[320px] shrink-0 snap-start md:w-auto md:max-w-none md:shrink">
+                <TestimonialCard t={t} />
+              </div>
             ))}
           </div>
 
