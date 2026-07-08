@@ -24,8 +24,6 @@ const money = (n: number) =>
 export function CustomerHomeContent() {
   const { email } = useAuth();
   const [copied, setCopied] = useState(false);
-  
-  // STATE MỚI: Quản lý popup chi tiết đơn hàng
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const customerQ = useQuery({
@@ -84,14 +82,14 @@ export function CustomerHomeContent() {
     },
   });
 
-  // RADAR BẮT TÍN HIỆU TỪ TRANG THÔNG BÁO DỘI VỀ
+  // Nhận diện tín hiệu mở Popup từ trang Thông báo
   useEffect(() => {
     const viewOrderId = sessionStorage.getItem("viewOrderId");
     if (viewOrderId && ordersQ.data && ordersQ.data.length > 0) {
       const orderToView = ordersQ.data.find(o => o.id === viewOrderId);
       if (orderToView) {
-        setSelectedOrder(orderToView); // Bật Popup ngay lập tức
-        sessionStorage.removeItem("viewOrderId"); // Mở xong thì xóa tín hiệu đi
+        setSelectedOrder(orderToView);
+        sessionStorage.removeItem("viewOrderId");
       }
     }
   }, [ordersQ.data]);
@@ -112,24 +110,49 @@ export function CustomerHomeContent() {
     },
   });
 
-  const serviceIds = Array.from(
+  // TỔNG HỢP TOÀN BỘ ID (Sản phẩm & Dịch vụ) để quét tên
+  const allItemIds = Array.from(
     new Set([
       ...(treatmentsQ.data ?? []).map((t) => t.service_id),
       ...(ordersQ.data ?? []).map((o) => o.service_id),
-    ].filter(Boolean) as string[]),
+      ...(orderItemsQ.data ?? []).map((it) => it.item_id)
+    ].filter(Boolean) as string[])
   );
+
   const servicesQ = useQuery({
-    queryKey: ["kh-services", serviceIds.join(",")],
-    enabled: serviceIds.length > 0,
+    queryKey: ["kh-services", allItemIds.join(",")],
+    enabled: allItemIds.length > 0,
     queryFn: async () => {
       try {
         const { data, error } = await supabase
-          .from("services").select("id, name, default_sessions").in("id", serviceIds);
+          .from("services").select("id, name, default_sessions").in("id", allItemIds);
         if (error) throw error;
         return (data ?? []) as Service[];
       } catch (e) { console.warn("[CustomerHome] services", e); return [] as Service[]; }
     },
   });
+
+  // QUÉT THÊM KHO SẢN PHẨM ĐỂ LẤY TÊN
+  const productsQ = useQuery({
+    queryKey: ["kh-products", allItemIds.join(",")],
+    enabled: allItemIds.length > 0,
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from("products").select("id, name").in("id", allItemIds);
+        if (error) throw error;
+        return (data ?? []) as { id: string; name: string }[];
+      } catch (e) { console.warn("[CustomerHome] products", e); return [] as { id: string; name: string }[]; }
+    },
+  });
+
+  // Bản đồ tên gọi tổng hợp (Cả SP và DV)
+  const catalogNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (servicesQ.data ?? []).forEach(s => map.set(s.id, s.name));
+    (productsQ.data ?? []).forEach(p => map.set(p.id, p.name));
+    return map;
+  }, [servicesQ.data, productsQ.data]);
 
   const serviceMap = useMemo(() => new Map((servicesQ.data ?? []).map((s) => [s.id, s])), [servicesQ.data]);
   const orderMap = useMemo(() => new Map((ordersQ.data ?? []).map((o) => [o.id, o])), [ordersQ.data]);
@@ -152,10 +175,11 @@ export function CustomerHomeContent() {
         if (!next) continue;
         const order = orderMap.get(orderId);
         const svc = next.service_id ? serviceMap.get(next.service_id) : null;
+        const svcName = next.service_id ? catalogNameMap.get(next.service_id) : null;
         const totalSessions = (order?.quantity ?? 1) * (svc?.default_sessions ?? 1);
         out.push({
           treatment: next,
-          serviceName: svc?.name ?? "Liệu trình",
+          serviceName: svcName ?? "Liệu trình",
           totalSessions: Number.isFinite(totalSessions) ? totalSessions : 1,
           remaining: list.length,
           packageIndex: idx,
@@ -163,18 +187,18 @@ export function CustomerHomeContent() {
       }
       return out;
     } catch (e) { console.error("[CustomerHome] availableSessions", e); return []; }
-  }, [treatmentsQ.data, orderMap, serviceMap]);
+  }, [treatmentsQ.data, orderMap, serviceMap, catalogNameMap]);
 
   const usedSessions = useMemo(() => {
     try {
       return (treatmentsQ.data ?? [])
         .filter((t) => t && t.status !== "pending")
         .map((t) => {
-          const svc = t.service_id ? serviceMap.get(t.service_id) : null;
-          return { id: t.id, serviceName: svc?.name ?? "Liệu trình", session_number: t.session_number, status: t.status };
+          const svcName = t.service_id ? catalogNameMap.get(t.service_id) : null;
+          return { id: t.id, serviceName: svcName ?? "Liệu trình", session_number: t.session_number, status: t.status };
         });
     } catch (e) { console.error("[CustomerHome] usedSessions", e); return []; }
-  }, [treatmentsQ.data, serviceMap]);
+  }, [treatmentsQ.data, catalogNameMap]);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState("");
@@ -396,8 +420,8 @@ export function CustomerHomeContent() {
                 {(ordersQ.data ?? []).map((o) => {
                   const items = (orderItemsQ.data ?? []).filter((it) => it.order_id === o.id);
                   const displayName = items.length > 0
-                    ? items.map((it) => it.name ?? "—").join(", ")
-                    : o.service_id ? serviceMap.get(o.service_id)?.name ?? "Đơn hàng" : "Đơn hàng";
+                    ? items.map((it) => it.name || (it.item_id ? catalogNameMap.get(it.item_id) : null) || "Sản phẩm / Dịch vụ").join(", ")
+                    : o.service_id ? catalogNameMap.get(o.service_id) ?? "Đơn hàng" : "Đơn hàng";
                   const totalQty = items.length > 0
                     ? items.reduce((s, it) => s + (Number(it.quantity) || 0), 0)
                     : (o.quantity ?? 1);
@@ -578,13 +602,16 @@ export function CustomerHomeContent() {
               <div className="mt-6">
                 <h4 className="text-xs uppercase tracking-widest text-ink-muted font-bold mb-3">Sản phẩm / Dịch vụ</h4>
                 <div className="space-y-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  {/* Tìm tất cả items thuộc về order này */}
+                  
+                  {/* LUỒNG CHUẨN: Lấy dữ liệu chi tiết từng sản phẩm trong đơn */}
                   {(orderItemsQ.data ?? [])
                     .filter((it) => it.order_id === selectedOrder.id)
                     .map((item, idx) => (
                       <div key={idx} className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <p className="text-sm font-semibold text-brand-dark">{item.name}</p>
+                          <p className="text-sm font-semibold text-brand-dark">
+                            {item.name || (item.item_id ? catalogNameMap.get(item.item_id) : null) || "Sản phẩm / Dịch vụ"}
+                          </p>
                           <p className="text-xs text-ink-muted mt-0.5">
                             {item.quantity} x {money(Number(item.unit_price ?? 0))}
                           </p>
@@ -595,12 +622,12 @@ export function CustomerHomeContent() {
                       </div>
                     ))}
 
-                  {/* Fallback nếu đơn hàng rỗng (cấu trúc cũ) */}
+                  {/* LUỒNG DỰ PHÒNG: Đơn hàng cũ chưa có order_items */}
                   {(orderItemsQ.data ?? []).filter((it) => it.order_id === selectedOrder.id).length === 0 && (
                      <div className="flex justify-between items-start gap-4">
                        <div className="flex-1">
                          <p className="text-sm font-semibold text-brand-dark">
-                            {selectedOrder.service_id ? serviceMap.get(selectedOrder.service_id)?.name ?? "Gói dịch vụ" : "Đơn hàng"}
+                            {selectedOrder.service_id ? catalogNameMap.get(selectedOrder.service_id) ?? "Sản phẩm / Dịch vụ" : "Đơn hàng"}
                          </p>
                          <p className="text-xs text-ink-muted">Số lượng: {selectedOrder.quantity ?? 1}</p>
                        </div>
