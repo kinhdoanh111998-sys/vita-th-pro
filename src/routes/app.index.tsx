@@ -50,6 +50,7 @@ function AppHome() {
   const { data: stores = [] } = useActiveStores();
   const { data: appNav = [] } = useNavigationItems("app");
   const { data: sys } = useSystemSettings();
+  const freeTrialName = sys?.free_trial_campaign || "Trải nghiệm liệu trình miễn phí";
   const showStoreList = sys?.show_store_list !== false;
   const quickItems = appNav.filter((i) => i.is_visible);
 
@@ -111,21 +112,25 @@ function AppHome() {
       ) : (
 
         <>
-          {/* Hero banner */}
+          {/* Hero banner (Đã được làm động) */}
           <section className="px-4 mt-2">
             <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-brand-primary to-brand-primary-dark text-white p-5 shadow-lg">
               <span className="inline-flex text-[11px] font-semibold uppercase tracking-wide bg-white/20 rounded-full px-2 py-0.5">
                 Ưu đãi thành viên
               </span>
               <h2 className="font-heading text-xl mt-2 text-white">
-                Trải nghiệm liệu trình miễn phí
+                {freeTrialName}
               </h2>
               <p className="text-sm text-white/85 mt-1">
                 Đặt lịch ngay để nhận buổi trải nghiệm và tư vấn cá nhân hoá.
               </p>
-              <button className="mt-3 bg-white text-brand-primary text-sm font-semibold px-4 py-2 rounded-full">
+              <Link 
+                to="/booking"
+                search={{ note: freeTrialName }}
+                className="mt-3 inline-flex bg-white text-brand-primary text-sm font-semibold px-4 py-2 rounded-full active:scale-95 transition-transform"
+              >
                 Khám phá ngay
-              </button>
+              </Link>
             </div>
           </section>
 
