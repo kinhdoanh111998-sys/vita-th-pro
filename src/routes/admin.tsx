@@ -12,6 +12,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const [open, setOpen] = useState(false);
+  
   return (
     <AuthGuard allowedRoles={["admin", "manager"]} forbiddenPath="/">
       <div className="min-h-screen bg-brand-bg flex flex-col lg:flex-row">
@@ -27,7 +28,8 @@ function AdminLayout() {
               </button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-[86%] max-w-[320px] bg-brand-surface border-0 text-brand-text">
-              <div onClick={() => setOpen(false)}>
+              {/* FIXED: Bổ sung chiều cao 100% và thanh cuộn ẩn cho menu Mobile */}
+              <div onClick={() => setOpen(false)} className="h-full overflow-y-auto scrollbar-none pb-10">
                 <AdminSidebar />
               </div>
             </SheetContent>
@@ -40,7 +42,8 @@ function AdminLayout() {
         </header>
 
         {/* Desktop sidebar */}
-        <div className="hidden lg:block">
+        {/* FIXED: Bổ sung sticky, giới hạn h-screen và bật scrollbar cho menu PC/Tablet */}
+        <div className="hidden lg:block sticky top-0 h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300">
           <AdminSidebar />
         </div>
 
