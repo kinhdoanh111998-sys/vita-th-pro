@@ -965,11 +965,19 @@ function TreatmentFunnelChart() {
   const data = useMemo(() => {
     const rows = q.data ?? [];
     const sold = rows.length;
-    const completed = rows.filter((r: any) => r.status === "completed" || r.status === "done").length;
-    const inUse = rows.filter((r: any) => r.status !== "pending" && r.status !== "completed" && r.status !== "done").length;
+    const completed = rows.filter(
+      (r: any) => r.status === "completed" || r.status === "done",
+    ).length;
+    const inUse = rows.filter(
+      (r: any) =>
+        r.status === "active" ||
+        r.status === "in_progress" ||
+        r.status === "in-use" ||
+        r.status === "using",
+    ).length;
     return [
       { name: "Đã bán", value: sold, fill: "#3B82F6" },
-      { name: "Đang sử dụng", value: inUse + completed, fill: "#8B5CF6" },
+      { name: "Đang sử dụng", value: inUse, fill: "#8B5CF6" },
       { name: "Hoàn thành", value: completed, fill: "#10B981" },
     ];
   }, [q.data]);
