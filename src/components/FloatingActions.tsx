@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { MessageCircle, Search, CalendarCheck } from "lucide-react";
+import { Search, CalendarCheck } from "lucide-react";
 import { BookingActionMenu } from "@/components/BookingActionMenu";
 import { useSystemSettings } from "@/lib/useSystemSettings";
+import zaloLogoAsset from "@/assets/zalo-logo.png.asset.json";
 
 type Btn = {
   key: string;
@@ -14,6 +15,10 @@ type Btn = {
   bg: string;
   ring: string;
 };
+
+function ZaloIcon({ className }: { className?: string }) {
+  return <img src={zaloLogoAsset.url} alt="Zalo" className={className} />;
+}
 
 const BUTTONS: Btn[] = [
   {
@@ -27,7 +32,7 @@ const BUTTONS: Btn[] = [
   {
     key: "zalo",
     label: "Liên hệ Zalo",
-    icon: MessageCircle,
+    icon: ZaloIcon,
     href: "https://zalo.me/0988000888",
     external: true,
     bg: "bg-[#0068FF] text-white",

@@ -44,6 +44,7 @@ import { Route as AdminProductsRouteImport } from './routes/admin.products'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminNavigationRouteImport } from './routes/admin.navigation'
+import { Route as AdminMarketingRouteImport } from './routes/admin.marketing'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEmployeesRouteImport } from './routes/admin.employees'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
@@ -67,6 +68,7 @@ import { Route as PublicAboutRouteImport } from './routes/_public.about'
 import { Route as PublicServicesIndexRouteImport } from './routes/_public.services.index'
 import { Route as PublicProductsIndexRouteImport } from './routes/_public.products.index'
 import { Route as PublicNewsIndexRouteImport } from './routes/_public.news.index'
+import { Route as PublicEventsIndexRouteImport } from './routes/_public.events.index'
 import { Route as PublicAboutIndexRouteImport } from './routes/_public.about.index'
 import { Route as AuthZaloCallbackRouteImport } from './routes/auth.zalo.callback'
 import { Route as AppStoreCheckoutRouteImport } from './routes/app.store.checkout'
@@ -269,6 +271,11 @@ const AdminNavigationRoute = AdminNavigationRouteImport.update({
   path: '/navigation',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMarketingRoute = AdminMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -383,6 +390,11 @@ const PublicNewsIndexRoute = PublicNewsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => PublicNewsRoute,
+} as any)
+const PublicEventsIndexRoute = PublicEventsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PublicEventsRoute,
 } as any)
 const PublicAboutIndexRoute = PublicAboutIndexRouteImport.update({
   id: '/',
@@ -555,6 +567,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/marketing': typeof AdminMarketingRoute
   '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -607,6 +620,7 @@ export interface FileRoutesByFullPath {
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/about/': typeof PublicAboutIndexRoute
+  '/events/': typeof PublicEventsIndexRoute
   '/news/': typeof PublicNewsIndexRoute
   '/products/': typeof PublicProductsIndexRoute
   '/services/': typeof PublicServicesIndexRoute
@@ -622,7 +636,6 @@ export interface FileRoutesByTo {
   '/checkout': typeof PublicCheckoutRoute
   '/community': typeof PublicCommunityRoute
   '/contact': typeof PublicContactRoute
-  '/events': typeof PublicEventsRouteWithChildren
   '/lookup': typeof PublicLookupRoute
   '/project-status': typeof PublicProjectStatusRoute
   '/wallet': typeof PublicWalletRoute
@@ -634,6 +647,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/marketing': typeof AdminMarketingRoute
   '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -687,6 +701,7 @@ export interface FileRoutesByTo {
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/about': typeof PublicAboutIndexRoute
+  '/events': typeof PublicEventsIndexRoute
   '/news': typeof PublicNewsIndexRoute
   '/products': typeof PublicProductsIndexRoute
   '/services': typeof PublicServicesIndexRoute
@@ -722,6 +737,7 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/employees': typeof AdminEmployeesRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/marketing': typeof AdminMarketingRoute
   '/admin/navigation': typeof AdminNavigationRoute
   '/admin/news': typeof AdminNewsRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -775,6 +791,7 @@ export interface FileRoutesById {
   '/app/store/checkout': typeof AppStoreCheckoutRoute
   '/auth/zalo/callback': typeof AuthZaloCallbackRoute
   '/_public/about/': typeof PublicAboutIndexRoute
+  '/_public/events/': typeof PublicEventsIndexRoute
   '/_public/news/': typeof PublicNewsIndexRoute
   '/_public/products/': typeof PublicProductsIndexRoute
   '/_public/services/': typeof PublicServicesIndexRoute
@@ -811,6 +828,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/marketing'
     | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
@@ -863,6 +881,7 @@ export interface FileRouteTypes {
     | '/app/store/checkout'
     | '/auth/zalo/callback'
     | '/about/'
+    | '/events/'
     | '/news/'
     | '/products/'
     | '/services/'
@@ -878,7 +897,6 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/community'
     | '/contact'
-    | '/events'
     | '/lookup'
     | '/project-status'
     | '/wallet'
@@ -890,6 +908,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/marketing'
     | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
@@ -943,6 +962,7 @@ export interface FileRouteTypes {
     | '/app/store/checkout'
     | '/auth/zalo/callback'
     | '/about'
+    | '/events'
     | '/news'
     | '/products'
     | '/services'
@@ -977,6 +997,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/employees'
     | '/admin/events'
+    | '/admin/marketing'
     | '/admin/navigation'
     | '/admin/news'
     | '/admin/orders'
@@ -1030,6 +1051,7 @@ export interface FileRouteTypes {
     | '/app/store/checkout'
     | '/auth/zalo/callback'
     | '/_public/about/'
+    | '/_public/events/'
     | '/_public/news/'
     | '/_public/products/'
     | '/_public/services/'
@@ -1301,6 +1323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNavigationRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/marketing': {
+      id: '/admin/marketing'
+      path: '/marketing'
+      fullPath: '/admin/marketing'
+      preLoaderRoute: typeof AdminMarketingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/events': {
       id: '/admin/events'
       path: '/events'
@@ -1461,6 +1490,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/news/'
       preLoaderRoute: typeof PublicNewsIndexRouteImport
       parentRoute: typeof PublicNewsRoute
+    }
+    '/_public/events/': {
+      id: '/_public/events/'
+      path: '/'
+      fullPath: '/events/'
+      preLoaderRoute: typeof PublicEventsIndexRouteImport
+      parentRoute: typeof PublicEventsRoute
     }
     '/_public/about/': {
       id: '/_public/about/'
@@ -1676,10 +1712,12 @@ const PublicAboutRouteWithChildren = PublicAboutRoute._addFileChildren(
 
 interface PublicEventsRouteChildren {
   PublicEventsIdRoute: typeof PublicEventsIdRoute
+  PublicEventsIndexRoute: typeof PublicEventsIndexRoute
 }
 
 const PublicEventsRouteChildren: PublicEventsRouteChildren = {
   PublicEventsIdRoute: PublicEventsIdRoute,
+  PublicEventsIndexRoute: PublicEventsIndexRoute,
 }
 
 const PublicEventsRouteWithChildren = PublicEventsRoute._addFileChildren(
@@ -1786,6 +1824,7 @@ interface AdminRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminEmployeesRoute: typeof AdminEmployeesRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminMarketingRoute: typeof AdminMarketingRoute
   AdminNavigationRoute: typeof AdminNavigationRoute
   AdminNewsRoute: typeof AdminNewsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -1809,6 +1848,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminEmployeesRoute: AdminEmployeesRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminMarketingRoute: AdminMarketingRoute,
   AdminNavigationRoute: AdminNavigationRoute,
   AdminNewsRoute: AdminNewsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -1938,3 +1978,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

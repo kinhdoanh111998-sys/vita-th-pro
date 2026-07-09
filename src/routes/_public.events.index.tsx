@@ -10,7 +10,7 @@ import {
   type EventRow,
 } from "@/lib/events";
 
-export const Route = createFileRoute("/_public/events")({
+export const Route = createFileRoute("/_public/events/")({
   head: () => ({
     meta: [
       { title: "Sự kiện | Vita TH Pro" },
