@@ -416,7 +416,7 @@ function PayrollDashboard() {
           </Button>
           {canFreeze && (
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => {
                 if (
                   confirm(
@@ -726,7 +726,7 @@ function PayrollExtrasSection({ canConfigure }: { canConfigure: boolean }) {
                 </div>
               ))}
               {canConfigure && (
-                <Button size="sm" variant="outline" onClick={() => setTiers([...(currentTiers), { min: 0, percent: 0 }])}>
+                <Button size="sm" variant="secondary" onClick={() => setTiers([...(currentTiers), { min: 0, percent: 0 }])}>
                   <Plus size={12} /> Thêm bậc
                 </Button>
               )}
