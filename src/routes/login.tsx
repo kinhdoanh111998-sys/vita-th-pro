@@ -191,7 +191,7 @@ function LoginPage() {
         </a>
 
         <p className="mt-2 text-xs text-ink-muted text-center">
-          Chưa có tài khoản? Dùng Zalo là xong, không cần đăng ký.
+          Chưa có tài khoản? Dùng Zalo là đăng nhập ngay.
         </p>
 
         <div className="mt-5 text-center text-sm">
