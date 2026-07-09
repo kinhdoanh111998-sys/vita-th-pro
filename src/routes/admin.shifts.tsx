@@ -34,12 +34,16 @@ type Registration = {
   status: "pending" | "approved" | "rejected"; note: string | null;
   approved_by: string | null; approved_at: string | null;
 };
+// BỔ SUNG TYPE CHO VỀ SỚM
 type Attendance = {
   id: string; employee_id: string; date: string; shift_id: string | null;
   check_in_time: string | null; check_out_time: string | null;
   check_in_approved: boolean; check_in_approved_at: string | null;
   ot_hours: number; ot_approved: boolean; ot_approved_at: string | null;
   notes: string | null;
+  early_checkout_requested?: boolean;
+  early_checkout_reason?: string | null;
+  early_checkout_approved?: boolean;
 };
 
 const todayISO = () => {
@@ -53,7 +57,7 @@ function ShiftsPage() {
     <>
       <AdminTopbar
         title="Quản lý Ca & Chấm công"
-        subtitle="Cấu hình ca làm · Duyệt đăng ký · Duyệt check-in & OT."
+        subtitle="Cấu hình ca làm · Duyệt đăng ký · Duyệt check-in, về sớm & OT."
       />
       <Tabs defaultValue="calendar" className="space-y-4">
         <TabsList className="bg-white border border-hairline">
@@ -171,7 +175,6 @@ function ShiftFormDialog({
   const [active, setActive] = useState(editing?.is_active ?? true);
   const [saving, setSaving] = useState(false);
 
-  // Reset when dialog opens
   useMemo(() => {
     if (open) {
       setName(editing?.name ?? "");
@@ -397,6 +400,7 @@ function AttendancesTab() {
       if (error) throw error;
       return (data ?? []) as Attendance[];
     },
+    refetchOnWindowFocus: true,
   });
 
   const approveCheckIn = async (a: Attendance) => {
@@ -418,6 +422,19 @@ function AttendancesTab() {
     }).eq("id", a.id);
     if (error) { toast.error(error.message); return; }
     toast.success(`Đã duyệt OT ${hours}h`); qc.invalidateQueries({ queryKey: ["attendances"] });
+  };
+
+  // LOGIC MỚI: HÀM DUYỆT VỀ SỚM CHO QUẢN LÝ
+  const approveEarlyCheckout = async (a: Attendance) => {
+    const uid = session?.user.id ?? null;
+    const { error } = await supabase.from("attendances").update({
+      early_checkout_approved: true,
+      early_checkout_approved_by: uid,
+      early_checkout_approved_at: new Date().toISOString(),
+    }).eq("id", a.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Đã cấp phép cho nhân viên về sớm!");
+    qc.invalidateQueries({ queryKey: ["attendances"] });
   };
 
   return (
@@ -471,14 +488,33 @@ function AttendancesTab() {
                   <td className="px-4 py-3">
                     {a.check_in_approved
                       ? <Badge className="bg-emerald-600 text-white"><ShieldCheck className="size-3 mr-1 inline" />Đã duyệt CI</Badge>
-                      : <Badge className="bg-amber-500 text-white">Chờ duyệt</Badge>}
+                      : <Badge className="bg-amber-500 text-white">Chờ duyệt CI</Badge>}
+                    
+                    {/* BỔ SUNG HIỂN THỊ YÊU CẦU VỀ SỚM Ở CỘT TRẠNG THÁI */}
+                    {a.early_checkout_requested && !a.early_checkout_approved && (
+                      <div className="mt-1.5 p-1 bg-red-50 text-[10px] text-red-600 border border-red-200 rounded leading-tight">
+                        <b>Xin về sớm:</b> {a.early_checkout_reason}
+                      </div>
+                    )}
+                    {a.early_checkout_approved && (
+                      <div className="mt-1.5 text-[10px] text-emerald-600 font-bold">
+                        ✓ Đã cho phép về sớm
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3">
-                    <Input type="number" step="0.25" min={0} className="w-24"
+                    <Input type="number" step="0.25" min={0} className="w-20"
                       value={otVal}
                       onChange={(e) => setOtDraft((p) => ({ ...p, [a.id]: e.target.value }))} />
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
+                    {/* BỔ SUNG NÚT DUYỆT VỀ SỚM CHO QUẢN LÝ */}
+                    {a.early_checkout_requested && !a.early_checkout_approved && !a.check_out_time && (
+                      <Button size="sm" onClick={() => approveEarlyCheckout(a)}
+                        className="bg-red-500 hover:bg-red-600 text-white">
+                        Duyệt về sớm
+                      </Button>
+                    )}
                     {!a.check_in_approved && (
                       <Button size="sm" onClick={() => approveCheckIn(a)}
                         className="bg-amber-500 hover:bg-amber-600 text-white">
