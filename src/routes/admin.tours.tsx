@@ -182,7 +182,7 @@ function ToursPage() {
     const attMap = new Map((attQ.data ?? []).map((a) => [a.employee_id, a]));
     return (usersQ.data ?? [])
       .filter((u) => u.role && STAFF_ROLES.includes(u.role))
-      .filter((u) => !busySet.has(u.id)) // Ẩn NV đang thực hiện ca khác
+      // Đã bỏ chặn: .filter((u) => !busySet.has(u.id)) 
       .map((u) => {
         const a = attMap.get(u.id);
         const checkedIn = !!a?.check_in_approved && !a?.check_out_time;
@@ -249,9 +249,6 @@ function ToursPage() {
     mutationFn: async () => {
       if (!customerId || customerId === "__new") throw new Error("Chọn hoặc tạo khách trước.");
       if (!technicianId) throw new Error("Chọn nhân viên.");
-      if (busySet.has(technicianId)) {
-        throw new Error("Nhân viên đang thực hiện ca khác — chưa thể xếp thêm.");
-      }
 
       let finalTreatmentId = treatmentId;
 
