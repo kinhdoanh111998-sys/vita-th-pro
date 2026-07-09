@@ -97,10 +97,12 @@ function AdminEventsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("*")
+        .select("*, event_registrations(count)")
         .order("start_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as EventRow[];
+      return (data ?? []) as (EventRow & {
+        event_registrations?: { count: number }[];
+      })[];
     },
   });
 
