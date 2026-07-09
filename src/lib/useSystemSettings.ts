@@ -9,6 +9,8 @@ export type SystemSettings = {
   updated_at: string;
   show_store_list: boolean;
   zalo_oa_url: string | null;
+  app_home_hero_campaign?: string | null;
+  homepage_shortcut_campaign?: string | null;
 };
 
 export const SYSTEM_SETTINGS_KEY = ["system_settings"] as const;
