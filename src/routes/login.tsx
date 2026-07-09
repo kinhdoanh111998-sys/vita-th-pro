@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/vita-th-pro-logo.png";
+import zaloLogoAsset from "@/assets/zalo-logo.png.asset.json";
 
 const VIRTUAL_CUSTOMER_DOMAIN = "@khach.vitath.pro";
 
