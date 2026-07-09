@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Clock, MapPin, ListChecks, CalendarDays } from "lucide-react";
+import { Calendar, Clock, MapPin, ListChecks, CalendarDays, Lock, Unlock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Link } from "@tanstack/react-router";
+import { MIN_SHIFTS_FOR_OT } from "@/lib/payroll";
 
 type Mode = "today" | "month";
 
