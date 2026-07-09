@@ -87,6 +87,13 @@ const emptyWeek = (): Record<DayId, DaySlots> => ({
   CN: { sang: false, chieu: false },
 });
 
+// Hàm hỗ trợ lấy ngày hôm nay chuẩn định dạng
+const todayISO = () => {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+};
+
 export function StaffScheduleRegistration() {
   const { session, fullName } = useAuth();
   const qc = useQueryClient();
@@ -168,7 +175,6 @@ export function StaffScheduleRegistration() {
       const from = draftMonth[0].date;
       const to = draftMonth[draftMonth.length - 1].date;
 
-      // Xoá lịch cũ (pending/rejected) trong tháng để đăng ký lại — giữ các ngày đã approved (nếu có).
       await supabase
         .from("staff_shifts")
         .delete()
@@ -176,12 +182,10 @@ export function StaffScheduleRegistration() {
         .gte("date", from).lte("date", to)
         .in("status", ["pending", "rejected"]);
 
-      // Nếu request cũ bị rejected → xoá để tạo bản mới sạch.
       if (request?.status === "rejected") {
         await supabase.from("shift_approval_requests").delete().eq("id", request.id);
       }
 
-      // Tạo batch mới
       const { data: newReq, error: reqErr } = await supabase
         .from("shift_approval_requests")
         .insert({ staff_id: uid, month: monthKey, status: "pending" })
@@ -205,7 +209,6 @@ export function StaffScheduleRegistration() {
         if (insErr) throw insErr;
       }
 
-      // Thông báo Admin/Manager
       try {
         const { data: ops } = await supabase
           .from("user_roles")
@@ -238,12 +241,10 @@ export function StaffScheduleRegistration() {
     }
   };
 
-  // Chỉnh sửa 1 ngày lẻ khi đã locked → lưu pending độc lập
   const saveSingleDay = async () => {
     if (!editing || !uid) return;
     setSaving(true);
     try {
-      // Xoá các bản ghi hiện có ở ngày đó (mọi ca) trước khi ghi mới
       if (editing.existingId) {
         await supabase.from("staff_shifts").delete()
           .eq("staff_id", uid).eq("date", editing.date);
@@ -266,7 +267,6 @@ export function StaffScheduleRegistration() {
     }
   };
 
-  // Khi chuyển tháng → reset draft & weekly
   useEffect(() => { setDraftMonth(null); setWeekly(emptyWeek()); }, [monthKey]);
 
   const monthShiftsByDate = useMemo(() => {
@@ -298,7 +298,7 @@ export function StaffScheduleRegistration() {
         <div>
           <h3 className="font-black text-lg">Lịch làm việc & Đăng ký ca</h3>
           <p className="text-xs text-ink-muted">
-            Đăng ký lịch theo tháng · click từng ngày để tinh chỉnh · quản lý sẽ duyệt tập trung.
+            Đăng ký lịch theo tháng · Tuyệt đối không thể sửa lịch quá khứ.
           </p>
         </div>
         <div className="ml-auto flex items-center gap-2">
@@ -368,7 +368,7 @@ export function StaffScheduleRegistration() {
 
           {draftMonth && (
             <div className="p-5 border-b border-hairline">
-              <div className="text-sm font-black mb-3">3 · Xem lại · click ô ngày để tinh chỉnh</div>
+              <div className="text-sm font-black mb-3">3 · Xem lại · click ô ngày tương lai để tinh chỉnh</div>
               <MonthGrid entries={draftMonth} anchor={anchor}
                 onPick={(e) => setEditing({ date: e.date, sang: e.sang, chieu: e.chieu })} />
               <div className="mt-4 flex justify-end">
@@ -387,7 +387,7 @@ export function StaffScheduleRegistration() {
         <div className="p-5">
           <div className="mb-3 flex items-center gap-2 text-sm text-ink-muted">
             <Lock className="size-4" />
-            <span>Đã gửi đăng ký · click vào một ngày để yêu cầu chỉnh sửa riêng.</span>
+            <span>Lịch đã duyệt/chờ duyệt · click vào một ngày tương lai để xin đổi ca.</span>
           </div>
           <MonthGrid
             entries={monthEntries} anchor={anchor} statusByDate={monthShiftsByDate}
@@ -410,13 +410,13 @@ export function StaffScheduleRegistration() {
           </DialogHeader>
           {editing && (
             <div className="space-y-3">
-              <ToggleRow label="Ca Sáng (8h – 12h)" active={editing.sang}
+              <ToggleRow label="Ca Sáng" active={editing.sang}
                 onClick={() => setEditing({ ...editing, sang: !editing.sang })} />
-              <ToggleRow label="Ca Chiều (13h30 – 18h)" active={editing.chieu}
+              <ToggleRow label="Ca Chiều" active={editing.chieu}
                 onClick={() => setEditing({ ...editing, chieu: !editing.chieu })} />
               {locked && (
                 <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
-                  Thay đổi này sẽ được lưu ở trạng thái <b>chờ duyệt</b> riêng, không ảnh hưởng batch đã gửi.
+                  Thay đổi này sẽ được gửi dưới dạng yêu cầu <b>chờ duyệt</b> riêng rẽ, không làm ảnh hưởng đến các ngày khác.
                 </p>
               )}
             </div>
@@ -482,6 +482,8 @@ function MonthGrid({
     return out;
   }, [entries, anchor]);
 
+  const tISO = todayISO(); // Lấy mốc chuẩn ngày hôm nay
+
   return (
     <div className="grid grid-cols-7 gap-px bg-hairline rounded-lg overflow-hidden">
       {WEEKDAYS.map((w, i) => (
@@ -489,6 +491,7 @@ function MonthGrid({
       ))}
       {cells.map((c, idx) => {
         if (!c) return <div key={idx} className="bg-gray-50 min-h-[80px]" />;
+        
         const isWeekend = idx % 7 >= 5;
         const hasWork = c.sang || c.chieu;
         const st = statusByDate?.[c.date]?.status;
@@ -496,9 +499,18 @@ function MonthGrid({
           st === "approved" ? "border-l-4 border-l-emerald-500" :
           st === "rejected" ? "border-l-4 border-l-red-500" :
           st === "pending" ? "border-l-4 border-l-amber-500" : "";
+        
+        // VÁ LỖI 2 & 3: BẪY THỜI GIAN NGĂN CHẶN CLICK VÀO NGÀY QUÁ KHỨ
+        const isPast = c.date < tISO;
+        const pastClass = isPast ? "opacity-40 cursor-not-allowed bg-gray-100" : "hover:bg-brand-soft/40 bg-white";
+
         return (
-          <button key={idx} type="button" onClick={() => onPick(c)}
-            className={`text-left bg-white min-h-[80px] p-1.5 hover:bg-brand-soft/40 ${hasWork ? "bg-emerald-50/60" : ""} ${stTone}`}>
+          <button 
+            key={idx} 
+            type="button" 
+            onClick={() => { if (!isPast) onPick(c); }} // Khóa click nếu là quá khứ
+            className={`text-left min-h-[80px] p-1.5 transition ${pastClass} ${hasWork && !isPast ? "bg-emerald-50/60" : ""} ${stTone}`}
+          >
             <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
               {new Date(c.date).getDate()}
             </div>
