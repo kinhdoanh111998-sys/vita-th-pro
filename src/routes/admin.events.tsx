@@ -180,7 +180,10 @@ function AdminEventsPage() {
     setTab("info");
     setOpen(true);
   };
-  const startEdit = (r: EventRow) => {
+  const startEdit = (
+    r: EventRow,
+    defaultTab: "info" | "album" | "regs" = "info",
+  ) => {
     setForm({
       id: r.id,
       title: r.title,
@@ -195,7 +198,7 @@ function AdminEventsPage() {
       price: r.price != null ? String(r.price) : "",
       max_attendees: r.max_attendees != null ? String(r.max_attendees) : "",
     });
-    setTab("info");
+    setTab(defaultTab);
     setOpen(true);
   };
 
