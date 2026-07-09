@@ -128,9 +128,11 @@ function CommissionsAdmin() {
     </>
   );
 }
-
 /* ================= TAB 1: PAYROLL ================= */
 function PayrollDashboard() {
+  const { role } = useAuth();
+  const canFreeze = role === "admin";
+  const qc = useQueryClient();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState(String(now.getMonth() + 1));
 
@@ -154,25 +156,34 @@ function PayrollDashboard() {
     },
   });
 
-  const salaryQ = useQuery({
-    queryKey: ["salary-configs"],
+  const tiersQ = useQuery({
+    queryKey: ["payroll-tiers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("salary_configs").select("*");
+      const { data, error } = await supabase
+        .from("payroll_tiers")
+        .select("*")
+        .order("tier_level");
       if (error) throw error;
-      return (data ?? []) as SalaryConfig[];
+      return ((data ?? []) as unknown as PayrollTier[]);
     },
   });
 
-  const bonusQ = useQuery({
-    queryKey: ["bonus-tiers-active"],
+  const settingsQ = useQuery({
+    queryKey: ["payroll-settings"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bonus_tiers")
+      const { data } = await supabase
+        .from("payroll_settings")
         .select("*")
-        .eq("active", true)
-        .order("target_amount", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as BonusTier[];
+        .eq("id", 1)
+        .maybeSingle();
+      if (!data) return DEFAULT_PAYROLL_SETTINGS;
+      const d = data as Record<string, unknown>;
+      return {
+        sales_commission_tiers: (d.sales_commission_tiers as SalesCommissionTier[]) ?? DEFAULT_PAYROLL_SETTINGS.sales_commission_tiers,
+        hot_bonus_percent: Number(d.hot_bonus_percent ?? 0),
+        hot_bonus_threshold: Number(d.hot_bonus_threshold ?? 0),
+        upsale_bonus_percent: Number(d.upsale_bonus_percent ?? 0),
+      } as PayrollSettings;
     },
   });
 
@@ -189,17 +200,23 @@ function PayrollDashboard() {
     },
   });
 
+  type OrderWithItems = {
+    id: string;
+    sales_staff_id: string | null;
+    created_at: string;
+    order_items: { item_type: string | null; quantity: number | null; price: number | null }[] | null;
+  };
   const ordersQ = useQuery({
-    queryKey: ["payroll-orders", startISO, endISO],
+    queryKey: ["payroll-orders-items", startISO, endISO],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id,sales_staff_id,total_amount,created_at")
+        .select("id, sales_staff_id, created_at, order_items(item_type, quantity, price)")
         .gte("created_at", startISO)
         .lt("created_at", endISO)
         .eq("status", "paid");
       if (error) throw error;
-      return (data ?? []) as OrderRow[];
+      return (data ?? []) as unknown as OrderWithItems[];
     },
   });
 
@@ -216,150 +233,158 @@ function PayrollDashboard() {
     },
   });
 
-  const salaryByRole = useMemo(() => {
-    const m = new Map<string, SalaryConfig>();
-    (salaryQ.data ?? []).forEach((s) => m.set(s.role, s));
-    return m;
-  }, [salaryQ.data]);
+  const frozenQ = useQuery({
+    queryKey: ["payroll-frozen", year, month],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("payroll_snapshots")
+        .select("id, frozen_at, totals")
+        .eq("year", Number(year))
+        .eq("month", Number(month))
+        .maybeSingle();
+      return data ?? null;
+    },
+  });
 
-  type Row = {
-    staffId: string;
-    name: string;
-    role: string;
-    shifts: number;
-    otHours: number;
-    shiftSalary: number;
-    otSalary: number;
-    saleAmount: number;
-    saleCommission: number;
-    serviceCommission: number;
-    bonus: number;
-    matchedTier: string | null;
-    total: number;
-  };
+  type Row = { staffId: string; name: string; role: string; breakdown: PayrollBreakdown };
 
   const rows = useMemo<Row[]>(() => {
     const staffs = staffQ.data ?? [];
     const atts = attQ.data ?? [];
     const orders = ordersQ.data ?? [];
     const comms = commQ.data ?? [];
-    const tiers = bonusQ.data ?? [];
+    const tiers = tiersQ.data ?? [];
+    const settings = settingsQ.data ?? DEFAULT_PAYROLL_SETTINGS;
 
     return staffs.map((s) => {
-      const cfg = salaryByRole.get(s.role);
-      const basePerShift = Number(cfg?.base_salary_per_shift ?? 0);
-      const otRate = Number(cfg?.ot_hourly_rate ?? 0);
-
       const myAtts = atts.filter((a) => a.employee_id === s.id);
       const shifts = myAtts.filter((a) => a.check_in_approved).length;
       const otHours = myAtts
         .filter((a) => a.ot_approved)
         .reduce((sum, a) => sum + Number(a.ot_hours ?? 0), 0);
 
-      // Doanh số bán trực tiếp qua orders
-      const myOrders = orders.filter((o) => o.sales_staff_id === s.id);
-      const saleAmount = myOrders.reduce((sum, o) => sum + Number(o.total_amount ?? 0), 0);
-
-      // Hoa hồng đã ghi nhận trong bảng commissions
-      const myComms = comms.filter((c) => c.staff_id === s.id);
-      const saleCommission = myComms
-        .filter((c) => c.commission_type === "sale" || c.commission_type === "product")
-        .reduce((sum, c) => sum + Number(c.amount ?? 0), 0);
-      const serviceCommission = myComms
-        .filter(
-          (c) =>
-            c.commission_type === "tour_service" ||
-            c.commission_type === "service",
-        )
-        .reduce((sum, c) => sum + Number(c.amount ?? 0), 0);
-
-      // Bonus: xét mốc cao nhất mà saleAmount đạt được (type total)
-      let bonus = 0;
-      let matchedTier: string | null = null;
-      tiers
-        .filter((t) => t.bonus_type === "total" || t.bonus_type === "product")
-        .forEach((t) => {
-          if (saleAmount >= Number(t.target_amount) && Number(t.bonus_amount) > bonus) {
-            bonus = Number(t.bonus_amount);
-            matchedTier = t.tier_name;
-          }
+      let serviceRevenue = 0;
+      let productRevenue = 0;
+      orders
+        .filter((o) => o.sales_staff_id === s.id)
+        .forEach((o) => {
+          (o.order_items ?? []).forEach((it) => {
+            const amt = Number(it.price ?? 0) * Number(it.quantity ?? 1);
+            if (it.item_type === "service") serviceRevenue += amt;
+            else if (it.item_type === "product") productRevenue += amt;
+          });
         });
 
-      const shiftSalary = shifts * basePerShift;
-      const otSalary = otHours * otRate;
-      const total = shiftSalary + otSalary + saleCommission + serviceCommission + bonus;
+      const serviceCommission = comms
+        .filter((c) => c.staff_id === s.id)
+        .filter((c) => c.commission_type === "service" || c.commission_type === "tour_service")
+        .reduce((sum, c) => sum + Number(c.amount ?? 0), 0);
+
+      const breakdown = computePayroll({
+        shifts,
+        otHours,
+        serviceRevenue,
+        productRevenue,
+        serviceCommission,
+        tiers,
+        settings,
+      });
 
       return {
         staffId: s.id,
         name: s.full_name ?? "(chưa đặt tên)",
         role: s.role,
-        shifts,
-        otHours,
-        shiftSalary,
-        otSalary,
-        saleAmount,
-        saleCommission,
-        serviceCommission,
-        bonus,
-        matchedTier,
-        total,
+        breakdown,
       };
     });
-  }, [staffQ.data, attQ.data, ordersQ.data, commQ.data, bonusQ.data, salaryByRole]);
+  }, [staffQ.data, attQ.data, ordersQ.data, commQ.data, tiersQ.data, settingsQ.data]);
 
   const totals = useMemo(() => {
     return rows.reduce(
-      (acc, r) => {
-        acc.shiftSalary += r.shiftSalary;
-        acc.otSalary += r.otSalary;
-        acc.saleCommission += r.saleCommission;
-        acc.serviceCommission += r.serviceCommission;
-        acc.bonus += r.bonus;
-        acc.total += r.total;
-        return acc;
+      (a, r) => {
+        a.basePay += r.breakdown.basePay + r.breakdown.allowance + r.breakdown.kpiBonus;
+        a.otSalary += r.breakdown.otSalary;
+        a.sales += r.breakdown.salesCommission + r.breakdown.hotBonus;
+        a.service += r.breakdown.serviceCommission;
+        a.total += r.breakdown.total;
+        return a;
       },
-      {
-        shiftSalary: 0, otSalary: 0, saleCommission: 0,
-        serviceCommission: 0, bonus: 0, total: 0,
-      },
+      { basePay: 0, otSalary: 0, sales: 0, service: 0, total: 0 },
     );
   }, [rows]);
 
   const isLoading =
-    staffQ.isLoading || attQ.isLoading || ordersQ.isLoading || commQ.isLoading;
+    staffQ.isLoading || attQ.isLoading || ordersQ.isLoading || commQ.isLoading || tiersQ.isLoading;
+
+  const freezeM = useMutation({
+    mutationFn: async () => {
+      const snapshot = rows.map((r) => ({
+        staff_id: r.staffId,
+        name: r.name,
+        role: r.role,
+        ...r.breakdown,
+        tier_level: r.breakdown.tier?.tier_level ?? null,
+      }));
+      const { error } = await supabase.from("payroll_snapshots").upsert(
+        {
+          year: Number(year),
+          month: Number(month),
+          data: snapshot,
+          totals: totals,
+        } as never,
+        { onConflict: "year,month" },
+      );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(`Đã chốt bảng lương tháng ${month}/${year}`);
+      qc.invalidateQueries({ queryKey: ["payroll-frozen", year, month] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const exportCSV = () => {
     const csv = toCSV(
       rows.map((r) => ({
         nhanvien: r.name,
         role: ROLE_LABEL[r.role] ?? r.role,
-        so_ca: r.shifts,
-        gio_ot: r.otHours,
-        luong_ca: r.shiftSalary,
-        luong_ot: r.otSalary,
-        doanh_so: r.saleAmount,
-        hh_sale: r.saleCommission,
-        hh_dv: r.serviceCommission,
-        thuong: r.bonus,
-        tong: r.total,
+        bac: r.breakdown.tier?.tier_name ?? "—",
+        so_ca: r.breakdown.shifts,
+        gio_ot: r.breakdown.otHours,
+        base: r.breakdown.basePay,
+        allowance: r.breakdown.allowance,
+        kpi: r.breakdown.kpiBonus,
+        ot: r.breakdown.otSalary,
+        ds_dv: r.breakdown.serviceRevenue,
+        ds_sp: r.breakdown.productRevenue,
+        hh_sale: r.breakdown.salesCommission,
+        hh_dv: r.breakdown.serviceCommission,
+        hot: r.breakdown.hotBonus,
+        tong: r.breakdown.total,
       })),
       [
         { key: "nhanvien", label: "Nhân viên" },
         { key: "role", label: "Vai trò" },
-        { key: "so_ca", label: "Số ca duyệt" },
+        { key: "bac", label: "Bậc" },
+        { key: "so_ca", label: "Số ca" },
         { key: "gio_ot", label: "Giờ OT" },
-        { key: "luong_ca", label: "Lương ca (VND)" },
-        { key: "luong_ot", label: "Lương OT (VND)" },
-        { key: "doanh_so", label: "Doanh số bán (VND)" },
-        { key: "hh_sale", label: "HH bán hàng (VND)" },
-        { key: "hh_dv", label: "HH dịch vụ (VND)" },
-        { key: "thuong", label: "Thưởng doanh số (VND)" },
-        { key: "tong", label: "TỔNG THU NHẬP (VND)" },
+        { key: "base", label: "Lương cơ bản" },
+        { key: "allowance", label: "Phụ cấp" },
+        { key: "kpi", label: "KPI" },
+        { key: "ot", label: "OT" },
+        { key: "ds_dv", label: "DS Dịch vụ" },
+        { key: "ds_sp", label: "DS Sản phẩm" },
+        { key: "hh_sale", label: "HH bán hàng" },
+        { key: "hh_dv", label: "HH dịch vụ" },
+        { key: "hot", label: "Thưởng nóng" },
+        { key: "tong", label: "TỔNG" },
       ],
     );
     downloadCSV(`bang-luong-${month}-${year}.csv`, csv);
     toast.success("Đã xuất bảng lương");
   };
+
+  const frozen = frozenQ.data;
 
   return (
     <>
@@ -385,35 +410,62 @@ function PayrollDashboard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
           <Button onClick={exportCSV} disabled={rows.length === 0}>
-            <Download size={16} /> Xuất bảng lương
+            <Download size={16} /> Xuất CSV
           </Button>
+          {canFreeze && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (
+                  confirm(
+                    frozen
+                      ? `Ghi đè bảng lương đã chốt của tháng ${month}/${year}?`
+                      : `Chốt bảng lương tháng ${month}/${year}? Số liệu sẽ được đóng băng.`,
+                  )
+                )
+                  freezeM.mutate();
+              }}
+              disabled={freezeM.isPending || rows.length === 0}
+              className="border-sky-300 text-sky-700 hover:bg-sky-50"
+            >
+              <Snowflake size={16} /> {frozen ? "Ghi đè chốt lương" : "Chốt bảng lương"}
+            </Button>
+          )}
         </div>
       </div>
 
+      {frozen && (
+        <div className="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800 flex items-center gap-2">
+          <Snowflake size={14} /> Bảng lương tháng {month}/{year} đã được chốt lúc{" "}
+          {new Date(frozen.frozen_at as string).toLocaleString("vi-VN")}.
+        </div>
+      )}
+
       <p className="text-xs text-ink-muted mb-3">
-        Ghi chú: 1 ngày công chuẩn = 2 ca. Lương ca tính trên
-        <b> số ca đã duyệt check-in</b>; Lương OT tính trên <b>giờ OT đã duyệt</b>;
-        Thưởng doanh số tự động áp mốc cao nhất mà nhân viên đạt được.
+        Bậc lương được xác định theo <b>doanh số dịch vụ tháng</b>. Lương cơ bản/phụ cấp prorate theo{" "}
+        <b>{MIN_SHIFTS_FOR_OT} ca chuẩn</b>. <b>KPI Bonus và Lương OT</b> chỉ mở khoá khi nhân viên đủ{" "}
+        {MIN_SHIFTS_FOR_OT} ca công.
       </p>
 
       {/* KPI */}
       <div className="grid gap-3 sm:grid-cols-4 mb-4">
-        <Kpi label="Lương ca" value={formatVND(totals.shiftSalary)} />
+        <Kpi label="Lương cứng + phụ cấp + KPI" value={formatVND(totals.basePay)} />
         <Kpi label="Lương OT" value={formatVND(totals.otSalary)} />
-        <Kpi label="Hoa hồng (bán + DV)" value={formatVND(totals.saleCommission + totals.serviceCommission)} />
-        <Kpi label="Tổng thu nhập kỳ" value={formatVND(totals.total)} tone="brand" />
+        <Kpi label="HH bán + thưởng nóng" value={formatVND(totals.sales)} />
+        <Kpi label="Tổng chi kỳ" value={formatVND(totals.total)} tone="brand" />
       </div>
 
       {/* Table */}
       <div className="overflow-auto bg-white border border-hairline rounded-2xl">
-        <table className="w-full min-w-[1200px] border-collapse text-sm">
+        <table className="w-full min-w-[1400px] border-collapse text-sm">
           <thead>
             <tr>
               {[
-                "Nhân viên", "Vai trò", "Số ca", "Giờ OT", "Lương ca", "Lương OT",
-                "Doanh số bán", "HH bán", "HH dịch vụ", "Thưởng DS", "TỔNG",
+                "Nhân viên", "Vai trò", "Bậc", "Số ca", "OT", "Lương CB",
+                "Phụ cấp", "KPI", "Lương OT", "DS Dịch vụ", "DS Sản phẩm",
+                "HH Bán (%)", "HH DV", "Thưởng nóng", "TỔNG",
               ].map((h) => (
                 <th key={h} className="text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider bg-brand-lime text-[#34483a] border-b border-[#edf3ed]">
                   {h}
@@ -423,39 +475,292 @@ function PayrollDashboard() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={11} className="px-3 py-10 text-center text-ink-muted">Đang tính lương…</td></tr>
+              <tr><td colSpan={15} className="px-3 py-10 text-center text-ink-muted">Đang tính lương…</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={11} className="px-3 py-10 text-center text-ink-muted">Không có nhân viên.</td></tr>
-            ) : rows.map((r) => (
-              <tr key={r.staffId} className="hover:bg-brand-soft/30">
-                <td className="px-3 py-2 border-b border-[#edf3ed] font-semibold">{r.name}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed] text-xs">
-                  <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold">
-                    {ROLE_LABEL[r.role] ?? r.role}
-                  </span>
-                </td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{r.shifts}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{r.otHours.toFixed(2)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(r.shiftSalary)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(r.otSalary)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed] text-slate-600">{formatVND(r.saleAmount)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(r.saleCommission)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(r.serviceCommission)}</td>
-                <td className="px-3 py-2 border-b border-[#edf3ed]">
-                  {r.bonus > 0 ? (
-                    <div>
-                      <div className="font-bold text-amber-700">{formatVND(r.bonus)}</div>
-                      {r.matchedTier && <div className="text-[10px] text-ink-muted">{r.matchedTier}</div>}
-                    </div>
-                  ) : "—"}
-                </td>
-                <td className="px-3 py-2 border-b border-[#edf3ed] font-black text-brand-dark">{formatVND(r.total)}</td>
-              </tr>
-            ))}
+              <tr><td colSpan={15} className="px-3 py-10 text-center text-ink-muted">Không có nhân viên.</td></tr>
+            ) : rows.map((r) => {
+              const b = r.breakdown;
+              return (
+                <tr key={r.staffId} className="hover:bg-brand-soft/30">
+                  <td className="px-3 py-2 border-b border-[#edf3ed] font-semibold">{r.name}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed] text-xs">
+                    <span className="inline-flex px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-bold">
+                      {ROLE_LABEL[r.role] ?? r.role}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed] text-xs">
+                    {b.tier ? (
+                      <span className="inline-flex px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                        {b.tier.tier_name}
+                      </span>
+                    ) : "—"}
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">
+                    <span className={b.otLocked ? "text-amber-700 font-bold" : "text-emerald-700 font-bold"}>
+                      {b.shifts}/{MIN_SHIFTS_FOR_OT}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">{b.otHours.toFixed(1)}h</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(b.basePay)}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(b.allowance)}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">
+                    {b.otLocked ? <span className="inline-flex items-center gap-1 text-slate-400"><Lock size={12} /> —</span> : formatVND(b.kpiBonus)}
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">
+                    {b.otLocked ? <span className="inline-flex items-center gap-1 text-slate-400"><Lock size={12} /> —</span> : formatVND(b.otSalary)}
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed] text-slate-600">{formatVND(b.serviceRevenue)}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed] text-slate-600">{formatVND(b.productRevenue)}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">
+                    <div className="font-bold">{formatVND(b.salesCommission)}</div>
+                    <div className="text-[10px] text-ink-muted">{b.salesPercent}%</div>
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">{formatVND(b.serviceCommission)}</td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed]">
+                    {b.hotBonus > 0 ? <span className="font-bold text-amber-700">{formatVND(b.hotBonus)}</span> : "—"}
+                  </td>
+                  <td className="px-3 py-2 border-b border-[#edf3ed] font-black text-brand-dark">{formatVND(b.total)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
     </>
+  );
+}
+
+/* ================= TAB 2: CONFIG ================= */
+function ConfigPanel({ canConfigure }: { canConfigure: boolean }) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <TierConfigSection canConfigure={canConfigure} />
+      <PayrollExtrasSection canConfigure={canConfigure} />
+      <SalarySection canConfigure={canConfigure} />
+      <BonusTiersSection canConfigure={canConfigure} />
+      <AffiliateSection canConfigure={canConfigure} />
+    </div>
+  );
+}
+
+/* ---- 7-tier salary config ---- */
+function TierConfigSection({ canConfigure }: { canConfigure: boolean }) {
+  const qc = useQueryClient();
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["payroll-tiers"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("payroll_tiers").select("*").order("tier_level");
+      if (error) throw error;
+      return ((data ?? []) as unknown as PayrollTier[]);
+    },
+  });
+
+  const saveM = useMutation({
+    mutationFn: async (r: PayrollTier) => {
+      const { error } = await supabase
+        .from("payroll_tiers")
+        .update({
+          tier_name: r.tier_name,
+          min_service_revenue: r.min_service_revenue,
+          base_salary: r.base_salary,
+          kpi_amount: r.kpi_amount,
+          allowance: r.allowance,
+          ot_hourly_rate: r.ot_hourly_rate,
+        } as never)
+        .eq("id", r.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã lưu bậc lương");
+      qc.invalidateQueries({ queryKey: ["payroll-tiers"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <section className="bg-white border border-hairline rounded-2xl p-5 shadow-sm lg:col-span-2">
+      <h3 className="font-black text-base mb-1">Bậc lương (7 bậc động theo doanh số dịch vụ)</h3>
+      <p className="text-xs text-ink-muted mb-3">
+        Nhân viên được xếp bậc cao nhất mà doanh số dịch vụ tháng đạt được. Cần đủ{" "}
+        <b>{MIN_SHIFTS_FOR_OT} ca</b> để mở khoá KPI + lương OT.
+      </p>
+      {isLoading ? <SkeletonRows /> : (
+        <div className="overflow-auto">
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr>
+                {["Bậc", "Tên", "DS dịch vụ tối thiểu", "Lương CB", "KPI", "Phụ cấp", "OT/giờ", ""].map((h) => (
+                  <th key={h} className="text-left px-2 py-2 font-bold uppercase text-ink-muted border-b border-hairline">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((r) => (
+                <TierRow key={r.id} row={r} disabled={!canConfigure} onSave={(v) => saveM.mutate(v)} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TierRow({ row, disabled, onSave }: { row: PayrollTier; disabled: boolean; onSave: (r: PayrollTier) => void }) {
+  const [name, setName] = useState(row.tier_name);
+  const [min, setMin] = useState(String(row.min_service_revenue));
+  const [base, setBase] = useState(String(row.base_salary));
+  const [kpi, setKpi] = useState(String(row.kpi_amount));
+  const [allw, setAllw] = useState(String(row.allowance));
+  const [ot, setOt] = useState(String(row.ot_hourly_rate));
+  const dirty =
+    name !== row.tier_name ||
+    Number(min) !== Number(row.min_service_revenue) ||
+    Number(base) !== Number(row.base_salary) ||
+    Number(kpi) !== Number(row.kpi_amount) ||
+    Number(allw) !== Number(row.allowance) ||
+    Number(ot) !== Number(row.ot_hourly_rate);
+  return (
+    <tr>
+      <td className="px-2 py-2 border-b border-hairline font-black text-brand-dark">{row.tier_level}</td>
+      <td className="px-2 py-2 border-b border-hairline"><Input value={name} onChange={(e) => setName(e.target.value)} disabled={disabled} className="w-24 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline"><Input type="number" value={min} onChange={(e) => setMin(e.target.value)} disabled={disabled} className="w-36 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline"><Input type="number" value={base} onChange={(e) => setBase(e.target.value)} disabled={disabled} className="w-32 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline"><Input type="number" value={kpi} onChange={(e) => setKpi(e.target.value)} disabled={disabled} className="w-28 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline"><Input type="number" value={allw} onChange={(e) => setAllw(e.target.value)} disabled={disabled} className="w-28 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline"><Input type="number" value={ot} onChange={(e) => setOt(e.target.value)} disabled={disabled} className="w-24 h-8" /></td>
+      <td className="px-2 py-2 border-b border-hairline">
+        <Button size="sm" disabled={disabled || !dirty} onClick={() => onSave({
+          ...row, tier_name: name,
+          min_service_revenue: Number(min), base_salary: Number(base),
+          kpi_amount: Number(kpi), allowance: Number(allw), ot_hourly_rate: Number(ot),
+        })}>
+          <Save size={12} />
+        </Button>
+      </td>
+    </tr>
+  );
+}
+
+/* ---- Extras: sales-tier %, hot, upsale ---- */
+function PayrollExtrasSection({ canConfigure }: { canConfigure: boolean }) {
+  const qc = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["payroll-settings"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payroll_settings").select("*").eq("id", 1).maybeSingle();
+      if (!data) return DEFAULT_PAYROLL_SETTINGS;
+      const d = data as Record<string, unknown>;
+      return {
+        sales_commission_tiers: (d.sales_commission_tiers as SalesCommissionTier[]) ?? DEFAULT_PAYROLL_SETTINGS.sales_commission_tiers,
+        hot_bonus_percent: Number(d.hot_bonus_percent ?? 0),
+        hot_bonus_threshold: Number(d.hot_bonus_threshold ?? 0),
+        upsale_bonus_percent: Number(d.upsale_bonus_percent ?? 0),
+      } as PayrollSettings;
+    },
+  });
+
+  const [tiers, setTiers] = useState<SalesCommissionTier[] | null>(null);
+  const [hotPct, setHotPct] = useState<string>("");
+  const [hotThr, setHotThr] = useState<string>("");
+  const [upsPct, setUpsPct] = useState<string>("");
+
+  const eff = data ?? DEFAULT_PAYROLL_SETTINGS;
+  const currentTiers = tiers ?? eff.sales_commission_tiers;
+  const currentHotPct = hotPct === "" ? String(eff.hot_bonus_percent) : hotPct;
+  const currentHotThr = hotThr === "" ? String(eff.hot_bonus_threshold) : hotThr;
+  const currentUpsPct = upsPct === "" ? String(eff.upsale_bonus_percent) : upsPct;
+
+  const saveM = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("payroll_settings").upsert({
+        id: 1,
+        sales_commission_tiers: currentTiers,
+        hot_bonus_percent: Number(currentHotPct),
+        hot_bonus_threshold: Number(currentHotThr),
+        upsale_bonus_percent: Number(currentUpsPct),
+      } as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Đã lưu cấu hình");
+      setTiers(null); setHotPct(""); setHotThr(""); setUpsPct("");
+      qc.invalidateQueries({ queryKey: ["payroll-settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <section className="bg-white border border-hairline rounded-2xl p-5 shadow-sm lg:col-span-2">
+      <h3 className="font-black text-base mb-1">Hoa hồng bán hàng & thưởng nóng</h3>
+      <p className="text-xs text-ink-muted mb-3">
+        Bậc % hoa hồng theo doanh số sản phẩm, mốc thưởng nóng và % thưởng upsale.
+      </p>
+
+      {isLoading ? <SkeletonRows /> : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div>
+            <div className="text-xs font-bold uppercase text-ink-muted mb-2">Bậc hoa hồng bán hàng</div>
+            <div className="space-y-2">
+              {currentTiers.map((t, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <span className="text-xs w-8 text-ink-muted">≥</span>
+                  <Input type="number" value={String(t.min)} disabled={!canConfigure}
+                    onChange={(e) => {
+                      const next = [...currentTiers];
+                      next[i] = { ...t, min: Number(e.target.value) };
+                      setTiers(next);
+                    }} className="h-8" />
+                  <Input type="number" step="0.1" value={String(t.percent)} disabled={!canConfigure}
+                    onChange={(e) => {
+                      const next = [...currentTiers];
+                      next[i] = { ...t, percent: Number(e.target.value) };
+                      setTiers(next);
+                    }} className="h-8 w-24" />
+                  <span className="text-xs">%</span>
+                  {canConfigure && (
+                    <button className="text-destructive" onClick={() => setTiers(currentTiers.filter((_, j) => j !== i))}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              {canConfigure && (
+                <Button size="sm" variant="outline" onClick={() => setTiers([...(currentTiers), { min: 0, percent: 0 }])}>
+                  <Plus size={12} /> Thêm bậc
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Thưởng nóng: khi DS sản phẩm ≥ (VND)</Label>
+              <Input type="number" value={currentHotThr} disabled={!canConfigure}
+                onChange={(e) => setHotThr(e.target.value)} className="mt-1 h-8" />
+            </div>
+            <div>
+              <Label className="text-xs">% thưởng nóng trên DS sản phẩm</Label>
+              <Input type="number" step="0.1" value={currentHotPct} disabled={!canConfigure}
+                onChange={(e) => setHotPct(e.target.value)} className="mt-1 h-8" />
+            </div>
+            <div>
+              <Label className="text-xs">% thưởng upsale</Label>
+              <Input type="number" step="0.1" value={currentUpsPct} disabled={!canConfigure}
+                onChange={(e) => setUpsPct(e.target.value)} className="mt-1 h-8" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {canConfigure && (
+        <div className="mt-4">
+          <Button onClick={() => saveM.mutate()} disabled={saveM.isPending}>
+            <Save size={14} /> Lưu cấu hình
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }
 
