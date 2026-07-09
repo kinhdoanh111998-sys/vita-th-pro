@@ -755,35 +755,28 @@ function CustomerMixChart() {
     queryKey: ["dashboard", "customer-mix", range],
     queryFn: async () => {
       const { from, to } = rangeBounds(range);
-      const [newC, ordC] = await Promise.all([
-        supabase
-          .from("customers")
-          .select("id,created_at")
-          .gte("created_at", from.toISOString())
-          .lte("created_at", to.toISOString()),
-        supabase
-          .from("orders")
-          .select("customer_id,created_at,customers!inner(created_at)")
-          .gte("created_at", from.toISOString())
-          .lte("created_at", to.toISOString()),
-      ]);
-      if (newC.error) throw newC.error;
-      if (ordC.error) throw ordC.error;
-      const newIds = new Set((newC.data ?? []).map((r) => r.id));
-      const returningIds = new Set<string>();
-      (ordC.data ?? []).forEach((o: any) => {
-        const cid = o?.customer_id;
+      const { data, error } = await supabase
+        .from("orders")
+        .select("customer_id,created_at,customers!inner(created_at)")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString());
+      if (error) throw error;
+      let newVisits = 0;
+      let returningVisits = 0;
+      (data ?? []).forEach((o: any) => {
         const cCreated = o?.customers?.created_at;
-        if (!cid || newIds.has(cid)) return;
-        if (cCreated && new Date(cCreated) < from) returningIds.add(cid);
+        if (!cCreated) return;
+        const created = new Date(cCreated);
+        if (created >= from && created <= to) newVisits++;
+        else if (created < from) returningVisits++;
       });
-      return { newCount: newIds.size, returningCount: returningIds.size };
+      return { newCount: newVisits, returningCount: returningVisits };
     },
     staleTime: 30_000,
   });
   const data = [
-    { key: "new", name: "Khách mới", value: q.data?.newCount ?? 0 },
-    { key: "returning", name: "Khách cũ", value: q.data?.returningCount ?? 0 },
+    { key: "new", name: "Lượt khách mới", value: q.data?.newCount ?? 0 },
+    { key: "returning", name: "Lượt khách cũ", value: q.data?.returningCount ?? 0 },
   ];
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
