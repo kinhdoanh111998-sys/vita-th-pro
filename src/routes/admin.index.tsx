@@ -1205,6 +1205,11 @@ function Dashboard() {
         <ServiceRevenueChart />
         <ProductRevenueChart />
         <BookingStatusChart />
+        <CustomerMixChart />
+        <NetProfitChart />
+        <TopBestsellersChart />
+        <TreatmentFunnelChart />
+        <BookingHeatmapCard />
         <LowStockCard />
         <ExpenseChart />
       </div>
