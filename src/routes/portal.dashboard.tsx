@@ -5,6 +5,8 @@ import { StaffScheduleRegistration } from "@/components/StaffScheduleRegistratio
 import { AffiliateCard } from "@/components/portal/dashboard/AffiliateCard";
 import { PerformanceCard } from "@/components/portal/dashboard/PerformanceCard";
 import { ShiftSummaryCard } from "@/components/portal/dashboard/ShiftSummaryCard";
+import { IncomeBreakdownCard } from "@/components/portal/dashboard/IncomeBreakdownCard";
+import { BonusHistoryCard } from "@/components/portal/dashboard/BonusHistoryCard";
 
 export const Route = createFileRoute("/portal/dashboard")({
   component: PortalDashboard,
@@ -38,6 +40,8 @@ function PortalDashboard() {
       <div className="grid gap-4 lg:grid-cols-2">
         <ShiftSummaryCard />
         <PerformanceCard />
+        <IncomeBreakdownCard />
+        <BonusHistoryCard />
       </div>
       <AffiliateCard />
     </div>
