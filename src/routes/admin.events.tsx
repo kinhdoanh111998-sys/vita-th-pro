@@ -318,6 +318,15 @@ function AdminEventsPage() {
                       {r.category ?? "—"}
                     </td>
                     <td className="px-4 py-3">
+                      <button
+                        onClick={() => startEdit(r, "regs")}
+                        className="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer transition-colors"
+                      >
+                        {(r as any).event_registrations?.[0]?.count || 0} /{" "}
+                        {r.max_attendees || "∞"}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3">
                       <span
                         className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${
                           up
