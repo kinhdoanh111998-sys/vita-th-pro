@@ -1050,6 +1050,110 @@ export type Database = {
           },
         ]
       }
+      payroll_settings: {
+        Row: {
+          hot_bonus_percent: number
+          hot_bonus_threshold: number
+          id: number
+          sales_commission_tiers: Json
+          updated_at: string
+          upsale_bonus_percent: number
+        }
+        Insert: {
+          hot_bonus_percent?: number
+          hot_bonus_threshold?: number
+          id?: number
+          sales_commission_tiers?: Json
+          updated_at?: string
+          upsale_bonus_percent?: number
+        }
+        Update: {
+          hot_bonus_percent?: number
+          hot_bonus_threshold?: number
+          id?: number
+          sales_commission_tiers?: Json
+          updated_at?: string
+          upsale_bonus_percent?: number
+        }
+        Relationships: []
+      }
+      payroll_snapshots: {
+        Row: {
+          data: Json
+          frozen_at: string
+          frozen_by: string | null
+          id: string
+          month: number
+          totals: Json
+          year: number
+        }
+        Insert: {
+          data: Json
+          frozen_at?: string
+          frozen_by?: string | null
+          id?: string
+          month: number
+          totals?: Json
+          year: number
+        }
+        Update: {
+          data?: Json
+          frozen_at?: string
+          frozen_by?: string | null
+          id?: string
+          month?: number
+          totals?: Json
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payroll_snapshots_frozen_by_fkey"
+            columns: ["frozen_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payroll_tiers: {
+        Row: {
+          allowance: number
+          base_salary: number
+          created_at: string
+          id: string
+          kpi_amount: number
+          min_service_revenue: number
+          ot_hourly_rate: number
+          tier_level: number
+          tier_name: string
+          updated_at: string
+        }
+        Insert: {
+          allowance?: number
+          base_salary?: number
+          created_at?: string
+          id?: string
+          kpi_amount?: number
+          min_service_revenue?: number
+          ot_hourly_rate?: number
+          tier_level: number
+          tier_name: string
+          updated_at?: string
+        }
+        Update: {
+          allowance?: number
+          base_salary?: number
+          created_at?: string
+          id?: string
+          kpi_amount?: number
+          min_service_revenue?: number
+          ot_hourly_rate?: number
+          tier_level?: number
+          tier_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       referral_clicks: {
         Row: {
           converted_customer_id: string | null
