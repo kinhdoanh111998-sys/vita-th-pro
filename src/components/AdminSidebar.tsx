@@ -18,7 +18,7 @@ const tabs: Tab[] = [
   { to: "/admin/services", label: "Quản lý Dịch vụ", roles: ["admin", "manager"] },
   { to: "/admin/products", label: "Quản lý Sản phẩm", roles: ["admin", "manager"] },
   { to: "/admin/orders", label: "Đơn hàng", roles: ["admin", "manager"] },
-  { to: "/admin/marketing", label: "Quản lý Marketing", icon: Sparkles },
+  { to: "/admin/marketing", label: "Quản lý Marketing", roles: ["admin", "manager"] },
   { to: "/admin/voucher", label: "Voucher / Khuyến mãi", roles: ["admin", "manager"] },
   { to: "/admin/shifts", label: "Ca & Chấm công", roles: ["admin", "manager"] },
   { to: "/admin/commissions", label: "Hoa hồng/Trả thưởng", roles: ["admin", "manager"] },
