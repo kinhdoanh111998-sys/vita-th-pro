@@ -764,16 +764,6 @@ function PayrollExtrasSection({ canConfigure }: { canConfigure: boolean }) {
   );
 }
 
-/* ================= TAB 2: CONFIG ================= */
-function ConfigPanel({ canConfigure }: { canConfigure: boolean }) {
-  return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <SalarySection canConfigure={canConfigure} />
-      <BonusTiersSection canConfigure={canConfigure} />
-      <AffiliateSection canConfigure={canConfigure} />
-    </div>
-  );
-}
 
 /* ---- Salary ---- */
 function SalarySection({ canConfigure }: { canConfigure: boolean }) {
