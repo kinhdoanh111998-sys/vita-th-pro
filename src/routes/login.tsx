@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/vita-th-pro-logo.png";
+import zaloLogoAsset from "@/assets/zalo-logo.png.asset.json";
 
 const VIRTUAL_CUSTOMER_DOMAIN = "@khach.vitath.pro";
 
@@ -185,9 +186,7 @@ function LoginPage() {
           href="/api/public/zalo/authorize"
           className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 rounded-lg bg-[#0068FF] hover:bg-[#0052cc] text-white font-bold text-sm transition-colors"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
-            <path d="M12.49 10.2722v-.4496h1.3467v6.3218h-.7704a.576.576 0 0 1-.5763-.5729l-.0006.0005a3.273 3.273 0 0 1-1.9372.6321c-1.8138 0-3.2844-1.4697-3.2844-3.2823 0-1.8125 1.4706-3.2822 3.2844-3.2822a3.273 3.273 0 0 1 1.9378.6326zM6.9188 6.7896v.4482c0 .3159-.0906.6254-.2612.8914L2.7178 14.63h3.9502v.7682a.5764.5764 0 0 1-.5767.5761H.4133v-.4548c0-.3121.0879-.6182.2536-.8827l3.9598-6.5127H.665V7.366A.576.576 0 0 1 1.2417 6.79h5.6771zm10.6537 9.3733a3.2723 3.2723 0 0 1-3.2794-3.2666 3.2723 3.2723 0 0 1 3.2794-3.2667 3.2723 3.2723 0 0 1 3.2795 3.2667 3.2723 3.2723 0 0 1-3.2795 3.2666zm-9.9834-9.9243c.4966 0 .899.4023.899.899s-.4024.899-.899.899a.8993.8993 0 0 1-.8991-.899c0-.4967.4025-.899.8991-.899zm.6947 9.7515H6.9188v-6.19h.7488c.3564 0 .6462.2887.6462.6448v5.5452zm14.4432 0h-.7683v-6.1911h.7511c.3549 0 .6425.2876.6425.6423v5.5488zM10.5522 14.783c1.0007 0 1.8118-.8085 1.8118-1.8067s-.811-1.8068-1.8118-1.8068c-1.0007 0-1.8118.8087-1.8118 1.8068 0 .9982.8111 1.8067 1.8118 1.8067zm7.0409-.0518c1.0302 0 1.8654-.8329 1.8654-1.8608 0-1.028-.8352-1.861-1.8654-1.861-1.0303 0-1.8655.833-1.8655 1.861 0 1.0279.8352 1.8608 1.8655 1.8608z"/>
-          </svg>
+          <img src={zaloLogoAsset.url} alt="Zalo" className="w-5 h-5" />
           Đăng nhập bằng Zalo
         </a>
 
