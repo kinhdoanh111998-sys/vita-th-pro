@@ -170,15 +170,17 @@ export function AttendanceWidget() {
     setBusy(true);
     try {
       if (chosenShiftId === "OT") {
-        const { error } = await supabase.from("attendances").insert({
+        const { error } = await supabase.from("attendances").upsert({
           employee_id: uid, date: day, shift_id: null, notes: "Tăng ca (Chờ duyệt)", check_in_time: new Date().toISOString()
-        });
+        }, { onConflict: 'employee_id,date' }); // <-- Đã sửa thành upsert và thêm onConflict
+        
         if (error) throw error;
         toast.success("Check-in Tăng ca thành công. Hãy báo Quản lý duyệt!");
       } else {
-        const { error } = await supabase.from("attendances").insert({
+        const { error } = await supabase.from("attendances").upsert({
           employee_id: uid, date: day, shift_id: chosenShiftId, check_in_time: new Date().toISOString()
-        });
+        }, { onConflict: 'employee_id,date' }); // <-- Đã sửa thành upsert và thêm onConflict
+        
         if (error) throw error;
         toast.success("Check-in thành công. Chờ duyệt diện mạo!");
       }
