@@ -53,6 +53,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_approved: boolean | null
+          early_checkout_approved_at: string | null
+          early_checkout_approved_by: string | null
           early_checkout_reason: string | null
           early_checkout_requested: boolean
           early_checkout_requested_at: string | null
@@ -74,6 +77,9 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date: string
+          early_checkout_approved?: boolean | null
+          early_checkout_approved_at?: string | null
+          early_checkout_approved_by?: string | null
           early_checkout_reason?: string | null
           early_checkout_requested?: boolean
           early_checkout_requested_at?: string | null
@@ -95,6 +101,9 @@ export type Database = {
           check_out_time?: string | null
           created_at?: string
           date?: string
+          early_checkout_approved?: boolean | null
+          early_checkout_approved_at?: string | null
+          early_checkout_approved_by?: string | null
           early_checkout_reason?: string | null
           early_checkout_requested?: boolean
           early_checkout_requested_at?: string | null
@@ -1414,7 +1423,10 @@ export type Database = {
       }
       system_settings: {
         Row: {
+          app_home_hero_campaign: string | null
           facebook_link: string | null
+          free_trial_campaign: string | null
+          homepage_shortcut_campaign: string | null
           hotline: string | null
           id: string
           show_store_list: boolean
@@ -1423,7 +1435,10 @@ export type Database = {
           zalo_oa_url: string | null
         }
         Insert: {
+          app_home_hero_campaign?: string | null
           facebook_link?: string | null
+          free_trial_campaign?: string | null
+          homepage_shortcut_campaign?: string | null
           hotline?: string | null
           id?: string
           show_store_list?: boolean
@@ -1432,7 +1447,10 @@ export type Database = {
           zalo_oa_url?: string | null
         }
         Update: {
+          app_home_hero_campaign?: string | null
           facebook_link?: string | null
+          free_trial_campaign?: string | null
+          homepage_shortcut_campaign?: string | null
           hotline?: string | null
           id?: string
           show_store_list?: boolean
@@ -1816,6 +1834,7 @@ export type Database = {
       }
     }
     Functions: {
+      fn_auto_checkout_overdue_shifts: { Args: never; Returns: undefined }
       fn_check_in: {
         Args: { p_shift_id: string }
         Returns: {
@@ -1826,6 +1845,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_approved: boolean | null
+          early_checkout_approved_at: string | null
+          early_checkout_approved_by: string | null
           early_checkout_reason: string | null
           early_checkout_requested: boolean
           early_checkout_requested_at: string | null
@@ -1856,6 +1878,9 @@ export type Database = {
           check_out_time: string | null
           created_at: string
           date: string
+          early_checkout_approved: boolean | null
+          early_checkout_approved_at: string | null
+          early_checkout_approved_by: string | null
           early_checkout_reason: string | null
           early_checkout_requested: boolean
           early_checkout_requested_at: string | null
