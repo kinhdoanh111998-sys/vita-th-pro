@@ -16,6 +16,10 @@ type Btn = {
   ring: string;
 };
 
+function ZaloIcon({ className }: { className?: string }) {
+  return <img src={zaloLogoAsset.url} alt="Zalo" className={className} />;
+}
+
 const BUTTONS: Btn[] = [
   {
     key: "booking",
@@ -28,7 +32,7 @@ const BUTTONS: Btn[] = [
   {
     key: "zalo",
     label: "Liên hệ Zalo",
-    icon: MessageCircle,
+    icon: ZaloIcon,
     href: "https://zalo.me/0988000888",
     external: true,
     bg: "bg-[#0068FF] text-white",
