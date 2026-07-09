@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Download, Save, Plus, Trash2, Loader2, Lock, Settings2, LineChart } from "lucide-react";
+import { Download, Save, Plus, Trash2, Loader2, Lock, Settings2, LineChart, Snowflake } from "lucide-react";
 import { AdminTopbar } from "@/components/AdminTopbar";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,15 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { downloadCSV, toCSV } from "@/lib/csv";
 import { useAuth } from "@/lib/AuthContext";
+import {
+  computePayroll,
+  DEFAULT_PAYROLL_SETTINGS,
+  MIN_SHIFTS_FOR_OT,
+  type PayrollBreakdown,
+  type PayrollSettings,
+  type PayrollTier,
+  type SalesCommissionTier,
+} from "@/lib/payroll";
 
 export const Route = createFileRoute("/admin/commissions")({
   component: CommissionsAdmin,
