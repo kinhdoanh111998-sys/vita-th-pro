@@ -271,6 +271,7 @@ function AdminEventsPage() {
                 <th className="px-4 py-3">Tiêu đề</th>
                 <th className="px-4 py-3 w-44">Thời gian</th>
                 <th className="px-4 py-3 w-40">Danh mục</th>
+                <th className="px-4 py-3 w-32">Đăng ký</th>
                 <th className="px-4 py-3 w-32">Trạng thái</th>
                 <th className="px-4 py-3 w-32 text-right">Thao tác</th>
               </tr>
