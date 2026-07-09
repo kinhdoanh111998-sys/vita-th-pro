@@ -834,6 +834,7 @@ function AlbumTab({
 }
 
 function RegsTab({ eventId }: { eventId: string }) {
+  const [search, setSearch] = useState("");
   const regQ = useQuery({
     queryKey: ["admin", "event_regs", eventId],
     queryFn: async () => {
@@ -850,13 +851,34 @@ function RegsTab({ eventId }: { eventId: string }) {
   if (regQ.isLoading)
     return <div className="p-8 text-center text-gray-500">Đang tải...</div>;
   const rows = regQ.data ?? [];
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        r.full_name.toLowerCase().includes(q) ||
+        r.phone.toLowerCase().includes(q),
+    );
+  }, [rows, search]);
+
   return (
     <div className="rounded-xl border border-gray-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center gap-2 text-sm">
-        <Users className="w-4 h-4 text-emerald-600" />
-        <b>{rows.length}</b> người đã đăng ký
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-col gap-3">
+        <div className="flex items-center gap-2 text-sm">
+          <Users className="w-4 h-4 text-emerald-600" />
+          <b>{rows.length}</b> người đã đăng ký
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Tìm theo tên hoặc SĐT..."
+            className="w-full h-9 pl-9 pr-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
       </div>
-      {rows.length === 0 ? (
+      {filteredRows.length === 0 ? (
         <div className="p-8 text-center text-gray-500">Chưa có đăng ký</div>
       ) : (
         <table className="w-full text-sm">
@@ -869,7 +891,7 @@ function RegsTab({ eventId }: { eventId: string }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {filteredRows.map((r) => (
               <tr key={r.id} className="border-t border-gray-100">
                 <td className="px-4 py-2 font-medium">{r.full_name}</td>
                 <td className="px-4 py-2">{r.phone}</td>
