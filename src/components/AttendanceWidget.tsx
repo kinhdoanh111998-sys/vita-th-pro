@@ -23,7 +23,9 @@ type Attendance = {
   id: string; shift_id: string | null;
   check_in_time: string | null; check_out_time: string | null;
   check_in_approved: boolean; ot_hours: number; ot_approved: boolean; notes: string | null;
-  early_checkout_requested?: boolean; early_checkout_reason?: string | null;
+  early_checkout_requested?: boolean; 
+  early_checkout_reason?: string | null;
+  early_checkout_approved?: boolean; // Cờ duyệt về sớm
 };
 
 const todayISO = () => {
@@ -79,13 +81,13 @@ export function AttendanceWidget() {
     refetchOnWindowFocus: true,
   });
 
-  // 3. Toàn bộ lịch sử Check-in của ngày hôm nay (Để bắt trùng lặp và lặp vòng)
+  // 3. Toàn bộ lịch sử Check-in của ngày hôm nay
   const attsQ = useQuery({
     enabled: !!uid,
     queryKey: ["portal-my-atts-today", uid, day],
     queryFn: async (): Promise<Attendance[]> => {
       const { data, error } = await supabase.from("attendances")
-        .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason")
+        .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason,early_checkout_approved")
         .eq("employee_id", uid!)
         .gte("date", day)
         .lte("date", day + " 23:59:59")
@@ -101,23 +103,19 @@ export function AttendanceWidget() {
   const shiftChieu = shifts.find(s => s.name.toLowerCase().includes("chiều"));
 
   const atts = attsQ.data ?? [];
-  // Phân loại: Ca đang chạy (Chưa Check-out) và Ca đã hoàn thành
   const activeAtt = atts.find(a => !a.check_out_time);
   const completedAtts = atts.filter(a => a.check_out_time);
   const activeShiftConf = activeAtt?.shift_id ? shifts.find(s => s.id === activeAtt.shift_id) : null;
 
-  /* ================== AUTO CHECKOUT (BƯỚC 2) ================== */
+  /* ================== AUTO CHECKOUT THỤ ĐỘNG ================== */
   useEffect(() => {
     if (!activeAtt || !activeShiftConf) return;
-    
     const [h, m] = activeShiftConf.end_time.split(':').map(Number);
     const endDate = new Date();
     endDate.setHours(h, m, 0, 0);
 
-    // Nếu giờ hiện tại > end_time của ca -> Chốt đơn tự động
     if (new Date() > endDate && !autoCheckoutIds.has(activeAtt.id)) {
       setAutoCheckoutIds(prev => new Set(prev).add(activeAtt.id));
-      
       supabase.from("attendances").update({
         check_out_time: endDate.toISOString(),
         notes: (activeAtt.notes ? activeAtt.notes + " " : "") + "[Hệ thống tự động Check-out khi hết giờ]"
@@ -130,13 +128,12 @@ export function AttendanceWidget() {
     }
   }, [activeAtt, activeShiftConf, now, autoCheckoutIds, qc]);
 
-  /* ================== THUẬT TOÁN DROPDOWN & TĂNG CA (BƯỚC 3 & 4) ================== */
+  /* ================== THUẬT TOÁN DROPDOWN & TĂNG CA ================== */
   const availableOptions = useMemo(() => {
     const opts: { id: string; label: string }[] = [];
     let allRegularDoneOrPassed = true;
     const allowedIds = new Set<string>();
 
-    // Phân tích lịch duyệt để mở khóa ca (Bẻ ca_ngay làm 2)
     (myShiftsTodayQ.data ?? []).forEach(ss => {
       if (ss.shift_type === 'sang' && shiftSang) allowedIds.add(shiftSang.id);
       if (ss.shift_type === 'chieu' && shiftChieu) allowedIds.add(shiftChieu.id);
@@ -146,11 +143,9 @@ export function AttendanceWidget() {
       }
     });
 
-    // Lọc chống trùng & ép thời gian
     allowedIds.forEach(id => {
       const conf = shifts.find(s => s.id === id);
       if (!conf) return;
-
       const isCompleted = completedAtts.some(a => a.shift_id === id);
       const [h, m] = conf.end_time.split(':').map(Number);
       const endDate = new Date(); endDate.setHours(h, m, 0, 0);
@@ -158,15 +153,10 @@ export function AttendanceWidget() {
 
       if (!isCompleted && !isPassed) {
         allRegularDoneOrPassed = false;
-        opts.push({ 
-          id: conf.id, 
-          label: `${conf.name} (${conf.start_time.slice(0,5)} - ${conf.end_time.slice(0,5)})` 
-        });
+        opts.push({ id: conf.id, label: `${conf.name} (${conf.start_time.slice(0,5)} - ${conf.end_time.slice(0,5)})` });
       }
     });
 
-    // Mở luồng Tăng ca khi mọi ca chính đã hoàn thành hoặc hết giờ
-    // Hoặc nếu nay ko có lịch nhưng vẫn muốn Tăng ca đột xuất
     if (allRegularDoneOrPassed && !activeAtt) {
       opts.push({ id: "OT", label: "🔥 Đăng ký Tăng ca (OT)" });
     }
@@ -174,11 +164,10 @@ export function AttendanceWidget() {
     return opts;
   }, [myShiftsTodayQ.data, completedAtts, shifts, shiftSang, shiftChieu, activeAtt]);
 
-  /* ================== HÀNH ĐỘNG VƯỢT DB (BƯỚC 1) ================== */
+  /* ================== HÀNH ĐỘNG ================== */
   const doCheckIn = async () => {
     if (!chosenShiftId) { toast.error("Chọn ca làm việc"); return; }
     setBusy(true);
-    
     try {
       if (chosenShiftId === "OT") {
         const { error } = await supabase.from("attendances").insert({
@@ -206,11 +195,9 @@ export function AttendanceWidget() {
     if (!activeAtt) return;
     setBusy(true);
     try {
-      // Vượt mặt DB update thẳng giờ checkout
       const { error } = await supabase.from("attendances").update({
         check_out_time: new Date().toISOString(), notes: notes || activeAtt.notes
       }).eq("id", activeAtt.id);
-      
       if (error) throw error;
       toast.success("Đã Check-out thành công!");
       setNotes("");
@@ -231,7 +218,6 @@ export function AttendanceWidget() {
         early_checkout_requested: true,
         early_checkout_reason: earlyReason.trim()
       }).eq("id", activeAtt.id);
-      
       if (error) throw error;
       toast.success("Đã gửi yêu cầu tan ca sớm.");
       setEarlyOpen(false);
@@ -243,10 +229,13 @@ export function AttendanceWidget() {
     }
   };
 
-  /* ================== HIỂN THỊ UI ================== */
   if (attsQ.isLoading || shiftsQ.isLoading || myShiftsTodayQ.isLoading) {
     return <Card>Đang tải dữ liệu chấm công…</Card>;
   }
+
+  const earlyRequested = !!activeAtt?.early_checkout_requested;
+  const earlyApproved = !!activeAtt?.early_checkout_approved;
+  const isOT = !activeAtt?.shift_id;
 
   return (
     <Card tone={activeAtt ? (activeAtt.check_in_approved ? "brand" : "warn") : "plain"}>
@@ -286,26 +275,57 @@ export function AttendanceWidget() {
                 )}
               </div>
               
-              <div className="flex gap-2">
-                <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ghi chú xuất ca (nếu có)..." className="flex-1 h-12" />
-                <Button onClick={doCheckOut} disabled={busy} className="h-12 whitespace-nowrap bg-brand hover:bg-brand-dark">
-                   <LogOut className="size-4 mr-2 inline" /> Check-out ngay
-                </Button>
-              </div>
-              
-              {activeAtt.shift_id && !activeAtt.early_checkout_requested && (
-                <div className="mt-3 text-right">
-                  <button onClick={() => setEarlyOpen(true)} className="text-xs text-ink-muted hover:text-brand font-medium underline">
-                    Xin tan ca sớm
-                  </button>
-                </div>
+              {/* THÔNG BÁO XIN VỀ SỚM */}
+              {earlyRequested && !earlyApproved && (
+                 <div className="p-3 bg-amber-50 text-amber-800 rounded-lg text-sm mb-4 border border-amber-200 shadow-sm">
+                   ⏳ Bạn đã gửi yêu cầu tan ca sớm. <b>Đang chờ Quản lý duyệt...</b>
+                 </div>
               )}
+              {earlyRequested && earlyApproved && (
+                 <div className="p-3 bg-emerald-50 text-emerald-800 rounded-lg text-sm mb-4 border border-emerald-200 shadow-sm">
+                   ✅ <b>Quản lý đã duyệt cho phép về sớm.</b> Hãy bấm Check-out ngay để ra về.
+                 </div>
+              )}
+              
+              {/* KHU VỰC GHI CHÚ VÀ NÚT HÀNH ĐỘNG ĐỘNG */}
+              <div className="flex flex-col gap-3 mt-4">
+                <Input 
+                   value={notes} 
+                   onChange={(e) => setNotes(e.target.value)} 
+                   placeholder="Ghi chú xuất ca (nếu có)..." 
+                   className="h-12 bg-white" 
+                />
+                
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {isOT ? (
+                    // Trạng thái 1: Ca OT -> Luôn được tự Check-out
+                    <Button onClick={doCheckOut} disabled={busy} className="flex-1 h-14 bg-brand hover:bg-brand-dark">
+                      <LogOut className="size-4 mr-2 inline" /> Check-out xuất ca
+                    </Button>
+                  ) : earlyRequested && !earlyApproved ? (
+                    // Trạng thái 2: Đã xin về -> Khóa nút chờ duyệt
+                    <Button disabled className="flex-1 h-14 bg-amber-500 hover:bg-amber-600 text-white opacity-80 cursor-not-allowed">
+                      <Clock className="size-4 mr-2 inline" /> Đang chờ duyệt về sớm...
+                    </Button>
+                  ) : earlyRequested && earlyApproved ? (
+                    // Trạng thái 3: Quản lý đã duyệt -> Mở khóa nút
+                    <Button onClick={doCheckOut} disabled={busy} className="flex-1 h-14 bg-emerald-600 hover:bg-emerald-700 text-white">
+                      <LogOut className="size-4 mr-2 inline" /> Check-out ngay
+                    </Button>
+                  ) : (
+                    // Trạng thái 4: Bình thường (Chưa hết giờ) -> Mở form xin về sớm
+                    <Button onClick={() => setEarlyOpen(true)} disabled={busy} className="flex-1 h-14 bg-brand hover:bg-brand-dark">
+                      <AlarmClockOff className="size-4 mr-2 inline" /> Xin check-out sớm
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* KHỐI 2: TRẠNG THÁI CHỌN CA ĐỂ CHECK-IN */}
+      {/* KHỐI 2: CHỌN CA ĐỂ CHECK-IN */}
       {!activeAtt && availableOptions.length > 0 && (
         <div className="mb-6 p-4 rounded-xl border border-hairline bg-slate-50">
           <Label className="text-xs font-bold text-ink mb-2 block">Ca làm việc khả dụng lúc này:</Label>
@@ -335,7 +355,7 @@ export function AttendanceWidget() {
         </div>
       )}
 
-      {/* KHỐI 3: LỊCH SỬ CHẤM CÔNG HÔM NAY (ĐÃ CHECK-OUT) */}
+      {/* KHỐI 3: LỊCH SỬ CHẤM CÔNG HÔM NAY */}
       {completedAtts.length > 0 && (
         <div className="pt-4 border-t border-hairline">
           <div className="text-xs font-black uppercase text-ink-muted mb-3">Lịch sử hôm nay</div>
@@ -369,7 +389,7 @@ export function AttendanceWidget() {
           <div className="space-y-2 mt-2">
             <Label className="text-xs">Lý do xin về sớm <span className="text-red-500">*</span></Label>
             <Textarea value={earlyReason} onChange={(e) => setEarlyReason(e.target.value)}
-              placeholder="Có việc đột xuất gia đình..." rows={4} />
+              placeholder="Ví dụ: Có việc đột xuất gia đình, đi khám bệnh..." rows={4} />
           </div>
           <DialogFooter className="mt-4">
             <Button variant="ghost" onClick={() => setEarlyOpen(false)}>Huỷ</Button>
@@ -381,7 +401,7 @@ export function AttendanceWidget() {
   );
 }
 
-/* =========== LỊCH TUẦN BÊN DƯỚI =========== */
+// Bảng lịch tuần (Không đổi)
 export function ShiftRegistrationPanel() {
   const { session } = useAuth();
   const uid = session?.user.id;
@@ -437,6 +457,6 @@ export function ShiftRegistrationPanel() {
 }
 
 function Card({ children, tone = "plain" }: { children: React.ReactNode; tone?: "plain" | "brand" | "warn" | "success" }) {
-  const tones: any = { plain: "border-hairline bg-white", brand: "border-brand/40 bg-white shadow-brand/10", warn: "border-amber-200 bg-amber-50" };
+  const tones: any = { plain: "border-hairline bg-white", brand: "border-brand/40 bg-white shadow-brand/10", warn: "border-amber-200 bg-amber-50", success: "border-emerald-200 bg-emerald-50" };
   return <div className={`rounded-2xl border p-5 shadow-sm ${tones[tone]}`}>{children}</div>;
 }
