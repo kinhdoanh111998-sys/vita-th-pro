@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { MessageCircle, Search, CalendarCheck } from "lucide-react";
+import { Search, CalendarCheck } from "lucide-react";
 import { BookingActionMenu } from "@/components/BookingActionMenu";
 import { useSystemSettings } from "@/lib/useSystemSettings";
+import zaloLogoAsset from "@/assets/zalo-logo.png.asset.json";
 
 type Btn = {
   key: string;
