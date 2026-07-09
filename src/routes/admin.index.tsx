@@ -755,35 +755,28 @@ function CustomerMixChart() {
     queryKey: ["dashboard", "customer-mix", range],
     queryFn: async () => {
       const { from, to } = rangeBounds(range);
-      const [newC, ordC] = await Promise.all([
-        supabase
-          .from("customers")
-          .select("id,created_at")
-          .gte("created_at", from.toISOString())
-          .lte("created_at", to.toISOString()),
-        supabase
-          .from("orders")
-          .select("customer_id,created_at,customers!inner(created_at)")
-          .gte("created_at", from.toISOString())
-          .lte("created_at", to.toISOString()),
-      ]);
-      if (newC.error) throw newC.error;
-      if (ordC.error) throw ordC.error;
-      const newIds = new Set((newC.data ?? []).map((r) => r.id));
-      const returningIds = new Set<string>();
-      (ordC.data ?? []).forEach((o: any) => {
-        const cid = o?.customer_id;
+      const { data, error } = await supabase
+        .from("orders")
+        .select("customer_id,created_at,customers!inner(created_at)")
+        .gte("created_at", from.toISOString())
+        .lte("created_at", to.toISOString());
+      if (error) throw error;
+      let newVisits = 0;
+      let returningVisits = 0;
+      (data ?? []).forEach((o: any) => {
         const cCreated = o?.customers?.created_at;
-        if (!cid || newIds.has(cid)) return;
-        if (cCreated && new Date(cCreated) < from) returningIds.add(cid);
+        if (!cCreated) return;
+        const created = new Date(cCreated);
+        if (created >= from && created <= to) newVisits++;
+        else if (created < from) returningVisits++;
       });
-      return { newCount: newIds.size, returningCount: returningIds.size };
+      return { newCount: newVisits, returningCount: returningVisits };
     },
     staleTime: 30_000,
   });
   const data = [
-    { key: "new", name: "Khách mới", value: q.data?.newCount ?? 0 },
-    { key: "returning", name: "Khách cũ", value: q.data?.returningCount ?? 0 },
+    { key: "new", name: "Lượt khách mới", value: q.data?.newCount ?? 0 },
+    { key: "returning", name: "Lượt khách cũ", value: q.data?.returningCount ?? 0 },
   ];
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
@@ -972,11 +965,19 @@ function TreatmentFunnelChart() {
   const data = useMemo(() => {
     const rows = q.data ?? [];
     const sold = rows.length;
-    const completed = rows.filter((r: any) => r.status === "completed" || r.status === "done").length;
-    const inUse = rows.filter((r: any) => r.status !== "pending" && r.status !== "completed" && r.status !== "done").length;
+    const completed = rows.filter(
+      (r: any) => r.status === "completed" || r.status === "done",
+    ).length;
+    const inUse = rows.filter(
+      (r: any) =>
+        r.status === "active" ||
+        r.status === "in_progress" ||
+        r.status === "in-use" ||
+        r.status === "using",
+    ).length;
     return [
       { name: "Đã bán", value: sold, fill: "#3B82F6" },
-      { name: "Đang sử dụng", value: inUse + completed, fill: "#8B5CF6" },
+      { name: "Đang sử dụng", value: inUse, fill: "#8B5CF6" },
       { name: "Hoàn thành", value: completed, fill: "#10B981" },
     ];
   }, [q.data]);
@@ -1000,82 +1001,7 @@ function TreatmentFunnelChart() {
   );
 }
 
-/* ---------------- Chart: Booking Heatmap ---------------- */
-function BookingHeatmapCard() {
-  const q = useQuery({
-    queryKey: ["dashboard", "booking-heatmap"],
-    queryFn: async () => {
-      const from = new Date();
-      from.setDate(from.getDate() - 60);
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("booking_date,booking_time,created_at")
-        .gte("created_at", from.toISOString());
-      if (error) throw error;
-      return data ?? [];
-    },
-    staleTime: 60_000,
-  });
-  const days = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-  const slots = ["Sáng", "Chiều", "Tối"];
-  const grid = useMemo(() => {
-    const m = new Map<string, number>();
-    days.forEach((d) => slots.forEach((s) => m.set(`${d}|${s}`, 0)));
-    (q.data ?? []).forEach((b: any) => {
-      const ds = b?.booking_date || b?.created_at;
-      if (!ds) return;
-      const dt = new Date(ds);
-      const dow = (dt.getDay() + 6) % 7; // Mon=0
-      const timeStr = String(b?.booking_time || "");
-      const hh = Number(timeStr.split(":")[0] || dt.getHours());
-      const slot = hh < 12 ? "Sáng" : hh < 18 ? "Chiều" : "Tối";
-      const key = `${days[dow]}|${slot}`;
-      m.set(key, (m.get(key) || 0) + 1);
-    });
-    return m;
-  }, [q.data]);
-  const max = Math.max(1, ...Array.from(grid.values()));
-  const empty = Array.from(grid.values()).every((v) => v === 0);
 
-  return (
-    <ChartCard title="Bản đồ nhiệt lịch hẹn" subtitle="60 ngày gần nhất" loading={q.isLoading}>
-      {empty ? (
-        <div className="h-full flex items-center justify-center text-xs text-ink-muted">Chưa có lịch hẹn</div>
-      ) : (
-        <div className="h-full flex flex-col gap-2">
-          <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
-            <div />
-            {days.map((d) => (
-              <div key={d} className="text-center">{d}</div>
-            ))}
-          </div>
-          {slots.map((s) => (
-            <div key={s} className="grid grid-cols-[60px_repeat(7,1fr)] gap-1.5 flex-1">
-              <div className="text-xs font-bold text-slate-600 flex items-center">{s}</div>
-              {days.map((d) => {
-                const v = grid.get(`${d}|${s}`) || 0;
-                const intensity = v / max;
-                const bg = v === 0
-                  ? "#f1f5f9"
-                  : `rgba(59,130,246,${0.15 + intensity * 0.75})`;
-                return (
-                  <div
-                    key={d + s}
-                    title={`${d} ${s}: ${v} lịch`}
-                    className="rounded-md flex items-center justify-center text-[11px] font-bold text-white transition-all duration-500 ease-out hover:scale-105"
-                    style={{ background: bg, color: intensity > 0.4 ? "#fff" : "#334155" }}
-                  >
-                    {v > 0 ? v : ""}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-    </ChartCard>
-  );
-}
 
 /* ---------------- KPI Strip ---------------- */
 function useCountUp(target: number, duration = 900) {
@@ -1194,6 +1120,33 @@ function Kpi({
 }
 
 /* ---------------- Page ---------------- */
+function SectionShell({
+  icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl bg-slate-50/70 border border-hairline p-4 md:p-5">
+      <header className="mb-4 flex items-baseline gap-2">
+        <span className="text-lg leading-none">{icon}</span>
+        <h2 className="text-base font-black text-brand-dark tracking-tight">
+          {title}
+        </h2>
+        {subtitle && (
+          <span className="text-xs text-ink-muted font-medium">· {subtitle}</span>
+        )}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 function Dashboard() {
   return (
     <>
@@ -1201,17 +1154,42 @@ function Dashboard() {
 
       <KpiStrip />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <ServiceRevenueChart />
-        <ProductRevenueChart />
-        <BookingStatusChart />
-        <CustomerMixChart />
-        <NetProfitChart />
-        <TopBestsellersChart />
-        <TreatmentFunnelChart />
-        <BookingHeatmapCard />
-        <LowStockCard />
-        <ExpenseChart />
+      <div className="space-y-5">
+        <SectionShell
+          icon="💰"
+          title="Tài chính & Dòng tiền"
+          subtitle="Doanh thu, chi phí và lợi nhuận"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ServiceRevenueChart />
+            <ProductRevenueChart />
+            <ExpenseChart />
+            <NetProfitChart />
+          </div>
+        </SectionShell>
+
+        <SectionShell
+          icon="👥"
+          title="Vận hành & Khách hàng"
+          subtitle="Lịch hẹn, khách và liệu trình"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <BookingStatusChart />
+            <CustomerMixChart />
+            <TreatmentFunnelChart />
+          </div>
+        </SectionShell>
+
+        <SectionShell
+          icon="📦"
+          title="Sản phẩm & Tồn kho"
+          subtitle="Tình trạng kho và bán chạy"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <LowStockCard />
+            <TopBestsellersChart />
+          </div>
+        </SectionShell>
       </div>
     </>
   );
