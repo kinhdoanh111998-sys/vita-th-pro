@@ -13,6 +13,7 @@ import {
   X,
   Users,
   CalendarDays,
+  Search,
 } from "lucide-react";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import {
