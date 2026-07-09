@@ -89,8 +89,7 @@ export function AttendanceWidget() {
       const { data, error } = await supabase.from("attendances")
         .select("id,shift_id,check_in_time,check_out_time,check_in_approved,ot_hours,ot_approved,notes,early_checkout_requested,early_checkout_reason,early_checkout_approved")
         .eq("employee_id", uid!)
-        .gte("date", day)
-        .lte("date", day + " 23:59:59")
+        .eq("date", day) // <--- ĐÃ SỬA THÀNH .eq ĐỂ LẤY CHUẨN NGÀY HÔM NAY
         .order("check_in_time", { ascending: true });
       if (error) throw error;
       return (data ?? []) as Attendance[];
