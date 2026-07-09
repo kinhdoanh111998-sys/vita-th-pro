@@ -156,7 +156,7 @@ export function PerformanceCard() {
       {/* Lịch sử Thưởng nóng */}
       <div className="mt-6 pt-5 border-t border-hairline">
         <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold mb-3 flex items-center gap-1.5">
-          <Flame className="w-4 h-4 text-orange-500" /> Thưởng nóng đơn > {formatVND(settings.hot_bonus_threshold)}
+          <Flame className="w-4 h-4 text-orange-500" /> Thưởng nóng đơn ≥ {formatVND(settings.hot_bonus_threshold)}
         </div>
         {hotBonuses.length === 0 ? (
            <div className="text-xs text-ink-muted italic bg-slate-50 p-3 rounded-lg border border-dashed text-center">Chưa có khoản thưởng nóng nào tháng này.</div>
