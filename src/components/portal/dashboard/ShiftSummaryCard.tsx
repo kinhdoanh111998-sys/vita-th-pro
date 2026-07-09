@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Clock, MapPin, ListChecks, CalendarDays } from "lucide-react";
+import { Calendar, Clock, MapPin, ListChecks, CalendarDays, Lock, Unlock } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
 import { Link } from "@tanstack/react-router";
+import { MIN_SHIFTS_FOR_OT } from "@/lib/payroll";
 
 type Mode = "today" | "month";
 
@@ -296,36 +297,78 @@ export function ShiftSummaryCard() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
-          <Stat
-            label="Buổi công đã đi"
-            value={attMonthQ.isLoading ? "…" : String(attMonthQ.data ?? 0)}
-            hint="Ngày đã check-in tháng này"
-            tone="emerald"
-            icon={<Calendar className="w-4 h-4" />}
-          />
-          <Stat
-            label="Ca đã duyệt còn lại"
-            value={shiftMonthQ.isLoading ? "…" : String(shiftMonthQ.data?.approved ?? 0)}
-            hint={`${shiftMonthQ.data?.pending ?? 0} ca chờ duyệt`}
-            tone="blue"
-            icon={<Clock className="w-4 h-4" />}
-          />
-          <Stat
-            label="Tour hoàn thành"
-            value={toursDoneMonthQ.isLoading ? "…" : String(toursDoneMonthQ.data ?? 0)}
-            hint="Tour completed tháng này"
-            tone="amber"
-            icon={<ListChecks className="w-4 h-4" />}
-          />
-          <Stat
-            label="Tổng ca tháng"
-            value={shiftMonthQ.isLoading ? "…" : String(shiftMonthQ.data?.total ?? 0)}
-            hint="Bao gồm cả pending"
-            tone="slate"
-            icon={<CalendarDays className="w-4 h-4" />}
-          />
-        </div>
+        <>
+          {(() => {
+            const shifts = Number(attMonthQ.data ?? 0);
+            const unlocked = shifts >= MIN_SHIFTS_FOR_OT;
+            const pct = Math.min(100, (shifts / MIN_SHIFTS_FOR_OT) * 100);
+            return (
+              <div
+                className={
+                  "mb-3 rounded-xl border p-3 flex items-center gap-3 " +
+                  (unlocked
+                    ? "border-emerald-200 bg-emerald-50"
+                    : "border-amber-200 bg-amber-50")
+                }
+              >
+                <div
+                  className={
+                    "w-10 h-10 rounded-full grid place-items-center " +
+                    (unlocked ? "bg-emerald-600 text-white" : "bg-amber-500 text-white")
+                  }
+                >
+                  {unlocked ? <Unlock className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-bold text-ink">
+                    {unlocked ? "Đã mở khoá KPI & OT" : "Chưa mở khoá KPI & OT"}
+                  </div>
+                  <div className="text-[11px] text-ink-muted">
+                    {shifts}/{MIN_SHIFTS_FOR_OT} ca đủ điều kiện tính lương OT
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-white/70 overflow-hidden">
+                    <div
+                      className={
+                        "h-full " + (unlocked ? "bg-emerald-500" : "bg-amber-500")
+                      }
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          <div className="grid grid-cols-2 gap-3">
+            <Stat
+              label="Buổi công đã đi"
+              value={attMonthQ.isLoading ? "…" : String(attMonthQ.data ?? 0)}
+              hint="Ngày đã check-in tháng này"
+              tone="emerald"
+              icon={<Calendar className="w-4 h-4" />}
+            />
+            <Stat
+              label="Ca đã duyệt còn lại"
+              value={shiftMonthQ.isLoading ? "…" : String(shiftMonthQ.data?.approved ?? 0)}
+              hint={`${shiftMonthQ.data?.pending ?? 0} ca chờ duyệt`}
+              tone="blue"
+              icon={<Clock className="w-4 h-4" />}
+            />
+            <Stat
+              label="Tour hoàn thành"
+              value={toursDoneMonthQ.isLoading ? "…" : String(toursDoneMonthQ.data ?? 0)}
+              hint="Tour completed tháng này"
+              tone="amber"
+              icon={<ListChecks className="w-4 h-4" />}
+            />
+            <Stat
+              label="Tổng ca tháng"
+              value={shiftMonthQ.isLoading ? "…" : String(shiftMonthQ.data?.total ?? 0)}
+              hint="Bao gồm cả pending"
+              tone="slate"
+              icon={<CalendarDays className="w-4 h-4" />}
+            />
+          </div>
+        </>
       )}
     </div>
   );
