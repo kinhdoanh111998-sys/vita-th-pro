@@ -1195,6 +1195,33 @@ function Kpi({
 }
 
 /* ---------------- Page ---------------- */
+function SectionShell({
+  icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl bg-slate-50/70 border border-hairline p-4 md:p-5">
+      <header className="mb-4 flex items-baseline gap-2">
+        <span className="text-lg leading-none">{icon}</span>
+        <h2 className="text-base font-black text-brand-dark tracking-tight">
+          {title}
+        </h2>
+        {subtitle && (
+          <span className="text-xs text-ink-muted font-medium">· {subtitle}</span>
+        )}
+      </header>
+      {children}
+    </section>
+  );
+}
+
 function Dashboard() {
   return (
     <>
@@ -1202,17 +1229,42 @@ function Dashboard() {
 
       <KpiStrip />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <ServiceRevenueChart />
-        <ProductRevenueChart />
-        <BookingStatusChart />
-        <CustomerMixChart />
-        <NetProfitChart />
-        <TopBestsellersChart />
-        <TreatmentFunnelChart />
-        <BookingHeatmapCard />
-        <LowStockCard />
-        <ExpenseChart />
+      <div className="space-y-5">
+        <SectionShell
+          icon="💰"
+          title="Tài chính & Dòng tiền"
+          subtitle="Doanh thu, chi phí và lợi nhuận"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ServiceRevenueChart />
+            <ProductRevenueChart />
+            <ExpenseChart />
+            <NetProfitChart />
+          </div>
+        </SectionShell>
+
+        <SectionShell
+          icon="👥"
+          title="Vận hành & Khách hàng"
+          subtitle="Lịch hẹn, khách và liệu trình"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <BookingStatusChart />
+            <CustomerMixChart />
+            <TreatmentFunnelChart />
+          </div>
+        </SectionShell>
+
+        <SectionShell
+          icon="📦"
+          title="Sản phẩm & Tồn kho"
+          subtitle="Tình trạng kho và bán chạy"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <LowStockCard />
+            <TopBestsellersChart />
+          </div>
+        </SectionShell>
       </div>
     </>
   );
