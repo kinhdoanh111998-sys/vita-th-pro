@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
+// CẬP NHẬT TYPE THEO ĐÚNG DATABASE THỰC TẾ
 type Shift = { id: string; name: string; start_time: string; end_time: string; is_active: boolean };
-type Registration = { id: string; shift_id: string; date: string; status: "pending" | "approved" | "rejected" };
+type StaffShift = { id: string; shift_type: string; date: string; status: string };
 type Attendance = {
   id: string; shift_id: string | null;
   check_in_time: string | null; check_out_time: string | null;
@@ -37,7 +38,7 @@ export function AttendanceWidget() {
   const uid = session?.user.id;
   const day = todayISO();
 
-  const [chosenShift, setChosenShift] = useState<string>("");
+  const [chosenShiftType, setChosenShiftType] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -50,33 +51,33 @@ export function AttendanceWidget() {
     return () => clearInterval(t);
   }, []);
 
+  // Lấy danh mục Ca làm việc (để lấy giờ start/end)
   const shiftsQ = useQuery({
-    queryKey: ["portal-shifts-map"],
-    queryFn: async (): Promise<Record<string, Shift>> => {
-      const { data } = await supabase.from("shifts").select("*");
-      const m: Record<string, Shift> = {};
-      (data ?? []).forEach((s) => { m[s.id] = s as Shift; });
-      return m;
+    queryKey: ["portal-shifts-list"],
+    queryFn: async (): Promise<Shift[]> => {
+      const { data } = await supabase.from("shifts").select("*").eq("is_active", true);
+      return (data ?? []) as Shift[];
     },
     refetchOnWindowFocus: true,
   });
 
-  const regsQ = useQuery({
+  // VÁ LỖI 1: TRỎ ĐÚNG VÀO BẢNG staff_shifts ĐỂ LẤY CA HÔM NAY ĐÃ DUYỆT
+  const myShiftsTodayQ = useQuery({
     enabled: !!uid,
-    queryKey: ["portal-my-regs-today", uid, day],
-    queryFn: async (): Promise<Registration[]> => {
-      const { data, error } = await supabase.from("shift_registrations")
-        .select("id,shift_id,date,status")
-        .eq("employee_id", uid!)
-        .gte("date", day)
-        .lte("date", day + " 23:59:59")
+    queryKey: ["portal-staff-shifts-today", uid, day],
+    queryFn: async (): Promise<StaffShift[]> => {
+      const { data, error } = await supabase.from("staff_shifts")
+        .select("id, shift_type, date, status")
+        .eq("staff_id", uid!)
+        .eq("date", day)
         .eq("status", "approved");
       if (error) throw error;
-      return (data ?? []) as Registration[];
+      return (data ?? []) as StaffShift[];
     },
     refetchOnWindowFocus: true,
   });
 
+  // Lấy dữ liệu Chấm công thực tế
   const attQ = useQuery({
     enabled: !!uid,
     queryKey: ["portal-my-att-today", uid, day],
@@ -95,14 +96,22 @@ export function AttendanceWidget() {
   });
 
   const att = attQ.data;
-  const shift = att?.shift_id ? shiftsQ.data?.[att.shift_id] : null;
+  
+  // LOGIC MAP CA: Tìm xem shift_id lưu trong attendances ứng với ca nào để đếm ngược
+  // Tạm thời nếu DB chưa lưu chuẩn, ta chỉ hiển thị trạng thái
+  const currentShift = useMemo(() => {
+     if(!att?.shift_id || !shiftsQ.data) return null;
+     // Giả định bảng attendances đang lưu trực tiếp ID của bảng shifts vào shift_id
+     return shiftsQ.data.find(s => s.id === att.shift_id) || null;
+  }, [att?.shift_id, shiftsQ.data]);
 
   const endMs = useMemo(() => {
-    if (!shift) return null;
-    const [hh, mm] = shift.end_time.split(":").map(Number);
+    if (!currentShift) return null;
+    const [hh, mm] = currentShift.end_time.split(":").map(Number);
     const end = new Date(); end.setHours(hh, mm, 0, 0);
     return end.getTime();
-  }, [shift]);
+  }, [currentShift]);
+
   const remaining = endMs ? Math.max(0, endMs - now) : 0;
   const remH = Math.floor(remaining / 3_600_000);
   const remM = Math.floor((remaining % 3_600_000) / 60_000);
@@ -120,7 +129,6 @@ export function AttendanceWidget() {
       }).eq("id", att.id);
       
       if (error) throw error;
-
       toast.success("Đã gửi yêu cầu tan ca sớm.");
       setEarlyOpen(false);
       qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
@@ -132,9 +140,26 @@ export function AttendanceWidget() {
   };
 
   const doCheckIn = async () => {
-    if (!chosenShift) { toast.error("Chọn ca làm việc"); return; }
+    if (!chosenShiftType) { toast.error("Chọn ca làm việc"); return; }
     setBusy(true);
-    const { error } = await supabase.rpc("fn_check_in", { p_shift_id: chosenShift });
+
+    // Tìm ID của ca tương ứng trong bảng shifts để nạp vào tham số
+    let actualShiftId = "";
+    if(shiftsQ.data) {
+       // Cố gắng map shift_type (ví dụ 'sang') sang bảng shifts
+       let found = shiftsQ.data.find(s => s.name.toLowerCase().includes(chosenShiftType.replace('_', ' ')));
+       // Fallback nếu ca_ngay
+       if(!found && chosenShiftType === 'ca_ngay') found = shiftsQ.data[0]; 
+       if(found) actualShiftId = found.id;
+    }
+
+    if(!actualShiftId) {
+        toast.error("Không tìm thấy cấu hình giờ cho ca này.");
+        setBusy(false);
+        return;
+    }
+
+    const { error } = await supabase.rpc("fn_check_in", { p_shift_id: actualShiftId });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Đã Check-in thành công!");
@@ -153,7 +178,7 @@ export function AttendanceWidget() {
     qc.invalidateQueries({ queryKey: ["portal-my-att-today"] });
   };
 
-  if (attQ.isLoading || shiftsQ.isLoading) return <Card>Đang tải chấm công…</Card>;
+  if (attQ.isLoading || shiftsQ.isLoading || myShiftsTodayQ.isLoading) return <Card>Đang tải chấm công…</Card>;
 
   if (att?.check_out_time) {
     return (
@@ -180,7 +205,7 @@ export function AttendanceWidget() {
             <div className={`text-xs uppercase tracking-wider font-bold ${shiftEnded ? "text-red-600" : "text-brand"}`}>
               {shiftEnded ? "Đã hết giờ ca" : "Đang trong ca"}
             </div>
-            <div className="text-2xl font-black text-brand-dark mt-1">{shift?.name ?? "Ca làm"}</div>
+            <div className="text-2xl font-black text-brand-dark mt-1">{currentShift?.name ?? "Đang làm việc"}</div>
           </div>
           {endMs !== null && (
             <div className="text-right">
@@ -204,7 +229,25 @@ export function AttendanceWidget() {
     );
   }
 
-  const approvedShifts = (regsQ.data ?? []).map((r) => shiftsQ.data?.[r.shift_id]).filter(Boolean) as Shift[];
+  if (att && !att.check_in_approved) {
+    return (
+      <Card tone="warn">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="size-8 text-amber-600" />
+          <div>
+            <div className="text-lg font-black text-amber-800">Đang trong ca – Chờ duyệt</div>
+            <div className="text-xs text-amber-900/80 mt-0.5">
+              Bạn đã Check-in lúc {new Date(att.check_in_time!).toLocaleTimeString("vi-VN")}.
+            </div>
+          </div>
+        </div>
+        <Button disabled className="mt-4 w-full h-12 opacity-60"><LogOut className="size-4 mr-2 inline" />Chờ duyệt để Check-out</Button>
+      </Card>
+    );
+  }
+
+  // TÌNH HUỐNG CHƯA CHECK-IN
+  const approvedShifts = myShiftsTodayQ.data ?? [];
 
   return (
     <Card>
@@ -219,21 +262,94 @@ export function AttendanceWidget() {
       ) : (
         <>
           <div className="mt-4">
-            <Label className="text-xs">Chọn ca làm</Label>
-            <Select value={chosenShift} onValueChange={setChosenShift}>
+            <Label className="text-xs">Chọn ca làm hôm nay (Đã được duyệt)</Label>
+            <Select value={chosenShiftType} onValueChange={setChosenShiftType}>
               <SelectTrigger><SelectValue placeholder="Chọn ca..." /></SelectTrigger>
               <SelectContent>
                 {approvedShifts.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.name} ({s.start_time}-{s.end_time})</SelectItem>
+                  <SelectItem key={s.id} value={s.shift_type}>
+                    Ca: {s.shift_type === 'sang' ? 'Ca Sáng' : s.shift_type === 'chieu' ? 'Ca Chiều' : 'Cả ngày'}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={doCheckIn} disabled={busy || !chosenShift} className="mt-4 w-full h-12">
+          <Button onClick={doCheckIn} disabled={busy || !chosenShiftType} className="mt-4 w-full h-12">
             BẤM CHECK-IN VÀO CA
           </Button>
         </>
       )}
+    </Card>
+  );
+}
+
+/* =========== ĐĂNG KÝ CA TƯƠNG LAI (LỊCH TUẦN) =========== */
+export function ShiftRegistrationPanel() {
+  const qc = useQueryClient();
+  const { session } = useAuth();
+  const uid = session?.user.id;
+
+  const [date, setDate] = useState(todayISO());
+  const [shiftType, setShiftType] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // VÁ LỖI 2: ĐỔI BẢNG LẤY LỊCH TUẦN THÀNH staff_shifts
+  const weekStart = todayISO();
+  const weekEnd = (() => {
+    const d = new Date(); d.setDate(d.getDate() + 6);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 10);
+  })();
+
+  const weekRegsQ = useQuery({
+    enabled: !!uid,
+    queryKey: ["portal-staff-shifts-week", uid, weekStart, weekEnd],
+    queryFn: async (): Promise<StaffShift[]> => {
+      const { data, error } = await supabase.from("staff_shifts")
+        .select("id, shift_type, date, status")
+        .eq("staff_id", uid!)
+        .gte("date", weekStart)
+        .lte("date", weekEnd)
+        .order("date");
+      if (error) throw error;
+      return (data ?? []) as StaffShift[];
+    },
+    refetchOnWindowFocus: true,
+  });
+
+  const submit = async () => {
+    // Tạm thời ẩn hàm này nếu bạn tạo Lịch từ trang Admin. 
+    // Nếu muốn nhân viên tự đăng ký, ta sẽ viết lệnh Insert vào bảng duyệt sau.
+    toast.error("Vui lòng liên hệ Quản lý để xếp ca làm việc.");
+  };
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2">
+        <CalendarPlus className="size-5 text-brand" />
+        <div className="font-black text-brand-dark">Lịch làm việc Tuần này</div>
+      </div>
+
+      <div className="mt-3 space-y-1.5">
+        {(weekRegsQ.data ?? []).length === 0 ? (
+          <div className="text-xs text-ink-muted">Chưa có ca nào trong 7 ngày tới.</div>
+        ) : (weekRegsQ.data ?? []).map((r) => {
+          const tone = r.status === "approved" ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+            : r.status === "rejected" ? "bg-red-100 text-red-800 border-red-200"
+            : "bg-amber-100 text-amber-800 border-amber-200";
+          return (
+            <div key={r.id} className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${tone}`}>
+              <div>
+                <b>{new Date(r.date).toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit" })}</b>
+                <span className="ml-2 font-semibold">
+                  Ca: {r.shift_type === 'sang' ? 'Ca Sáng' : r.shift_type === 'chieu' ? 'Ca Chiều' : 'Cả ngày'}
+                </span>
+              </div>
+              <Badge className="bg-white/70 text-inherit border">{r.status}</Badge>
+            </div>
+          );
+        })}
+      </div>
     </Card>
   );
 }
