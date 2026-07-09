@@ -1,13 +1,9 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, TrendingUp, Target } from "lucide-react";
+import { Trophy, TrendingUp, Target, Flame } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/lib/AuthContext";
-
-const money = (n: number) =>
-  n.toLocaleString("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
-
-type Tier = { id: string; tier_name: string; target_amount: number; bonus_amount: number };
+import { DEFAULT_PAYROLL_SETTINGS, formatVND } from "@/lib/payroll";
 
 function monthRange() {
   const now = new Date();
@@ -21,62 +17,70 @@ export function PerformanceCard() {
   const uid = session?.user.id ?? null;
   const { startISO, endISO } = monthRange();
 
-  // Tổng hoa hồng của nhân viên trong tháng (mọi loại)
-  const totalQ = useQuery({
-    queryKey: ["portal-perf-total", uid, startISO],
+  // Lấy Cấu hình Lương từ Database (nếu không có thì dùng DEFAULT_PAYROLL_SETTINGS từ payroll.ts)
+  const settingsQ = useQuery({
+    queryKey: ["payroll-settings-global"],
+    queryFn: async () => {
+      const { data } = await supabase.from("payroll_settings").select("*").single();
+      return data ? { ...DEFAULT_PAYROLL_SETTINGS, ...data } : DEFAULT_PAYROLL_SETTINGS;
+    }
+  });
+
+  const settings = settingsQ.data ?? DEFAULT_PAYROLL_SETTINGS;
+  const tiers = [...settings.sales_commission_tiers].sort((a, b) => a.min - b.min);
+
+  // Truy vấn Doanh số Sản phẩm tháng này
+  const productRevenueQ = useQuery({
+    queryKey: ["portal-product-revenue", uid, startISO],
     enabled: !!uid,
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("commissions")
-          .select("amount, created_at")
-          .eq("staff_id", uid!)
-          .gte("created_at", startISO)
-          .lt("created_at", endISO);
-        if (error) throw error;
-        const sum = (data ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
-        return Number.isFinite(sum) ? sum : 0;
-      } catch (e) {
-        console.warn("[PerformanceCard] total error", e);
-        return 0;
-      }
+      // NOTE: Đang Query mẫu từ bảng orders (Bạn có thể điều chỉnh tên cột nếu DB lưu khác)
+      const { data, error } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("created_by", uid!) // Hoặc staff_id tùy schema của bạn
+        .eq("status", "paid")
+        .gte("created_at", startISO)
+        .lt("created_at", endISO);
+      
+      const sum = (data ?? []).reduce((acc, row) => acc + Number(row.total_amount || 0), 0);
+      return sum;
     },
   });
 
-  const tiersQ = useQuery({
-    queryKey: ["portal-perf-tiers"],
+  // Lịch sử nhận Thưởng nóng trong tháng
+  const hotBonusHistoryQ = useQuery({
+    queryKey: ["portal-hot-bonus-history", uid, startISO],
+    enabled: !!uid,
     queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from("bonus_tiers")
-          .select("id, tier_name, target_amount, bonus_amount")
-          .eq("active", true)
-          .order("target_amount", { ascending: true });
-        if (error) throw error;
-        return (data ?? []) as Tier[];
-      } catch (e) {
-        console.warn("[PerformanceCard] tiers error", e);
-        return [] as Tier[];
-      }
-    },
+      const { data, error } = await supabase
+        .from("commissions")
+        .select("id, amount, note, created_at")
+        .eq("staff_id", uid!)
+        .eq("commission_type", "hot_bonus") // Cột phân loại thưởng nóng
+        .gte("created_at", startISO)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    }
   });
 
-  const current = Number(totalQ.data ?? 0);
-  const tiers = tiersQ.data ?? [];
+  const currentRevenue = Number(productRevenueQ.data ?? 0);
+  const hotBonuses = hotBonusHistoryQ.data ?? [];
 
-  const { nextTier, prevTierAmount, progressPct, achieved } = useMemo(() => {
-    if (tiers.length === 0) {
-      return { nextTier: null as Tier | null, prevTierAmount: 0, progressPct: 0, achieved: [] as Tier[] };
-    }
-    const achieved = tiers.filter((t) => current >= Number(t.target_amount));
-    const next = tiers.find((t) => current < Number(t.target_amount)) ?? null;
-    const maxTarget = Number(tiers[tiers.length - 1].target_amount) || 1;
-    const pct = Math.min(100, Math.max(0, (current / maxTarget) * 100));
-    const prevAmt = achieved.length > 0 ? Number(achieved[achieved.length - 1].target_amount) : 0;
-    return { nextTier: next, prevTierAmount: prevAmt, progressPct: pct, achieved };
-  }, [tiers, current]);
+  // Tính toán Tiến trình Gameification
+  const { nextTier, progressPct, achieved } = useMemo(() => {
+    if (tiers.length === 0) return { nextTier: null, progressPct: 0, achieved: [] };
+    
+    const achieved = tiers.filter((t) => currentRevenue >= t.min);
+    const next = tiers.find((t) => currentRevenue < t.min) ?? null;
+    const maxTarget = tiers[tiers.length - 1].min || 1;
+    const pct = Math.min(100, Math.max(0, (currentRevenue / maxTarget) * 100));
+    
+    return { nextTier: next, progressPct: pct, achieved };
+  }, [tiers, currentRevenue]);
 
-  const distance = nextTier ? Math.max(0, Number(nextTier.target_amount) - current) : 0;
+  const currentPercent = achieved.length > 0 ? achieved[achieved.length - 1].percent : 0;
+  const distance = nextTier ? Math.max(0, nextTier.min - currentRevenue) : 0;
 
   return (
     <div className="rounded-2xl border border-hairline bg-white p-5 shadow-sm">
@@ -85,8 +89,8 @@ export function PerformanceCard() {
           <Trophy className="w-5 h-5" />
         </div>
         <div className="flex-1">
-          <h3 className="font-black text-brand-dark">Năng suất tháng</h3>
-          <p className="text-xs text-ink-muted">Hoa hồng tích luỹ trong tháng hiện tại.</p>
+          <h3 className="font-black text-brand-dark">Hoa hồng Bán hàng</h3>
+          <p className="text-xs text-ink-muted">Doanh số sản phẩm tích lũy tháng này.</p>
         </div>
       </div>
 
@@ -97,88 +101,77 @@ export function PerformanceCard() {
               <TrendingUp className="w-3.5 h-3.5" /> Doanh số hiện tại
             </div>
             <div className="text-3xl font-black text-brand-dark mt-1">
-              {totalQ.isLoading ? "…" : money(current)}
+              {productRevenueQ.isLoading ? "…" : formatVND(currentRevenue)}
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold">Mốc đạt được</div>
+            <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold">Mức Hoa hồng</div>
             <div className="text-2xl font-black text-emerald-700 mt-1">
-              {achieved.length}/{tiers.length}
+              {currentPercent}%
             </div>
           </div>
         </div>
       </div>
 
-      {/* Thanh tiến trình nhiều mốc */}
-      <div className="mt-5">
-        {tiers.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-hairline p-4 text-center text-xs text-ink-muted italic">
-            Chưa có cấu hình mốc thưởng.
-          </div>
-        ) : (
-          <>
-            <div className="relative h-3 rounded-full bg-slate-100 overflow-visible">
-              <div
-                className="h-3 rounded-full bg-gradient-to-r from-brand to-emerald-500 transition-all"
-                style={{ width: `${progressPct}%` }}
-              />
-              {tiers.map((t, i) => {
-                const maxTarget = Number(tiers[tiers.length - 1].target_amount) || 1;
-                const pos = Math.min(100, (Number(t.target_amount) / maxTarget) * 100);
-                const done = current >= Number(t.target_amount);
-                return (
-                  <div
-                    key={t.id}
-                    className="absolute -top-1"
-                    style={{ left: `${pos}%`, transform: "translateX(-50%)" }}
-                  >
-                    <div
-                      className={
-                        "w-5 h-5 rounded-full border-2 grid place-items-center shadow-sm " +
-                        (done
-                          ? "bg-emerald-500 border-white text-white"
-                          : "bg-white border-slate-300 text-slate-400")
-                      }
-                      title={t.tier_name}
-                    >
-                      <span className="text-[9px] font-black">{i + 1}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Labels dưới */}
-            <div className="flex justify-between mt-4 gap-1 text-[10px] text-ink-muted">
-              {tiers.map((t) => (
-                <div key={t.id} className="flex-1 text-center">
-                  <div className="font-bold text-ink truncate">{t.tier_name}</div>
-                  <div>{money(Number(t.target_amount))}</div>
-                  <div className="text-emerald-700 font-bold">+{money(Number(t.bonus_amount))}</div>
+      {/* Thanh tiến trình */}
+      <div className="mt-6">
+        <div className="relative h-3 rounded-full bg-slate-100 overflow-visible">
+          <div className="h-3 rounded-full bg-gradient-to-r from-brand to-emerald-500 transition-all" style={{ width: `${progressPct}%` }} />
+          {tiers.map((t, i) => {
+            const maxTarget = tiers[tiers.length - 1].min || 1;
+            const pos = Math.min(100, (t.min / maxTarget) * 100);
+            const done = currentRevenue >= t.min;
+            return (
+              <div key={i} className="absolute -top-1.5" style={{ left: `${pos}%`, transform: "translateX(-50%)" }}>
+                <div className={`w-6 h-6 rounded-full border-2 grid place-items-center shadow-sm ${done ? "bg-emerald-500 border-white text-white" : "bg-white border-slate-300 text-slate-400"}`} title={`Mốc ${formatVND(t.min)}`}>
+                  <span className="text-[9px] font-black">{t.percent}%</span>
                 </div>
-              ))}
-            </div>
-
-            {/* Text khích lệ */}
-            <div className="mt-4 rounded-xl bg-brand-soft/70 border border-hairline p-3 flex items-start gap-2">
-              <Target className="w-4 h-4 text-brand-dark shrink-0 mt-0.5" />
-              <div className="text-sm text-brand-dark">
-                {nextTier ? (
-                  <>
-                    Cố lên! Bạn còn cách mốc <b>{nextTier.tier_name}</b> (thưởng{" "}
-                    <b>{money(Number(nextTier.bonus_amount))}</b>){" "}
-                    <b>{money(distance)}</b> nữa.
-                  </>
-                ) : (
-                  <>🎉 Xuất sắc! Bạn đã chinh phục tất cả các mốc thưởng của tháng này.</>
-                )}
-                {prevTierAmount > 0 && nextTier && (
-                  <div className="text-[11px] text-ink-muted mt-1">
-                    Vừa vượt mốc {money(prevTierAmount)}. Tiếp tục phát huy nhé!
-                  </div>
-                )}
               </div>
+            );
+          })}
+        </div>
+        
+        {/* Labels dưới */}
+        <div className="flex justify-between mt-4 gap-1 text-[10px] text-ink-muted">
+          {tiers.map((t, i) => (
+            <div key={i} className="flex-1 text-center">
+              <div>{formatVND(t.min)}</div>
             </div>
-          </>
+          ))}
+        </div>
+
+        {/* Text khích lệ */}
+        <div className="mt-4 rounded-xl bg-brand-soft/70 border border-hairline p-3 flex items-start gap-2">
+          <Target className="w-4 h-4 text-brand-dark shrink-0 mt-0.5" />
+          <div className="text-sm text-brand-dark">
+            {nextTier ? (
+              <>Cố lên! Cần bán thêm <b>{formatVND(distance)}</b> nữa để nâng mức hoa hồng lên <b>{nextTier.percent}%</b>.</>
+            ) : (
+              <>🎉 Xuất sắc! Bạn đã chạm mốc hoa hồng cao nhất ({currentPercent}%).</>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Lịch sử Thưởng nóng */}
+      <div className="mt-6 pt-5 border-t border-hairline">
+        <div className="text-[11px] uppercase tracking-widest text-ink-muted font-bold mb-3 flex items-center gap-1.5">
+          <Flame className="w-4 h-4 text-orange-500" /> Thưởng nóng đơn > {formatVND(settings.hot_bonus_threshold)}
+        </div>
+        {hotBonuses.length === 0 ? (
+           <div className="text-xs text-ink-muted italic bg-slate-50 p-3 rounded-lg border border-dashed text-center">Chưa có khoản thưởng nóng nào tháng này.</div>
+        ) : (
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+            {hotBonuses.map(hb => (
+              <div key={hb.id} className="flex justify-between items-center bg-orange-50 border border-orange-100 p-2.5 rounded-lg">
+                <div>
+                  <div className="text-xs font-bold text-orange-900">{hb.note || "Thưởng nóng doanh số"}</div>
+                  <div className="text-[10px] text-orange-700 mt-0.5">{new Date(hb.created_at).toLocaleDateString('vi-VN')}</div>
+                </div>
+                <div className="text-sm font-black text-orange-600">+{formatVND(hb.amount)}</div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
