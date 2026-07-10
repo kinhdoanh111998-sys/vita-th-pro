@@ -120,9 +120,16 @@ export function StaffMonthCalendar() {
         <div>
           <h3 className="font-black text-lg">Lịch Tháng · Toàn nhân viên</h3>
           <p className="text-xs text-ink-muted">
-            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} ca đã duyệt`}
+            {q.isLoading
+              ? "Đang tải..."
+              : `${(q.data?.shifts.length ?? 0) - pendingCount} ca đã duyệt${pendingCount > 0 ? ` · ${pendingCount} yêu cầu chờ duyệt` : ""}`}
           </p>
         </div>
+        {pendingCount > 0 && (
+          <span className="ml-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[11px] font-black animate-pulse">
+            {pendingCount} yêu cầu thay đổi
+          </span>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAnchor((d) => addMonths(d, -1))}
