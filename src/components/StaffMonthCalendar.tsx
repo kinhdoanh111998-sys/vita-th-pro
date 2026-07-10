@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addMonths, endOfMonth, format, getDay, startOfMonth,
 } from "date-fns";
 import { vi } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/Button";
 import {
@@ -62,10 +63,26 @@ function buildMonthGrid(anchor: Date) {
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 export function StaffMonthCalendar() {
+  const qc = useQueryClient();
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"));
   const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const monthKey = format(anchor, "yyyy-MM");
+
+  const decidePending = async (shiftId: string, next: "approved" | "rejected") => {
+    setBusy(shiftId);
+    try {
+      const { error } = await supabase.from("staff_shifts")
+        .update({ status: next }).eq("id", shiftId);
+      if (error) throw error;
+      toast.success(next === "approved" ? "Đã duyệt yêu cầu" : "Đã từ chối yêu cầu");
+      await qc.invalidateQueries({ queryKey: ["staff-shifts-month"] });
+      await qc.invalidateQueries({ queryKey: ["single-shift-change-requests"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Không cập nhật được");
+    } finally { setBusy(null); }
+  };
 
   const q = useQuery({
     queryKey: ["staff-shifts-month", monthKey],
@@ -73,12 +90,14 @@ export function StaffMonthCalendar() {
       try {
         const from = format(startOfMonth(anchor), "yyyy-MM-dd");
         const to = format(endOfMonth(anchor), "yyyy-MM-dd");
+        // Bao gồm cả ca đã duyệt VÀ các yêu cầu thay đổi đang chờ duyệt,
+        // để Quản lý thấy được khi lịch tháng đã 'confirmed' nhưng có request lẻ.
         const { data: shifts, error } = await supabase
           .from("staff_shifts")
           .select("id,staff_id,date,shift_type,status")
           .gte("date", from)
           .lte("date", to)
-          .eq("status", "approved");
+          .in("status", ["approved", "pending"]);
         if (error) throw error;
         const ids = Array.from(new Set((shifts ?? []).map((s) => s.staff_id)));
         let usersMap: Record<string, StaffInfo> = {};
@@ -97,6 +116,11 @@ export function StaffMonthCalendar() {
     },
   });
 
+  const pendingCount = useMemo(
+    () => (q.data?.shifts ?? []).filter((s) => s.status === "pending").length,
+    [q.data],
+  );
+
   const byDate = useMemo(() => {
     const m: Record<string, StaffShift[]> = {};
     (q.data?.shifts ?? []).forEach((s) => {
@@ -113,9 +137,16 @@ export function StaffMonthCalendar() {
         <div>
           <h3 className="font-black text-lg">Lịch Tháng · Toàn nhân viên</h3>
           <p className="text-xs text-ink-muted">
-            {q.isLoading ? "Đang tải..." : `${q.data?.shifts.length ?? 0} ca đã duyệt`}
+            {q.isLoading
+              ? "Đang tải..."
+              : `${(q.data?.shifts.length ?? 0) - pendingCount} ca đã duyệt${pendingCount > 0 ? ` · ${pendingCount} yêu cầu chờ duyệt` : ""}`}
           </p>
         </div>
+        {pendingCount > 0 && (
+          <span className="ml-3 px-2.5 py-1 rounded-full bg-amber-500 text-white text-[11px] font-black animate-pulse">
+            {pendingCount} yêu cầu thay đổi
+          </span>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setAnchor((d) => addMonths(d, -1))}
@@ -165,7 +196,7 @@ export function StaffMonthCalendar() {
                       onClick={() => setSelectedDate(iso)}
                       onMouseEnter={() => setHoverDate(iso)}
                       onMouseLeave={() => setHoverDate((h) => (h === iso ? null : h))}
-                      className={`text-left bg-white min-h-[90px] p-1.5 flex flex-col transition ${items.length ? "bg-emerald-50/40" : ""} ${isSelected ? "ring-2 ring-brand-dark ring-inset" : "hover:bg-brand-soft/30"}`}
+                      className={`text-left bg-white min-h-[90px] p-1.5 flex flex-col transition ${items.some((i) => i.status === "pending") ? "bg-amber-50 ring-1 ring-amber-300 ring-inset" : items.length ? "bg-emerald-50/40" : ""} ${isSelected ? "ring-2 ring-brand-dark ring-inset" : "hover:bg-brand-soft/30"}`}
                     >
                       <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
                         {d.getDate()}
@@ -173,10 +204,12 @@ export function StaffMonthCalendar() {
                       <div className="mt-1 flex flex-wrap items-center -space-x-2">
                         {items.slice(0, 6).map((s) => {
                           const u = q.data?.users[s.staff_id];
+                          const isPending = s.status === "pending";
                           return (
                             <div
                               key={s.id}
-                              className={`size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white ${avatarColor(s.staff_id)}`}
+                              title={isPending ? "Yêu cầu thay đổi · Chờ duyệt" : undefined}
+                              className={`size-7 rounded-full ring-2 grid place-items-center text-[10px] font-black text-white ${avatarColor(s.staff_id)} ${isPending ? "ring-amber-500" : "ring-white"}`}
                             >
                               {initials(u?.full_name, u?.email)}
                             </div>
@@ -207,6 +240,9 @@ export function StaffMonthCalendar() {
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${shiftBadge(s.shift_type)}`}>
                                 {shiftLabel(s.shift_type)}
                               </span>
+                              {s.status === "pending" && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">Chờ duyệt</span>
+                              )}
                             </div>
                           );
                         })}
@@ -250,7 +286,21 @@ export function StaffMonthCalendar() {
                       <span className={`px-2 py-1 rounded text-xs font-bold ${shiftBadge(s.shift_type)}`}>
                         {shiftLabel(s.shift_type)}
                       </span>
-                      <span className="text-xs font-bold text-emerald-700 uppercase">{s.status}</span>
+                      {s.status === "pending" ? (
+                        <>
+                          <span className="px-2 py-1 rounded text-xs font-black bg-amber-500 text-white">
+                            Yêu cầu thay đổi · Chờ duyệt
+                          </span>
+                          <Button size="sm" onClick={() => decidePending(s.id, "approved")} disabled={busy === s.id}>
+                            <Check className="size-3.5 mr-1 inline" /> Duyệt
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => decidePending(s.id, "rejected")} disabled={busy === s.id}>
+                            <X className="size-3.5 mr-1 inline" /> Từ chối
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-700 uppercase">{s.status}</span>
+                      )}
                     </div>
                   );
                 })

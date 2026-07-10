@@ -154,16 +154,38 @@ export function ShiftSummaryCard() {
               <div className="space-y-1.5">
                 {(shiftsTodayQ.data ?? []).map((r: any) => {
                   const approved = r.status === "approved";
+                  const pending = r.status === "pending";
+                  const rejected = r.status === "rejected";
                   return (
-                    <div key={r.id} className="flex items-center gap-3 rounded-xl border border-hairline bg-[#fafcf7] px-3 py-2">
+                    <div
+                      key={r.id}
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${
+                        pending
+                          ? "border-amber-300 bg-amber-50"
+                          : "border-hairline bg-[#fafcf7]"
+                      }`}
+                    >
                       <div className="w-8 h-8 rounded-lg bg-brand/10 grid place-items-center text-brand-dark">
                         <Clock className="w-4 h-4" />
                       </div>
                       <div className="flex-1">
                         <div className="text-sm font-bold text-ink">{translateShift(r.shift_type)}</div>
+                        {pending && (
+                          <div className="text-[10px] text-amber-700 font-bold">Yêu cầu thay đổi — chờ Quản lý duyệt</div>
+                        )}
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${approved ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
-                        {approved ? "Đã duyệt" : r.status}
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          approved
+                            ? "bg-emerald-100 text-emerald-800"
+                            : pending
+                              ? "bg-amber-500 text-white"
+                              : rejected
+                                ? "bg-red-100 text-red-800"
+                                : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {approved ? "Đã duyệt" : pending ? "Chờ duyệt" : rejected ? "Từ chối" : r.status}
                       </span>
                     </div>
                   );
