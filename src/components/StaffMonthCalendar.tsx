@@ -73,12 +73,14 @@ export function StaffMonthCalendar() {
       try {
         const from = format(startOfMonth(anchor), "yyyy-MM-dd");
         const to = format(endOfMonth(anchor), "yyyy-MM-dd");
+        // Bao gồm cả ca đã duyệt VÀ các yêu cầu thay đổi đang chờ duyệt,
+        // để Quản lý thấy được khi lịch tháng đã 'confirmed' nhưng có request lẻ.
         const { data: shifts, error } = await supabase
           .from("staff_shifts")
           .select("id,staff_id,date,shift_type,status")
           .gte("date", from)
           .lte("date", to)
-          .eq("status", "approved");
+          .in("status", ["approved", "pending"]);
         if (error) throw error;
         const ids = Array.from(new Set((shifts ?? []).map((s) => s.staff_id)));
         let usersMap: Record<string, StaffInfo> = {};
@@ -96,6 +98,11 @@ export function StaffMonthCalendar() {
       }
     },
   });
+
+  const pendingCount = useMemo(
+    () => (q.data?.shifts ?? []).filter((s) => s.status === "pending").length,
+    [q.data],
+  );
 
   const byDate = useMemo(() => {
     const m: Record<string, StaffShift[]> = {};
