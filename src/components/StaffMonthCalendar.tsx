@@ -63,10 +63,26 @@ function buildMonthGrid(anchor: Date) {
 const WEEKDAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 export function StaffMonthCalendar() {
+  const qc = useQueryClient();
   const [anchor, setAnchor] = useState(() => startOfMonth(new Date()));
   const [selectedDate, setSelectedDate] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"));
   const [hoverDate, setHoverDate] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const monthKey = format(anchor, "yyyy-MM");
+
+  const decidePending = async (shiftId: string, next: "approved" | "rejected") => {
+    setBusy(shiftId);
+    try {
+      const { error } = await supabase.from("staff_shifts")
+        .update({ status: next }).eq("id", shiftId);
+      if (error) throw error;
+      toast.success(next === "approved" ? "Đã duyệt yêu cầu" : "Đã từ chối yêu cầu");
+      await qc.invalidateQueries({ queryKey: ["staff-shifts-month"] });
+      await qc.invalidateQueries({ queryKey: ["single-shift-change-requests"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Không cập nhật được");
+    } finally { setBusy(null); }
+  };
 
   const q = useQuery({
     queryKey: ["staff-shifts-month", monthKey],
