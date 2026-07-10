@@ -179,7 +179,7 @@ export function StaffMonthCalendar() {
                       onClick={() => setSelectedDate(iso)}
                       onMouseEnter={() => setHoverDate(iso)}
                       onMouseLeave={() => setHoverDate((h) => (h === iso ? null : h))}
-                      className={`text-left bg-white min-h-[90px] p-1.5 flex flex-col transition ${items.length ? "bg-emerald-50/40" : ""} ${isSelected ? "ring-2 ring-brand-dark ring-inset" : "hover:bg-brand-soft/30"}`}
+                      className={`text-left bg-white min-h-[90px] p-1.5 flex flex-col transition ${items.some((i) => i.status === "pending") ? "bg-amber-50 ring-1 ring-amber-300 ring-inset" : items.length ? "bg-emerald-50/40" : ""} ${isSelected ? "ring-2 ring-brand-dark ring-inset" : "hover:bg-brand-soft/30"}`}
                     >
                       <div className={`text-xs font-bold ${isWeekend ? "text-red-600" : "text-ink"}`}>
                         {d.getDate()}
@@ -187,10 +187,12 @@ export function StaffMonthCalendar() {
                       <div className="mt-1 flex flex-wrap items-center -space-x-2">
                         {items.slice(0, 6).map((s) => {
                           const u = q.data?.users[s.staff_id];
+                          const isPending = s.status === "pending";
                           return (
                             <div
                               key={s.id}
-                              className={`size-7 rounded-full ring-2 ring-white grid place-items-center text-[10px] font-black text-white ${avatarColor(s.staff_id)}`}
+                              title={isPending ? "Yêu cầu thay đổi · Chờ duyệt" : undefined}
+                              className={`size-7 rounded-full ring-2 grid place-items-center text-[10px] font-black text-white ${avatarColor(s.staff_id)} ${isPending ? "ring-amber-500" : "ring-white"}`}
                             >
                               {initials(u?.full_name, u?.email)}
                             </div>
