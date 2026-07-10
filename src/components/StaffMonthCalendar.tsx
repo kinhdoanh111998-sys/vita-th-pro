@@ -223,6 +223,9 @@ export function StaffMonthCalendar() {
                               <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${shiftBadge(s.shift_type)}`}>
                                 {shiftLabel(s.shift_type)}
                               </span>
+                              {s.status === "pending" && (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white">Chờ duyệt</span>
+                              )}
                             </div>
                           );
                         })}
