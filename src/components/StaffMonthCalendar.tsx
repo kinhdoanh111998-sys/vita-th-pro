@@ -286,7 +286,21 @@ export function StaffMonthCalendar() {
                       <span className={`px-2 py-1 rounded text-xs font-bold ${shiftBadge(s.shift_type)}`}>
                         {shiftLabel(s.shift_type)}
                       </span>
-                      <span className="text-xs font-bold text-emerald-700 uppercase">{s.status}</span>
+                      {s.status === "pending" ? (
+                        <>
+                          <span className="px-2 py-1 rounded text-xs font-black bg-amber-500 text-white">
+                            Yêu cầu thay đổi · Chờ duyệt
+                          </span>
+                          <Button size="sm" onClick={() => decidePending(s.id, "approved")} disabled={busy === s.id}>
+                            <Check className="size-3.5 mr-1 inline" /> Duyệt
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => decidePending(s.id, "rejected")} disabled={busy === s.id}>
+                            <X className="size-3.5 mr-1 inline" /> Từ chối
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-700 uppercase">{s.status}</span>
+                      )}
                     </div>
                   );
                 })
